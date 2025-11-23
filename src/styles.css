@@ -1,0 +1,257 @@
+window.window {
+    background: none;
+    padding: 4px 20px 4px 20px;
+    font-size: 1rem;
+    line-height: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+box.line {
+    background: transparent;
+}
+
+/* Popover общие стили */
+popover.background {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+popover > contents {
+    background: #000000AA;
+    border: none;
+    border-radius: 4px;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.main-button {
+    min-height: 22px;
+    /*min-width: 28px;*/
+    background: #000000AA;
+    border: none;
+    border-radius: 4px;
+}
+
+.main-button:hover {
+    background: #ffffff20;
+}
+
+.main-button:active {
+    background: #ffffff30;
+}
+
+/* Arch Linux icon */
+.arch-icon {
+    background: transparent;
+}
+
+.main-button > image {
+    background: transparent;
+}
+
+/* Main menu popover */
+.main-menu {
+    background: transparent;
+    padding: 4px;
+    min-width: 120px;
+}
+
+.main-menu .menu-item {
+    color: #ffffff;
+    padding: 0;
+    text-align: left;
+    border-radius: 2px;
+}
+
+.main-menu .menu-item:hover {
+    background: #ffffff20;
+}
+
+/* Workspaces section */
+box.workspaces {
+    background: #000000AA;
+    border-radius: 4px;
+}
+
+.workspace-label {
+    color: #666666;
+    font-weight: normal;
+    padding: 0 8px;
+    transition: all 0.2s ease;
+}
+
+.workspace-label:hover {
+    color: #aaaaaa;
+}
+
+.workspace-label.active {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.workspace-label.occupied {
+    color: #999999;
+}
+
+/* Active window title */
+.active-window {
+    background: #000000AA;
+    color: #ffffff;
+    padding: 0 10px;
+    margin-left: 8px;
+    border-radius: 4px;
+}
+
+/* Zones */
+box.zone-left {
+    margin-right: auto;
+}
+
+box.zone-center {
+}
+
+box.zone-right {
+    margin-left: auto;
+}
+
+/* DateTime widget */
+.datetime-button {
+    background: #000000AA;
+    border: none;
+    border-radius: 4px;
+    padding: 0 10px;
+    margin-left: 8px;
+}
+
+.datetime-button:hover {
+    background: #ffffff15;
+}
+
+.datetime-label {
+    color: #ffffff;
+}
+
+/* Calendar popup */
+.calendar-container {
+    background: transparent;
+    padding: 8px;
+}
+
+.calendar-header {
+    margin-bottom: 8px;
+}
+
+.calendar-nav {
+    background: #ffffff10;
+    border: none;
+    color: #ffffff;
+    padding: 4px 10px;
+    border-radius: 2px;
+}
+
+.calendar-nav:hover {
+    background: #ffffff20;
+}
+
+.calendar-month {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.calendar-grid {
+    margin-top: 4px;
+}
+
+.calendar-weekday {
+    color: #aaaaaa;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px;
+}
+
+.calendar-day {
+    background: #ffffff08;
+    border: none;
+    color: #cccccc;
+    padding: 4px;
+    border-radius: 2px;
+    min-width: 28px;
+    min-height: 28px;
+}
+
+.calendar-day:hover {
+    background: #ffffff20;
+    color: #ffffff;
+}
+
+.calendar-today {
+    background: #4a90d9;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.calendar-today:hover {
+    background: #5a9fe9;
+}
+
+/* System Tray */
+.system-tray {
+    background: #000000AA;
+    border-radius: 4px;
+    margin-left: 8px;
+    padding: 0;
+    /*padding: 2px;*/
+}
+
+.tray-item {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.tray-item:hover {
+    background: #ffffff20;
+    border-radius: 2px;
+}
+
+.tray-placeholder {
+    color: #888888;
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* Tray context menu */
+.tray-context-menu {
+    background: transparent;
+    padding: 4px;
+    min-width: 120px;
+}
+
+.menu-header {
+    color: #aaaaaa;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 8px;
+    margin-bottom: 2px;
+}
+
+.menu-item {
+    color: #ffffff;
+    padding: 6px 12px;
+    text-align: left;
+    border-radius: 2px;
+}
+
+.menu-item:hover {
+    background: #ffffff20;
+}
+
+.menu-item:disabled {
+    color: #666666;
+}
+
