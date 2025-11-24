@@ -860,6 +860,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
+name = "hyprline"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "chrono",
+ "futures",
+ "gdk-pixbuf",
+ "gtk4",
+ "gtk4-layer-shell",
+ "serde",
+ "serde_json",
+ "tokio",
+ "zbus",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1129,22 +1145,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.16",
-]
-
-[[package]]
-name = "rust-test"
-version = "0.1.0"
-dependencies = [
- "async-channel",
- "chrono",
- "futures",
- "gdk-pixbuf",
- "gtk4",
- "gtk4-layer-shell",
- "serde",
- "serde_json",
- "tokio",
- "zbus",
 ]
 
 [[package]]
