@@ -24,7 +24,7 @@ fn main() -> glib::ExitCode {
 
     app.connect_startup(|app| {
         let provider = gtk4::CssProvider::new();
-        provider.load_from_path("src/styles.css");
+        provider.load_from_data(include_str!("styles.css"));
 
         gtk4::style_context_add_provider_for_display(
             &gdk::Display::default().expect("error initializing gtk4 style context"),
