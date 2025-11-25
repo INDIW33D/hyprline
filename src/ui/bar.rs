@@ -2,11 +2,17 @@ use crate::config::bar_config::{load_bar_config, WidgetType, WidgetZone};
 use crate::domain::workspace_service::WorkspaceService;
 use crate::domain::system_tray_service::SystemTrayService;
 use crate::domain::datetime_service::DateTimeService;
-use crate::domain::models::{TrayItem, DateTimeConfig};
+use crate::domain::battery_service::BatteryService;
+use crate::domain::volume_service::VolumeService;
+use crate::domain::notification_service::NotificationService;
+use crate::domain::keyboard_layout_service::KeyboardLayoutService;
+use crate::domain::models::{TrayItem, DateTimeConfig, Notification};
 use crate::infrastructure::event_listener;
 use crate::ui::{
     active_window::ActiveWindowWidget, datetime::DateTimeWidget, menu::Menu,
-    system_tray::SystemTrayWidget, workspaces::WorkspacesWidget,
+    system_tray::SystemTrayWidget, workspaces::WorkspacesWidget, battery::BatteryWidget,
+    volume::VolumeWidget, notifications::NotificationWidget, notification_popup::NotificationPopup,
+    keyboard_layout::KeyboardLayoutWidget,
 };
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
@@ -21,6 +27,11 @@ pub struct Bar {
     datetime_widget: Option<Arc<Mutex<DateTimeWidget>>>,
     #[allow(dead_code)]
     system_tray_widget: Option<Arc<Mutex<SystemTrayWidget>>>,
+    battery_widget: Option<Arc<Mutex<BatteryWidget>>>,
+    volume_widget: Option<Arc<Mutex<VolumeWidget>>>,
+    notifications_widget: Option<Arc<Mutex<NotificationWidget>>>,
+    keyboard_layout_widget: Option<Arc<Mutex<KeyboardLayoutWidget>>>,
+    app: gtk4::Application,
 }
 
 impl Bar {
@@ -32,6 +43,10 @@ impl Bar {
         tray_service: Arc<dyn SystemTrayService + Send + Sync>,
         datetime_service: Arc<dyn DateTimeService + Send + Sync>,
         datetime_config: DateTimeConfig,
+        battery_service: Arc<dyn BatteryService + Send + Sync>,
+        volume_service: Arc<dyn VolumeService + Send + Sync>,
+        notification_service: Arc<dyn NotificationService + Send + Sync>,
+        keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync>,
     ) -> Self {
         let window = gtk4::ApplicationWindow::new(app);
 
@@ -89,6 +104,10 @@ impl Bar {
         let mut active_window_widget = None;
         let mut datetime_widget = None;
         let mut system_tray_widget = None;
+        let mut battery_widget = None;
+        let mut volume_widget = None;
+        let mut notifications_widget = None;
+        let mut keyboard_layout_widget = None;
 
         // Создаём список виджетов с их конфигурацией
         let mut widgets_to_place: Vec<(WidgetType, WidgetZone, usize)> = config
@@ -150,6 +169,26 @@ impl Bar {
                         target_box.append(widget.lock().unwrap().widget());
                         system_tray_widget = Some(widget);
                     }
+                    WidgetType::Battery => {
+                        let widget = Arc::new(Mutex::new(BatteryWidget::new(battery_service.clone())));
+                        target_box.append(widget.lock().unwrap().widget());
+                        battery_widget = Some(widget);
+                    }
+                    WidgetType::Volume => {
+                        let widget = Arc::new(Mutex::new(VolumeWidget::new(volume_service.clone())));
+                        target_box.append(widget.lock().unwrap().widget());
+                        volume_widget = Some(widget);
+                    }
+                    WidgetType::Notifications => {
+                        let widget = Arc::new(Mutex::new(NotificationWidget::new(notification_service.clone())));
+                        target_box.append(widget.lock().unwrap().widget());
+                        notifications_widget = Some(widget);
+                    }
+                    WidgetType::KeyboardLayout => {
+                        let widget = Arc::new(Mutex::new(KeyboardLayoutWidget::new(keyboard_layout_service.clone())));
+                        target_box.append(widget.lock().unwrap().widget());
+                        keyboard_layout_widget = Some(widget);
+                    }
                 }
             }
         }
@@ -162,10 +201,21 @@ impl Bar {
             active_window_widget,
             datetime_widget,
             system_tray_widget,
+            battery_widget,
+            volume_widget,
+            notifications_widget,
+            keyboard_layout_widget,
+            app: app.clone(),
         }
     }
 
-    pub fn setup_event_listener(&self, tray_rx: async_channel::Receiver<Vec<TrayItem>>) {
+    pub fn setup_event_listener(
+        &self,
+        tray_rx: async_channel::Receiver<Vec<TrayItem>>,
+        volume_rx: async_channel::Receiver<()>,
+        notification_rx: async_channel::Receiver<Notification>,
+        keyboard_layout_rx: async_channel::Receiver<()>,
+    ) {
         let (tx, rx) = mpsc::channel();
 
         event_listener::start_event_listener(move || {
@@ -174,6 +224,7 @@ impl Bar {
 
         let workspaces_widget = self.workspaces_widget.clone();
         let active_window_widget = self.active_window_widget.clone();
+        let keyboard_layout_widget = self.keyboard_layout_widget.clone();
         glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
             let mut should_update = false;
 
@@ -186,6 +237,9 @@ impl Bar {
                     widget.lock().unwrap().update();
                 }
                 if let Some(ref widget) = active_window_widget {
+                    widget.lock().unwrap().update();
+                }
+                if let Some(ref widget) = keyboard_layout_widget {
                     widget.lock().unwrap().update();
                 }
             }
@@ -213,6 +267,54 @@ impl Bar {
             glib::ControlFlow::Continue
         });
 
+        // Обновление батареи каждые 30 секунд
+        let battery_widget = self.battery_widget.clone();
+        glib::timeout_add_local(std::time::Duration::from_secs(30), move || {
+            if let Some(ref widget) = battery_widget {
+                widget.lock().unwrap().update();
+            }
+            glib::ControlFlow::Continue
+        });
+
+        // Обновление громкости по событиям от PipeWire
+        let volume_widget = self.volume_widget.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            while let Ok(_) = volume_rx.try_recv() {
+                if let Some(ref widget) = volume_widget {
+                    widget.lock().unwrap().update();
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+
+        // Обработка уведомлений
+        let notifications_widget = self.notifications_widget.clone();
+        let app = self.app.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            while let Ok(notification) = notification_rx.try_recv() {
+                // Показываем popup на 5 секунд
+                let popup = NotificationPopup::new(notification, &app);
+                popup.show(5);
+
+                // Обновляем виджет уведомлений (счётчик)
+                if let Some(ref widget) = notifications_widget {
+                    widget.lock().unwrap().update();
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+
+        // Обработка событий смены раскладки клавиатуры
+        let keyboard_layout_widget = self.keyboard_layout_widget.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            while let Ok(_) = keyboard_layout_rx.try_recv() {
+                if let Some(ref widget) = keyboard_layout_widget {
+                    widget.lock().unwrap().update();
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+
         // Первоначальное обновление
         if let Some(ref widget) = self.workspaces_widget {
             widget.lock().unwrap().update();
@@ -222,6 +324,18 @@ impl Bar {
         }
         if let Some(ref widget) = self.datetime_widget {
             widget.lock().unwrap().update_time();
+        }
+        if let Some(ref widget) = self.battery_widget {
+            widget.lock().unwrap().update();
+        }
+        if let Some(ref widget) = self.volume_widget {
+            widget.lock().unwrap().update();
+        }
+        if let Some(ref widget) = self.notifications_widget {
+            widget.lock().unwrap().update();
+        }
+        if let Some(ref widget) = self.keyboard_layout_widget {
+            widget.lock().unwrap().update();
         }
     }
 

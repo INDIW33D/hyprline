@@ -105,3 +105,57 @@ impl Default for DateTimeConfig {
     }
 }
 
+// Battery models
+#[derive(Debug, Clone)]
+pub struct BatteryInfo {
+    pub percentage: u8,
+    pub status: BatteryStatus,
+    pub time_to_empty: Option<u32>, // minutes
+    pub time_to_full: Option<u32>,  // minutes
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BatteryStatus {
+    Charging,
+    Discharging,
+    Full,
+    NotCharging,
+    Unknown,
+}
+
+// Volume models
+#[derive(Debug, Clone, PartialEq)]
+pub struct VolumeInfo {
+    pub volume: u8,      // 0-100
+    pub muted: bool,
+}
+
+// Notification models
+#[derive(Debug, Clone)]
+pub struct Notification {
+    pub id: u32,
+    pub app_name: String,
+    pub summary: String,
+    pub body: String,
+    pub app_icon: String,
+    pub urgency: NotificationUrgency,
+    pub timestamp: std::time::SystemTime,
+    pub actions: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum NotificationUrgency {
+    Low,
+    Normal,
+    Critical,
+}
+
+// Keyboard layout models
+#[derive(Debug, Clone, PartialEq)]
+pub struct KeyboardLayout {
+    /// Короткое имя раскладки (например: "us", "ru")
+    pub short_name: String,
+    /// Полное имя раскладки (например: "English (US)", "Russian")
+    pub full_name: String,
+}
+

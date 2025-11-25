@@ -1,7 +1,10 @@
 use crate::domain::models::{TrayItem, MenuItem};
 
+/// Обновление трея
+pub type TrayUpdate = Vec<TrayItem>;
+
 /// Trait для работы с системным треем
-pub trait SystemTrayService {
+pub trait SystemTrayService: Send + Sync {
     /// Получить список элементов трея
     #[allow(dead_code)]
     fn get_items(&self) -> Vec<TrayItem>;
@@ -17,5 +20,10 @@ pub trait SystemTrayService {
 
     /// Активировать пункт меню
     fn activate_menu_item(&self, service: &str, menu_path: &str, item_id: i32);
-}
 
+    /// Начать мониторинг
+    fn start_monitoring(&self, tx: async_channel::Sender<TrayUpdate>);
+
+    /// Остановить мониторинг
+    fn stop(&self);
+}

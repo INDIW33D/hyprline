@@ -7,10 +7,19 @@ use config::parse_workspace_bindings;
 use domain::workspace_service::WorkspaceService;
 use domain::system_tray_service::SystemTrayService;
 use domain::datetime_service::DateTimeService;
+use domain::battery_service::BatteryService;
+use domain::volume_service::VolumeService;
+use domain::notification_service::NotificationService;
+use domain::keyboard_layout_service::KeyboardLayoutService;
+use domain::status_notifier_watcher_service::StatusNotifierWatcherService;
 use domain::models::DateTimeConfig;
 use infrastructure::hyprland_ipc::HyprlandIpc;
 use infrastructure::status_notifier_tray::StatusNotifierTrayService;
 use infrastructure::system_datetime::SystemDateTimeService;
+use infrastructure::system_battery::SystemBatteryService;
+use infrastructure::dbus_status_notifier_watcher::DbusStatusNotifierWatcher;
+use infrastructure::dbus_notification_service::DbusNotificationService;
+use infrastructure::hyprland_keyboard_layout::HyprlandKeyboardLayoutService;
 use ui::bar::Bar;
 
 use gtk4::prelude::*;
@@ -39,6 +48,15 @@ fn main() -> glib::ExitCode {
 }
 
 fn build_ui(app: &gtk4::Application) {
+    // Запускаем свой StatusNotifierWatcher D-Bus сервис
+    let watcher_service = Arc::new(DbusStatusNotifierWatcher::new());
+    if let Err(e) = watcher_service.start() {
+        eprintln!("[Main] Warning: Failed to start StatusNotifierWatcher: {}", e);
+    }
+    
+    // Даём время сервису зарегистрироваться в D-Bus
+    std::thread::sleep(std::time::Duration::from_millis(200));
+    
     let service: Arc<dyn WorkspaceService + Send + Sync> = Arc::new(HyprlandIpc::new());
     
     // Создаём системный трей сервис
@@ -49,18 +67,74 @@ fn build_ui(app: &gtk4::Application) {
     let datetime_service: Arc<dyn DateTimeService + Send + Sync> = Arc::new(SystemDateTimeService::new());
     let datetime_config = DateTimeConfig::default();
     
+    // Создаём Battery сервис
+    let battery_service: Arc<dyn BatteryService + Send + Sync> = Arc::new(SystemBatteryService::new());
+    
+    // Создаём Volume сервис с мониторингом
+    let (volume_tx, volume_rx) = infrastructure::pipewire_volume::create_volume_channel();
+    let mut volume_service_impl = infrastructure::pipewire_volume::PipewireVolume::new();
+    volume_service_impl.start_monitoring(volume_tx);
+    let volume_service: Arc<dyn VolumeService + Send + Sync> = Arc::new(volume_service_impl);
+
+    // Создаём Notification сервис с мониторингом
+    let (notification_tx, notification_rx) = infrastructure::dbus_notification_service::create_notification_channel();
+    let notification_service_impl = Arc::new(DbusNotificationService::new());
+    if let Err(e) = notification_service_impl.start(notification_tx) {
+        eprintln!("[Main] Warning: Failed to start NotificationService: {}", e);
+    }
+    let notification_service: Arc<dyn NotificationService + Send + Sync> = notification_service_impl;
+
+    // Создаём KeyboardLayout сервис
+    let keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync> = 
+        Arc::new(HyprlandKeyboardLayoutService::new());
+
+    // Создаём канал для событий смены раскладки
+    let (keyboard_layout_tx, keyboard_layout_rx) = infrastructure::keyboard_layout_listener::create_keyboard_layout_channel();
+    
+    // Запускаем мониторинг событий раскладки
+    infrastructure::keyboard_layout_listener::start_keyboard_layout_listener(keyboard_layout_tx);
+
     // Создаём канал для обновлений трея
     let (tray_tx, tray_rx) = async_channel::unbounded();
     
     // Запускаем мониторинг трея
     tray_service_impl.start_monitoring(tray_tx.clone());
     
+    // Подключаем обработчик завершения приложения
+    let watcher_service_cleanup = watcher_service.clone();
+    let tray_service_cleanup = tray_service_impl.clone();
+    app.connect_shutdown(move |_| {
+        eprintln!("[Main] Application shutting down...");
+        
+        // Останавливаем мониторинг трея
+        tray_service_cleanup.stop();
+        
+        // Останавливаем StatusNotifierWatcher
+        if let Err(e) = watcher_service_cleanup.stop() {
+            eprintln!("[Main] Warning: Failed to stop StatusNotifierWatcher: {}", e);
+        }
+        
+        eprintln!("[Main] Cleanup completed");
+    });
+    
     let workspace_keys = parse_workspace_bindings();
     let monitors = service.get_monitors();
 
     if monitors.is_empty() {
-        let bar = Bar::new(app, "default", workspace_keys, service, tray_service, datetime_service, datetime_config);
-        bar.setup_event_listener(tray_rx);
+        let bar = Bar::new(
+            app, 
+            "default", 
+            workspace_keys, 
+            service, 
+            tray_service, 
+            datetime_service, 
+            datetime_config, 
+            battery_service, 
+            volume_service, 
+            notification_service,
+            keyboard_layout_service
+        );
+        bar.setup_event_listener(tray_rx, volume_rx, notification_rx, keyboard_layout_rx);
         bar.present();
         return;
     }
@@ -74,9 +148,17 @@ fn build_ui(app: &gtk4::Application) {
             tray_service.clone(),
             datetime_service.clone(),
             datetime_config.clone(),
+            battery_service.clone(),
+            volume_service.clone(),
+            notification_service.clone(),
+            keyboard_layout_service.clone(),
         );
-        bar.setup_event_listener(tray_rx.clone());
+        bar.setup_event_listener(
+            tray_rx.clone(), 
+            volume_rx.clone(), 
+            notification_rx.clone(),
+            keyboard_layout_rx.clone()
+        );
         bar.present();
     }
 }
-

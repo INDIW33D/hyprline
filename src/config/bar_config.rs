@@ -23,6 +23,10 @@ pub enum WidgetType {
     ActiveWindow,
     DateTime,
     SystemTray,
+    Battery,
+    Volume,
+    Notifications,
+    KeyboardLayout,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -71,6 +75,38 @@ impl Default for BarConfig {
             WidgetConfig {
                 zone: WidgetZone::Right,
                 order: 0,
+            },
+        );
+
+        widgets.insert(
+            WidgetType::Battery,
+            WidgetConfig {
+                zone: WidgetZone::Right,
+                order: 2,
+            },
+        );
+
+        widgets.insert(
+            WidgetType::Volume,
+            WidgetConfig {
+                zone: WidgetZone::Right,
+                order: 3,
+            },
+        );
+
+        widgets.insert(
+            WidgetType::KeyboardLayout,
+            WidgetConfig {
+                zone: WidgetZone::Right,
+                order: 4,
+            },
+        );
+
+        widgets.insert(
+            WidgetType::Notifications,
+            WidgetConfig {
+                zone: WidgetZone::Right,
+                order: 5,
             },
         );
 

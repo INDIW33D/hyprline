@@ -1,6 +1,6 @@
 use crate::domain::models::{TrayItem, TrayStatus};
-use crate::domain::system_tray_service::SystemTrayService;
-use std::sync::Arc;
+use crate::domain::system_tray_service::{SystemTrayService, TrayUpdate};
+use std::sync::{Arc, Mutex};
 use zbus::{proxy, Connection};
 use async_channel::Sender;
 use futures::stream::StreamExt;
@@ -76,52 +76,72 @@ trait DBusMenu {
 }
 
 pub struct StatusNotifierTrayService {
-    items: Arc<std::sync::Mutex<Vec<TrayItem>>>,
+    items: Arc<Mutex<Vec<TrayItem>>>,
+    handle: Arc<Mutex<Option<std::thread::JoinHandle<()>>>>,
+    shutdown_tx: Arc<Mutex<Option<async_channel::Sender<()>>>>,
 }
 
 impl StatusNotifierTrayService {
     pub fn new() -> Self {
         Self {
-            items: Arc::new(std::sync::Mutex::new(Vec::new())),
+            items: Arc::new(Mutex::new(Vec::new())),
+            handle: Arc::new(Mutex::new(None)),
+            shutdown_tx: Arc::new(Mutex::new(None)),
         }
-    }
-
-    /// Запускает мониторинг трея в фоновом потоке
-    pub fn start_monitoring(&self, tx: Sender<Vec<TrayItem>>) {
-        let items = self.items.clone();
-
-        std::thread::spawn(move || {
-            // Создаём async runtime
-            let rt = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap();
-
-            rt.block_on(async move {
-                if let Err(e) = Self::monitor_tray_async(items, tx).await {
-                    eprintln!("System tray monitoring error: {}", e);
-                }
-            });
-        });
     }
 
     async fn monitor_tray_async(
         items: Arc<std::sync::Mutex<Vec<TrayItem>>>,
-        tx: Sender<Vec<TrayItem>>,
+        tx: Sender<TrayUpdate>,
+        shutdown_rx: async_channel::Receiver<()>,
     ) -> zbus::Result<()> {
+        eprintln!("[Tray] Starting system tray monitoring...");
+
         // Подключаемся к session bus
-        let connection = Connection::session().await?;
+        let connection = match Connection::session().await {
+            Ok(conn) => {
+                eprintln!("[Tray] ✓ Connected to D-Bus session bus");
+                conn
+            }
+            Err(e) => {
+                eprintln!("[Tray] ERROR: Failed to connect to D-Bus: {}", e);
+                return Err(e);
+            }
+        };
 
         // Создаём proxy для StatusNotifierWatcher
-        let watcher = StatusNotifierWatcherProxy::new(&connection).await?;
+        let watcher = match StatusNotifierWatcherProxy::new(&connection).await {
+            Ok(w) => {
+                eprintln!("[Tray] ✓ Connected to StatusNotifierWatcher");
+                w
+            }
+            Err(e) => {
+                eprintln!("[Tray] ERROR: StatusNotifierWatcher not available: {}", e);
+                eprintln!("[Tray] This should not happen with built-in watcher!");
+                return Err(e);
+            }
+        };
 
         // Получаем начальный список зарегистрированных элементов
-        let registered_items = watcher.registered_status_notifier_items().await?;
+        let registered_items = match watcher.registered_status_notifier_items().await {
+            Ok(items) => {
+                eprintln!("[Tray] Found {} registered tray items", items.len());
+                for item in &items {
+                    eprintln!("[Tray]   - {}", item);
+                }
+                items
+            }
+            Err(e) => {
+                eprintln!("[Tray] ERROR: Failed to get registered items: {}", e);
+                Vec::new()
+            }
+        };
 
         let mut tray_items = Vec::new();
 
         for service in registered_items {
             if let Ok(item) = Self::fetch_tray_item(&connection, &service).await {
+                eprintln!("[Tray] Found existing item: {} ({})", item.title, item.service);
                 tray_items.push(item);
             }
         }
@@ -129,7 +149,8 @@ impl StatusNotifierTrayService {
         // Сохраняем элементы
         *items.lock().unwrap() = tray_items.clone();
 
-        // Отправляем в UI поток
+        // Отправляем в UI поток начальный список (даже если пустой)
+        eprintln!("[Tray] Sending {} initial items to UI", tray_items.len());
         let _ = tx.send(tray_items.clone()).await;
 
         // Подписываемся на сигналы
@@ -139,11 +160,15 @@ impl StatusNotifierTrayService {
         // Слушаем сигналы в бесконечном цикле
         loop {
             tokio::select! {
+                _ = shutdown_rx.recv() => {
+                    eprintln!("[Tray] Received shutdown signal");
+                    break;
+                }
+
                 // Новый элемент зарегистрирован
                 Some(signal) = registered_stream.next() => {
                     if let Ok(args) = signal.args() {
                         let service = args.service;
-                        eprintln!("[Tray] Item registered: {}", service);
 
                         // Добавляем новый элемент
                         if let Ok(item) = Self::fetch_tray_item(&connection, service).await {
@@ -151,6 +176,7 @@ impl StatusNotifierTrayService {
 
                             // Проверяем, нет ли уже такого элемента
                             if !items_guard.iter().any(|i| i.service == item.service) {
+                                eprintln!("[Tray] Added: {} ({})", item.title, item.service);
                                 items_guard.push(item);
                                 let updated = items_guard.clone();
                                 drop(items_guard);
@@ -166,11 +192,16 @@ impl StatusNotifierTrayService {
                 Some(signal) = unregistered_stream.next() => {
                     if let Ok(args) = signal.args() {
                         let service = args.service;
-                        eprintln!("[Tray] Item unregistered: {}", service);
 
                         // Удаляем элемент
                         let mut items_guard = items.lock().unwrap();
-                        items_guard.retain(|i| i.service != service);
+                        items_guard.retain(|i| {
+                            let keep = i.service != service;
+                            if !keep {
+                                eprintln!("[Tray] Removed: {} ({})", i.title, i.service);
+                            }
+                            keep
+                        });
                         let updated = items_guard.clone();
                         drop(items_guard);
 
@@ -180,6 +211,8 @@ impl StatusNotifierTrayService {
                 }
             }
         }
+
+        Ok(())
     }
 
     async fn fetch_tray_item(
@@ -434,6 +467,44 @@ impl SystemTrayService for StatusNotifierTrayService {
         self.items.lock().unwrap().clone()
     }
 
+    fn start_monitoring(&self, tx: async_channel::Sender<TrayUpdate>) {
+        let items = self.items.clone();
+        let (shutdown_tx, shutdown_rx) = async_channel::bounded::<()>(1);
+
+        *self.shutdown_tx.lock().unwrap() = Some(shutdown_tx);
+
+        let handle = std::thread::spawn(move || {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+
+            rt.block_on(async move {
+                if let Err(e) = StatusNotifierTrayService::monitor_tray_async(items, tx, shutdown_rx).await {
+                    eprintln!("System tray monitoring error: {}", e);
+                }
+            });
+        });
+
+        *self.handle.lock().unwrap() = Some(handle);
+    }
+
+    fn stop(&self) {
+        eprintln!("[SystemTray] Stopping monitoring...");
+
+        if let Some(tx) = self.shutdown_tx.lock().unwrap().take() {
+            let _ = tx.try_send(());
+        }
+
+        if let Some(handle) = self.handle.lock().unwrap().take() {
+            let _ = handle.join();
+        }
+
+        self.items.lock().unwrap().clear();
+
+        eprintln!("[SystemTray] Monitoring stopped");
+    }
+
     fn activate_item(&self, service: &str) {
         let service = service.to_string();
         std::thread::spawn(move || {
@@ -492,6 +563,3 @@ impl SystemTrayService for StatusNotifierTrayService {
         });
     }
 }
-
-
-

@@ -53,19 +53,22 @@ popover > contents {
 /* Main menu popover */
 .main-menu {
     background: transparent;
-    padding: 4px;
-    min-width: 120px;
+    padding: 6px;
 }
 
 .main-menu .menu-item {
     color: #ffffff;
-    padding: 0;
-    text-align: left;
-    border-radius: 2px;
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin: 2px 0;
 }
 
 .main-menu .menu-item:hover {
     background: #ffffff20;
+}
+
+.menu-item-icon {
+    font-size: 24px;
 }
 
 /* Workspaces section */
@@ -253,5 +256,312 @@ box.zone-right {
 
 .menu-item:disabled {
     color: #666666;
+}
+
+/* Battery Widget */
+.battery-widget {
+    background: #000000AA;
+    border-radius: 4px;
+    margin-left: 8px;
+    padding: 0 10px;
+}
+
+.battery-icon {
+    color: #ffffff;
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+.battery-percentage {
+    color: #ffffff;
+    font-size: 13px;
+}
+
+/* Battery level colors */
+.battery-critical .battery-icon,
+.battery-critical .battery-percentage {
+    color: #ff5555;
+    font-weight: bold;
+}
+
+.battery-low .battery-icon,
+.battery-low .battery-percentage {
+    color: #ffaa00;
+}
+
+.battery-medium .battery-icon,
+.battery-medium .battery-percentage {
+    color: #ffff55;
+}
+
+.battery-high .battery-icon,
+.battery-high .battery-percentage {
+    color: #88ff88;
+}
+
+.battery-full .battery-icon,
+.battery-full .battery-percentage {
+    color: #55ff55;
+}
+
+.battery-charging .battery-icon {
+    color: #55aaff;
+}
+
+.battery-not-found {
+    color: #888888;
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* Volume Widget */
+.volume-widget {
+    background: #000000AA;
+    border-radius: 4px;
+    margin-left: 8px;
+    padding: 0 10px;
+}
+
+.volume-button {
+    padding: 0;
+    margin: 0;
+}
+
+.volume-icon {
+    color: #ffffff;
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+.volume-icon.volume-muted {
+    color: #ff5555;
+}
+
+.volume-percentage {
+    color: #ffffff;
+    font-size: 13px;
+}
+
+.volume-not-found {
+    color: #888888;
+    font-size: 16px;
+}
+
+.volume-popover {
+    background: #000000DD;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.volume-slider {
+    min-width: 40px;
+}
+
+.volume-slider slider {
+    background: #ffffff;
+    border-radius: 50%;
+    min-width: 16px;
+    min-height: 16px;
+}
+
+.volume-slider trough {
+    background: #333333;
+    border-radius: 2px;
+    min-width: 6px;
+}
+
+.volume-slider highlight {
+    background: #55aaff;
+    border-radius: 2px;
+}
+
+/* Notification Widget */
+.notification-button {
+    background: #000000AA;
+    border-radius: 4px;
+    margin-left: 8px;
+    padding: 0 10px;
+}
+
+.notification-icon {
+    color: #ffffff;
+    font-size: 16px;
+}
+
+.notification-count {
+    color: #55aaff;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Notification History Popover */
+.notification-history {
+    background: #000000DD;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.notification-header {
+    padding: 8px;
+    border-bottom: 1px solid #333333;
+    margin-bottom: 8px;
+}
+
+.notification-title {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.notification-clear-button {
+    color: #ff5555;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+.notification-clear-button:hover {
+    background: #ffffff20;
+}
+
+.notification-clear-button:active {
+    background: #ffffff30;
+}
+
+.notifications-list {
+    padding: 4px;
+}
+
+.notification-empty {
+    color: #888888;
+    font-style: italic;
+    padding: 20px;
+}
+
+.notification-item {
+    background: #1a1a1a;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 4px 0;
+}
+
+.notification-item:hover {
+    background: #252525;
+}
+
+.notification-item.notification-critical {
+    border-left: 3px solid #ff5555;
+}
+
+.notification-item.notification-low {
+    opacity: 0.7;
+}
+
+.notification-summary {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.notification-body {
+    color: #cccccc;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.notification-meta {
+    color: #888888;
+    font-size: 10px;
+    margin-top: 4px;
+}
+
+.notification-close {
+    color: #888888;
+    padding: 4px;
+    border-radius: 4px;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+.notification-close:hover {
+    color: #ffffff;
+    background: #ffffff20;
+}
+
+.notification-close:active {
+    background: #ffffff30;
+}
+
+.notification-fallback-icon {
+    font-size: 32px;
+    color: #888888;
+}
+
+/* Notification Popup */
+.notification-popup {
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #333333;
+}
+
+.notification-popup-normal {
+    border-left: 4px solid #55aaff;
+}
+
+.notification-popup-critical {
+    border-left: 4px solid #ff5555;
+    background: #2a1a1a;
+}
+
+.notification-popup-low {
+    opacity: 0.85;
+}
+
+.notification-popup-container {
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.notification-popup-icon {
+    margin-right: 8px;
+}
+
+.notification-popup-summary {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.notification-popup-body {
+    color: #cccccc;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.notification-popup-app {
+    color: #888888;
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.notification-popup-close {
+    color: #888888;
+}
+
+.notification-popup-close:hover {
+    color: #ffffff;
+    background: #ffffff20;
+}
+
+/* Keyboard Layout Widget */
+.keyboard-layout {
+    background: #000000AA;
+    border-radius: 4px;
+    margin-left: 8px;
+    padding: 0 12px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 30px;
 }
 

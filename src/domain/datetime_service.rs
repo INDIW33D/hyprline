@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local};
-use crate::domain::models::{DateTimeConfig, DateTimeFormat};
+use crate::domain::models::DateTimeConfig;
 
 /// Trait для форматирования даты и времени
 pub trait DateTimeService {
