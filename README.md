@@ -33,7 +33,11 @@ A lightweight, self-contained system bar for Hyprland written in Rust with GTK4.
   - Persistent history stored in SQLite
   - Clear individual or all notifications
   - Multi-notification stacking
-- 🔋 **Battery Indicator** - Real-time battery percentage (Nerd Font icons)
+- 🔋 **Battery Indicator** - Real-time battery percentage and status
+  - UPower D-Bus event monitoring (instant updates!)
+  - Charging/discharging status with Nerd Font icons
+  - Percentage display
+  - No polling - updates on battery events only
 - 🔊 **Volume Control** - PipeWire integration
   - Real-time volume slider
   - Mute/unmute toggle
@@ -131,6 +135,7 @@ Result: Workspace buttons show `1`, `2`, `Q` respectively.
 - **gtk4-layer-shell** - Wayland layer shell protocol
 - **PipeWire** - Audio control (via `libpipewire`)
 - **WirePlumber** - PipeWire session manager (provides `wpctl` utility)
+- **UPower** - Battery monitoring via D-Bus
 - **SQLite** - Notification history storage (bundled in binary)
 - **D-Bus** - System integration (pre-installed on most systems)
 - **GDK-PixBuf** - Image loading and manipulation
@@ -143,7 +148,7 @@ Result: Workspace buttons show `1`, `2`, `Q` respectively.
 - `chrono` - Date and time handling
 - `zbus` - D-Bus communication
 - `async-channel` - Async channels for events
-- `futures` - Async runtime utilities
+- `futures` / `futures-util` - Async runtime utilities and stream handling
 - `tokio` - Async runtime
 - `pipewire` - PipeWire bindings
 - `rusqlite` - SQLite database (bundled)
@@ -187,7 +192,11 @@ Everything else is embedded!
   - Постоянная история в SQLite
   - Очистка отдельных уведомлений или всех сразу
   - Стекирование нескольких уведомлений
-- 🔋 **Индикатор батареи** - процент заряда в реальном времени (иконки Nerd Font)
+- 🔋 **Индикатор батареи** - процент заряда и статус в реальном времени
+  - Мониторинг событий UPower D-Bus (мгновенные обновления!)
+  - Статус зарядки/разрядки с иконками Nerd Font
+  - Отображение процента
+  - Без опроса - обновления только по событиям батареи
 - 🔊 **Управление громкостью** - интеграция с PipeWire
   - Слайдер громкости в реальном времени
   - Переключатель mute/unmute

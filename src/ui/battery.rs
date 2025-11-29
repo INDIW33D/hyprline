@@ -31,6 +31,8 @@ impl BatteryWidget {
 
         // Получаем информацию о батарее
         if let Some(battery_info) = self.service.get_battery_info() {
+            println!("[BatteryWidget] Updated: {}% {:?}", battery_info.percentage, battery_info.status);
+
             // Создаём иконку
             let icon = self.create_battery_icon(&battery_info);
             self.container.append(&icon);

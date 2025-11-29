@@ -215,6 +215,7 @@ impl Bar {
         volume_rx: async_channel::Receiver<()>,
         notification_rx: async_channel::Receiver<Notification>,
         keyboard_layout_rx: async_channel::Receiver<()>,
+        battery_rx: async_channel::Receiver<()>,
     ) {
         let (tx, rx) = mpsc::channel();
 
@@ -267,11 +268,13 @@ impl Bar {
             glib::ControlFlow::Continue
         });
 
-        // Обновление батареи каждые 30 секунд
+        // Обновление батареи по событиям от UPower D-Bus
         let battery_widget = self.battery_widget.clone();
-        glib::timeout_add_local(std::time::Duration::from_secs(30), move || {
-            if let Some(ref widget) = battery_widget {
-                widget.lock().unwrap().update();
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            while let Ok(_) = battery_rx.try_recv() {
+                if let Some(ref widget) = battery_widget {
+                    widget.lock().unwrap().update();
+                }
             }
             glib::ControlFlow::Continue
         });

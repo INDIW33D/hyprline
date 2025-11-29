@@ -67,9 +67,12 @@ fn build_ui(app: &gtk4::Application) {
     let datetime_service: Arc<dyn DateTimeService + Send + Sync> = Arc::new(SystemDateTimeService::new());
     let datetime_config = DateTimeConfig::default();
     
-    // Создаём Battery сервис
-    let battery_service: Arc<dyn BatteryService + Send + Sync> = Arc::new(SystemBatteryService::new());
-    
+    // Создаём Battery сервис с мониторингом событий
+    let (battery_tx, battery_rx) = async_channel::unbounded();
+    let battery_service_impl = Arc::new(SystemBatteryService::new());
+    battery_service_impl.start_monitoring(battery_tx);
+    let battery_service: Arc<dyn BatteryService + Send + Sync> = battery_service_impl;
+
     // Создаём Volume сервис с мониторингом
     let (volume_tx, volume_rx) = infrastructure::pipewire_volume::create_volume_channel();
     let mut volume_service_impl = infrastructure::pipewire_volume::PipewireVolume::new();
@@ -134,7 +137,7 @@ fn build_ui(app: &gtk4::Application) {
             notification_service,
             keyboard_layout_service
         );
-        bar.setup_event_listener(tray_rx, volume_rx, notification_rx, keyboard_layout_rx);
+        bar.setup_event_listener(tray_rx, volume_rx, notification_rx, keyboard_layout_rx, battery_rx);
         bar.present();
         return;
     }
@@ -157,7 +160,8 @@ fn build_ui(app: &gtk4::Application) {
             tray_rx.clone(), 
             volume_rx.clone(), 
             notification_rx.clone(),
-            keyboard_layout_rx.clone()
+            keyboard_layout_rx.clone(),
+            battery_rx.clone(),
         );
         bar.present();
     }
