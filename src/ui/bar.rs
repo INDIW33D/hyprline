@@ -6,13 +6,14 @@ use crate::domain::battery_service::BatteryService;
 use crate::domain::volume_service::VolumeService;
 use crate::domain::notification_service::NotificationService;
 use crate::domain::keyboard_layout_service::KeyboardLayoutService;
+use crate::domain::system_resources_service::SystemResourcesService;
 use crate::domain::models::{TrayItem, DateTimeConfig, Notification};
 use crate::infrastructure::event_listener;
 use crate::ui::{
     active_window::ActiveWindowWidget, datetime::DateTimeWidget, menu::Menu,
     system_tray::SystemTrayWidget, workspaces::WorkspacesWidget, battery::BatteryWidget,
     volume::VolumeWidget, notifications::NotificationWidget, notification_popup::NotificationPopup,
-    keyboard_layout::KeyboardLayoutWidget,
+    keyboard_layout::KeyboardLayoutWidget, system_resources::SystemResourcesWidget,
 };
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
@@ -31,6 +32,7 @@ pub struct Bar {
     volume_widget: Option<Arc<Mutex<VolumeWidget>>>,
     notifications_widget: Option<Arc<Mutex<NotificationWidget>>>,
     keyboard_layout_widget: Option<Arc<Mutex<KeyboardLayoutWidget>>>,
+    system_resources_widget: Option<Arc<Mutex<SystemResourcesWidget>>>,
     app: gtk4::Application,
 }
 
@@ -47,6 +49,7 @@ impl Bar {
         volume_service: Arc<dyn VolumeService + Send + Sync>,
         notification_service: Arc<dyn NotificationService + Send + Sync>,
         keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync>,
+        system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
     ) -> Self {
         let window = gtk4::ApplicationWindow::new(app);
 
@@ -108,6 +111,7 @@ impl Bar {
         let mut volume_widget = None;
         let mut notifications_widget = None;
         let mut keyboard_layout_widget = None;
+        let mut system_resources_widget = None;
 
         // Создаём список виджетов с их конфигурацией
         let mut widgets_to_place: Vec<(WidgetType, WidgetZone, usize)> = config
@@ -189,6 +193,11 @@ impl Bar {
                         target_box.append(widget.lock().unwrap().widget());
                         keyboard_layout_widget = Some(widget);
                     }
+                    WidgetType::SystemResources => {
+                        let widget = Arc::new(Mutex::new(SystemResourcesWidget::new(system_resources_service.clone())));
+                        target_box.append(widget.lock().unwrap().widget());
+                        system_resources_widget = Some(widget);
+                    }
                 }
             }
         }
@@ -205,6 +214,7 @@ impl Bar {
             volume_widget,
             notifications_widget,
             keyboard_layout_widget,
+            system_resources_widget,
             app: app.clone(),
         }
     }
@@ -318,6 +328,15 @@ impl Bar {
             glib::ControlFlow::Continue
         });
 
+        // Обновление системных ресурсов каждые 2 секунды
+        let system_resources_widget = self.system_resources_widget.clone();
+        glib::timeout_add_local(std::time::Duration::from_secs(2), move || {
+            if let Some(ref widget) = system_resources_widget {
+                widget.lock().unwrap().update();
+            }
+            glib::ControlFlow::Continue
+        });
+
         // Первоначальное обновление
         if let Some(ref widget) = self.workspaces_widget {
             widget.lock().unwrap().update();
@@ -338,6 +357,9 @@ impl Bar {
             widget.lock().unwrap().update();
         }
         if let Some(ref widget) = self.keyboard_layout_widget {
+            widget.lock().unwrap().update();
+        }
+        if let Some(ref widget) = self.system_resources_widget {
             widget.lock().unwrap().update();
         }
     }

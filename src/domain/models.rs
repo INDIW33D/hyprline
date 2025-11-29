@@ -150,6 +150,15 @@ pub enum NotificationUrgency {
     Critical,
 }
 
+// System resources models
+#[derive(Debug, Clone)]
+pub struct SystemResources {
+    pub cpu_usage: f32,     // 0.0 - 100.0
+    pub memory_usage: f32,  // 0.0 - 100.0
+    pub memory_used_gb: f32,
+    pub memory_total_gb: f32,
+}
+
 // Keyboard layout models
 #[derive(Debug, Clone, PartialEq)]
 pub struct KeyboardLayout {

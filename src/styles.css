@@ -565,3 +565,73 @@ box.zone-right {
     min-width: 30px;
 }
 
+/* System Resources Widget */
+.system-resources-widget {
+    background: #000000AA;
+    border-radius: 4px;
+    margin-left: 8px;
+    padding: 4px 12px;
+}
+
+.system-resources-icon {
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+.cpu-icon {
+    color: #4CAF50;
+}
+
+.ram-icon {
+    color: #2196F3;
+}
+
+.system-resources-value {
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 35px;
+}
+
+.cpu-value {
+    color: #81C784;
+}
+
+.ram-value {
+    color: #64B5F6;
+}
+
+.system-resources-separator {
+    margin: 0 8px;
+    opacity: 0.4;
+    color: #ffffff;
+    font-size: 12px;
+}
+
+/* CPU usage level colors */
+.cpu-high .cpu-value {
+    color: #EF5350;
+    font-weight: bold;
+}
+
+.cpu-medium .cpu-value {
+    color: #FFA726;
+}
+
+.cpu-low .cpu-value {
+    color: #81C784;
+}
+
+/* RAM usage level colors */
+.ram-high .ram-value {
+    color: #EF5350;
+    font-weight: bold;
+}
+
+.ram-medium .ram-value {
+    color: #FFA726;
+}
+
+.ram-low .ram-value {
+    color: #64B5F6;
+}
+

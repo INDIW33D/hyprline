@@ -27,6 +27,7 @@ pub enum WidgetType {
     Volume,
     Notifications,
     KeyboardLayout,
+    SystemResources,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -107,6 +108,14 @@ impl Default for BarConfig {
             WidgetConfig {
                 zone: WidgetZone::Right,
                 order: 5,
+            },
+        );
+
+        widgets.insert(
+            WidgetType::SystemResources,
+            WidgetConfig {
+                zone: WidgetZone::Right,
+                order: 6,
             },
         );
 

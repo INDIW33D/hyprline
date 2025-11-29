@@ -9,5 +9,6 @@ pub mod dbus_notification_service;
 pub mod notification_repository;
 pub mod hyprland_keyboard_layout;
 pub mod keyboard_layout_listener;
+pub mod system_resources;
 
 

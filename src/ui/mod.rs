@@ -10,4 +10,5 @@ pub mod volume;
 pub mod notifications;
 pub mod notification_popup;
 pub mod keyboard_layout;
+pub mod system_resources;
 

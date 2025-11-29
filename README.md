@@ -43,6 +43,12 @@ A lightweight, self-contained system bar for Hyprland written in Rust with GTK4.
   - Mute/unmute toggle
   - Live event updates (no polling!)
 - ⌨️ **Keyboard Layout** - Current layout indicator with real-time switching
+- 💻 **System Resources** - CPU and RAM monitoring
+  - Real-time CPU usage percentage
+  - RAM usage in GB
+  - Color-coded indicators (green/orange/red)
+  - Updates every 2 seconds
+  - Reads from /proc/stat and /proc/meminfo
 - 🎨 **Custom Styling** - CSS-based theming
 - 🚀 **Embedded Resources** - All SVG and CSS bundled into binary
 - 📦 **Self-Contained** - No external tools required
@@ -80,6 +86,7 @@ Clean architecture principles with clear layer separation:
   - System tray management
   - Volume control
   - Workspace management
+  - System resources monitoring
   
 - **Infrastructure Layer** (`src/infrastructure/`) - External integrations
   - D-Bus services (notifications, tray)
@@ -202,6 +209,12 @@ Everything else is embedded!
   - Переключатель mute/unmute
   - Обновления по событиям (без опроса!)
 - ⌨️ **Раскладка клавиатуры** - индикатор текущей раскладки с обновлением в реальном времени
+- 💻 **Системные ресурсы** - мониторинг CPU и RAM
+  - Процент использования CPU в реальном времени
+  - Использование RAM в GB
+  - Цветовые индикаторы нагрузки (зелёный/оранжевый/красный)
+  - Обновление каждые 2 секунды
+  - Чтение из /proc/stat и /proc/meminfo
 - 🎨 **Кастомизация** - темизация на основе CSS
 - 🚀 **Встроенные ресурсы** - все SVG и CSS упакованы в бинарник
 - 📦 **Автономность** - не требует внешних инструментов
@@ -239,6 +252,7 @@ exec-once = /path/to/hyprline
   - Управление системным треем
   - Управление громкостью
   - Управление рабочими пространствами
+  - Мониторинг системных ресурсов
   
 - **Слой инфраструктуры** (`src/infrastructure/`) - внешние интеграции
   - D-Bus сервисы (уведомления, трей)
