@@ -7,35 +7,38 @@ use std::thread;
 
 pub struct PipewireVolume {
     current_info: Arc<Mutex<Option<VolumeInfo>>>,
-    update_tx: Option<Sender<()>>,
+    update_txs: Arc<Mutex<Vec<Sender<()>>>>,
 }
 
 impl PipewireVolume {
     pub fn new() -> Self {
         Self {
             current_info: Arc::new(Mutex::new(None)),
-            update_tx: None,
+            update_txs: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
     /// Запускает мониторинг изменений громкости через PipeWire
     pub fn start_monitoring(&mut self, update_tx: Sender<()>) {
-        self.update_tx = Some(update_tx.clone());
+        self.update_txs.lock().unwrap().push(update_tx.clone());
         let current_info = Arc::clone(&self.current_info);
+        let update_txs = Arc::clone(&self.update_txs);
 
         // Сначала получаем текущее состояние
         if let Some(info) = Self::get_volume_info_internal() {
             *current_info.lock().unwrap() = Some(info);
         }
 
-        // Запускаем фоновый поток для мониторинга
-        thread::spawn(move || {
-            Self::monitor_pipewire_events(current_info, update_tx);
-        });
+        // Запускаем фоновый поток для мониторинга только один раз
+        if self.update_txs.lock().unwrap().len() == 1 {
+            thread::spawn(move || {
+                Self::monitor_pipewire_events(current_info, update_txs);
+            });
+        }
     }
 
     /// Мониторинг событий PipeWire через API с подпиской на изменения
-    fn monitor_pipewire_events(current_info: Arc<Mutex<Option<VolumeInfo>>>, update_tx: Sender<()>) {
+    fn monitor_pipewire_events(current_info: Arc<Mutex<Option<VolumeInfo>>>, update_txs: Arc<Mutex<Vec<Sender<()>>>>) {
         use pipewire as pw;
 
         // Инициализируем PipeWire
@@ -47,10 +50,10 @@ impl PipewireVolume {
         let registry = core.get_registry().expect("Failed to get registry");
 
         let current_info_global = Arc::clone(&current_info);
-        let update_tx_global = update_tx.clone();
+        let update_txs_global = Arc::clone(&update_txs);
 
         let current_info_remove = Arc::clone(&current_info);
-        let update_tx_remove = update_tx.clone();
+        let update_txs_remove = Arc::clone(&update_txs);
 
         // Подписываемся на глобальные события (добавление/удаление объектов)
         let _listener = registry
@@ -61,7 +64,10 @@ impl PipewireVolume {
                     let mut current = current_info_global.lock().unwrap();
                     if current.as_ref() != Some(&info) {
                         *current = Some(info);
-                        let _ = update_tx_global.try_send(());
+                        // Отправляем во все каналы
+                        for tx in update_txs_global.lock().unwrap().iter() {
+                            let _ = tx.try_send(());
+                        }
                     }
                 }
             })
@@ -71,7 +77,10 @@ impl PipewireVolume {
                     let mut current = current_info_remove.lock().unwrap();
                     if current.as_ref() != Some(&info) {
                         *current = Some(info);
-                        let _ = update_tx_remove.try_send(());
+                        // Отправляем во все каналы
+                        for tx in update_txs_remove.lock().unwrap().iter() {
+                            let _ = tx.try_send(());
+                        }
                     }
                 }
             })
@@ -145,8 +154,8 @@ impl VolumeService for PipewireVolume {
         // Обновляем кэшированное значение
         if let Some(info) = Self::get_volume_info_internal() {
             *self.current_info.lock().unwrap() = Some(info);
-            // Отправляем уведомление об обновлении
-            if let Some(tx) = &self.update_tx {
+            // Отправляем уведомление об обновлении во все каналы
+            for tx in self.update_txs.lock().unwrap().iter() {
                 let _ = tx.try_send(());
             }
         }
@@ -170,8 +179,8 @@ impl VolumeService for PipewireVolume {
         // Обновляем кэшированное значение
         if let Some(info) = Self::get_volume_info_internal() {
             *self.current_info.lock().unwrap() = Some(info);
-            // Отправляем уведомление об обновлении
-            if let Some(tx) = &self.update_tx {
+            // Отправляем уведомление об обновлении во все каналы
+            for tx in self.update_txs.lock().unwrap().iter() {
                 let _ = tx.try_send(());
             }
         }
@@ -197,8 +206,8 @@ impl VolumeService for PipewireVolume {
         // Обновляем кэшированное значение
         if let Some(info) = Self::get_volume_info_internal() {
             *self.current_info.lock().unwrap() = Some(info);
-            // Отправляем уведомление об обновлении
-            if let Some(tx) = &self.update_tx {
+            // Отправляем уведомление об обновлении во все каналы
+            for tx in self.update_txs.lock().unwrap().iter() {
                 let _ = tx.try_send(());
             }
         }

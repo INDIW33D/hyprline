@@ -7,6 +7,7 @@ pub mod system_tray;
 pub mod workspaces;
 pub mod battery;
 pub mod volume;
+pub mod volume_osd;
 pub mod notifications;
 pub mod notification_popup;
 pub mod keyboard_layout;

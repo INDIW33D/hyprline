@@ -635,3 +635,50 @@ box.zone-right {
     color: #64B5F6;
 }
 
+/* Volume OSD (On-Screen Display) */
+.volume-osd-window {
+    background: transparent;
+}
+
+.volume-osd {
+    background: #000000DD;
+    border-radius: 8px;
+    padding: 16px 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.volume-osd-icon {
+    color: #ffffff;
+    font-size: 20px;
+    padding: 4px;
+}
+
+.volume-osd-icon-max {
+    margin-bottom: 8px;
+}
+
+.volume-osd-icon-min {
+    margin-top: 8px;
+}
+
+.volume-osd-progress {
+    min-width: 8px;
+    min-height: 120px;
+}
+
+.volume-osd-progress trough {
+    background: #333333;
+    border-radius: 4px;
+    min-width: 8px;
+}
+
+.volume-osd-progress progress {
+    background: linear-gradient(to top, #4CAF50, #8BC34A);
+    border-radius: 4px;
+    min-width: 8px;
+}
+
+.volume-osd-progress.volume-osd-muted progress {
+    background: #EF5350;
+}
+
