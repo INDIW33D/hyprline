@@ -150,6 +150,42 @@ pub enum NotificationUrgency {
     Critical,
 }
 
+// Network models
+#[derive(Debug, Clone)]
+pub struct NetworkConnection {
+    pub connection_type: NetworkConnectionType,
+    pub is_connected: bool,
+    pub interface_name: String,
+    pub ssid: Option<String>,        // For WiFi
+    pub signal_strength: Option<u8>, // 0-100, for WiFi
+    pub speed: Option<u64>,          // Mbps
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum NetworkConnectionType {
+    WiFi,
+    Ethernet,
+    None,
+}
+
+#[derive(Debug, Clone)]
+pub struct WiFiNetwork {
+    pub ssid: String,
+    pub signal_strength: u8, // 0-100
+    pub security: WiFiSecurity,
+    pub in_use: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum WiFiSecurity {
+    None,
+    WEP,
+    WPA,
+    WPA2,
+    WPA3,
+    Enterprise,
+}
+
 // System resources models
 #[derive(Debug, Clone)]
 pub struct SystemResources {

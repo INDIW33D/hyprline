@@ -682,3 +682,123 @@ box.zone-right {
     background: #EF5350;
 }
 
+/* Network Widget */
+.network-widget {
+    background: #000000AA;
+    border-radius: 4px;
+    margin-left: 8px;
+    padding: 4px 12px;
+    cursor: pointer;
+}
+
+.network-widget:hover {
+    background: #ffffff20;
+}
+
+.network-icon {
+    font-size: 16px;
+    color: #4CAF50;
+}
+
+.network-info {
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+/* Network Popover */
+.network-popover {
+    background: transparent;
+}
+
+.network-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.section-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #aaaaaa;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.current-connection {
+    padding: 8px;
+    background: #ffffff10;
+    border-radius: 4px;
+}
+
+.connection-icon {
+    font-size: 18px;
+    color: #4CAF50;
+}
+
+.connection-name {
+    font-size: 14px;
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.refresh-button {
+    margin-top: 8px;
+    padding: 8px 16px;
+    background: #2196F3;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+}
+
+.refresh-button:hover {
+    background: #1976D2;
+}
+
+.loading-label,
+.no-networks-label,
+.error-label {
+    padding: 20px;
+    font-size: 14px;
+    color: #aaaaaa;
+}
+
+.error-label {
+    color: #f44336;
+}
+
+/* Network Item */
+.network-item {
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    margin: 2px 0;
+}
+
+.network-item:hover {
+    background: #ffffff20;
+}
+
+.network-item-icon {
+    font-size: 16px;
+    color: #4CAF50;
+    margin-right: 8px;
+}
+
+.network-item-ssid {
+    font-size: 14px;
+    color: #ffffff;
+}
+
+.security-icon {
+    font-size: 12px;
+    color: #FFB74D;
+    margin-right: 8px;
+}
+
+.signal-label {
+    font-size: 12px;
+    color: #aaaaaa;
+}
+

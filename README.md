@@ -49,6 +49,12 @@ A lightweight, self-contained system bar for Hyprland written in Rust with GTK4.
   - Color-coded indicators (green/orange/red)
   - Updates every 2 seconds
   - Reads from /proc/stat and /proc/meminfo
+- 🌐 **Network Manager** - WiFi and Ethernet control
+  - Current connection status display
+  - WiFi network scanning
+  - Connect to WiFi networks
+  - Signal strength indicator
+  - NetworkManager integration via D-Bus
 - 🎨 **Custom Styling** - CSS-based theming
 - 🚀 **Embedded Resources** - All SVG and CSS bundled into binary
 - 📦 **Self-Contained** - No external tools required
@@ -87,12 +93,14 @@ Clean architecture principles with clear layer separation:
   - Volume control
   - Workspace management
   - System resources monitoring
+  - Network management
   
 - **Infrastructure Layer** (`src/infrastructure/`) - External integrations
   - D-Bus services (notifications, tray)
   - Hyprland IPC
   - PipeWire audio
   - System battery access
+  - NetworkManager integration
   - Event listeners
   
 - **UI Layer** (`src/ui/`) - GTK4 widgets and presentation
@@ -143,6 +151,7 @@ Result: Workspace buttons show `1`, `2`, `Q` respectively.
 - **PipeWire** - Audio control (via `libpipewire`)
 - **WirePlumber** - PipeWire session manager (provides `wpctl` utility)
 - **UPower** - Battery monitoring via D-Bus
+- **NetworkManager** - Network management via D-Bus
 - **SQLite** - Notification history storage (bundled in binary)
 - **D-Bus** - System integration (pre-installed on most systems)
 - **GDK-PixBuf** - Image loading and manipulation
@@ -215,6 +224,12 @@ Everything else is embedded!
   - Цветовые индикаторы нагрузки (зелёный/оранжевый/красный)
   - Обновление каждые 2 секунды
   - Чтение из /proc/stat и /proc/meminfo
+- 🌐 **Менеджер сети** - управление WiFi и Ethernet
+  - Отображение статуса текущего подключения
+  - Сканирование WiFi сетей
+  - Подключение к WiFi сетям
+  - Индикатор силы сигнала
+  - Интеграция с NetworkManager через D-Bus
 - 🎨 **Кастомизация** - темизация на основе CSS
 - 🚀 **Встроенные ресурсы** - все SVG и CSS упакованы в бинарник
 - 📦 **Автономность** - не требует внешних инструментов
@@ -253,12 +268,14 @@ exec-once = /path/to/hyprline
   - Управление громкостью
   - Управление рабочими пространствами
   - Мониторинг системных ресурсов
+  - Управление сетью
   
 - **Слой инфраструктуры** (`src/infrastructure/`) - внешние интеграции
   - D-Bus сервисы (уведомления, трей)
   - Hyprland IPC
   - PipeWire аудио
   - Доступ к системной батарее
+  - Интеграция с NetworkManager
   - Слушатели событий
   
 - **UI слой** (`src/ui/`) - GTK4 виджеты и представление

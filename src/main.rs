@@ -12,6 +12,7 @@ use domain::volume_service::VolumeService;
 use domain::notification_service::NotificationService;
 use domain::keyboard_layout_service::KeyboardLayoutService;
 use domain::system_resources_service::SystemResourcesService;
+use domain::network_service::NetworkService;
 use domain::status_notifier_watcher_service::StatusNotifierWatcherService;
 use domain::models::DateTimeConfig;
 use infrastructure::hyprland_ipc::HyprlandIpc;
@@ -19,6 +20,7 @@ use infrastructure::status_notifier_tray::StatusNotifierTrayService;
 use infrastructure::system_datetime::SystemDateTimeService;
 use infrastructure::system_battery::SystemBatteryService;
 use infrastructure::system_resources::LinuxSystemResources;
+use infrastructure::networkmanager::NetworkManagerService;
 use infrastructure::dbus_status_notifier_watcher::DbusStatusNotifierWatcher;
 use infrastructure::dbus_notification_service::DbusNotificationService;
 use infrastructure::hyprland_keyboard_layout::HyprlandKeyboardLayoutService;
@@ -122,6 +124,10 @@ fn build_ui(app: &gtk4::Application) {
     let system_resources_service: Arc<dyn SystemResourcesService + Send + Sync> =
         Arc::new(LinuxSystemResources::new());
 
+    // Создаём Network сервис
+    let network_service: Arc<dyn NetworkService + Send + Sync> =
+        Arc::new(NetworkManagerService::new());
+
     // Создаём канал для обновлений трея
     let (tray_tx, tray_rx) = async_channel::unbounded();
     
@@ -162,6 +168,7 @@ fn build_ui(app: &gtk4::Application) {
             notification_service,
             keyboard_layout_service,
             system_resources_service,
+            network_service,
         );
         bar.setup_event_listener(tray_rx, volume_rx, notification_rx, keyboard_layout_rx, battery_rx);
         bar.present();
@@ -182,6 +189,7 @@ fn build_ui(app: &gtk4::Application) {
             notification_service.clone(),
             keyboard_layout_service.clone(),
             system_resources_service.clone(),
+            network_service.clone(),
         );
         bar.setup_event_listener(
             tray_rx.clone(), 

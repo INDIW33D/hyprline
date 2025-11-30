@@ -7,6 +7,7 @@ use crate::domain::volume_service::VolumeService;
 use crate::domain::notification_service::NotificationService;
 use crate::domain::keyboard_layout_service::KeyboardLayoutService;
 use crate::domain::system_resources_service::SystemResourcesService;
+use crate::domain::network_service::NetworkService;
 use crate::domain::models::{TrayItem, DateTimeConfig, Notification};
 use crate::infrastructure::event_listener;
 use crate::ui::{
@@ -14,6 +15,7 @@ use crate::ui::{
     system_tray::SystemTrayWidget, workspaces::WorkspacesWidget, battery::BatteryWidget,
     volume::VolumeWidget, notifications::NotificationWidget, notification_popup::NotificationPopup,
     keyboard_layout::KeyboardLayoutWidget, system_resources::SystemResourcesWidget,
+    network::NetworkWidget,
 };
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
@@ -33,6 +35,7 @@ pub struct Bar {
     notifications_widget: Option<Arc<Mutex<NotificationWidget>>>,
     keyboard_layout_widget: Option<Arc<Mutex<KeyboardLayoutWidget>>>,
     system_resources_widget: Option<Arc<Mutex<SystemResourcesWidget>>>,
+    network_widget: Option<NetworkWidget>,
     app: gtk4::Application,
 }
 
@@ -50,6 +53,7 @@ impl Bar {
         notification_service: Arc<dyn NotificationService + Send + Sync>,
         keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync>,
         system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
+        network_service: Arc<dyn NetworkService + Send + Sync>,
     ) -> Self {
         let window = gtk4::ApplicationWindow::new(app);
 
@@ -112,6 +116,7 @@ impl Bar {
         let mut notifications_widget = None;
         let mut keyboard_layout_widget = None;
         let mut system_resources_widget = None;
+        let mut network_widget = None;
 
         // Создаём список виджетов с их конфигурацией
         let mut widgets_to_place: Vec<(WidgetType, WidgetZone, usize)> = config
@@ -198,6 +203,11 @@ impl Bar {
                         target_box.append(widget.lock().unwrap().widget());
                         system_resources_widget = Some(widget);
                     }
+                    WidgetType::Network => {
+                        let widget = NetworkWidget::new(network_service.clone());
+                        target_box.append(&widget.container);
+                        network_widget = Some(widget);
+                    }
                 }
             }
         }
@@ -215,6 +225,7 @@ impl Bar {
             notifications_widget,
             keyboard_layout_widget,
             system_resources_widget,
+            network_widget,
             app: app.clone(),
         }
     }

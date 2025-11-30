@@ -28,6 +28,7 @@ pub enum WidgetType {
     Notifications,
     KeyboardLayout,
     SystemResources,
+    Network,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -116,6 +117,14 @@ impl Default for BarConfig {
             WidgetConfig {
                 zone: WidgetZone::Right,
                 order: 6,
+            },
+        );
+
+        widgets.insert(
+            WidgetType::Network,
+            WidgetConfig {
+                zone: WidgetZone::Right,
+                order: 7,
             },
         );
 
