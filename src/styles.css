@@ -575,7 +575,6 @@ box.zone-right {
 
 .system-resources-icon {
     font-size: 16px;
-    margin-right: 4px;
 }
 
 .cpu-icon {
@@ -589,7 +588,6 @@ box.zone-right {
 .system-resources-value {
     font-size: 13px;
     font-weight: 500;
-    min-width: 35px;
 }
 
 .cpu-value {
@@ -601,7 +599,6 @@ box.zone-right {
 }
 
 .system-resources-separator {
-    margin: 0 8px;
     opacity: 0.4;
     color: #ffffff;
     font-size: 12px;
