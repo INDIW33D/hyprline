@@ -799,3 +799,95 @@ box.zone-right {
     color: #aaaaaa;
 }
 
+/* Brightness Widget */
+.brightness-widget {
+    background: #000000AA;
+    border-radius: 4px;
+    margin-left: 8px;
+    padding: 0 10px;
+    min-height: 22px;
+}
+
+.brightness-icon {
+    color: #ffffff;
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+.brightness-percentage {
+    color: #ffffff;
+    font-size: 13px;
+}
+
+/* Brightness level colors */
+.brightness-off .brightness-icon,
+.brightness-off .brightness-percentage {
+    color: #888888;
+}
+
+.brightness-low .brightness-icon,
+.brightness-low .brightness-percentage {
+    color: #FFA726;
+}
+
+.brightness-medium .brightness-icon,
+.brightness-medium .brightness-percentage {
+    color: #FFD54F;
+}
+
+.brightness-high .brightness-icon,
+.brightness-high .brightness-percentage {
+    color: #FFF59D;
+}
+
+.brightness-full .brightness-icon,
+.brightness-full .brightness-percentage {
+    color: #FFEB3B;
+}
+
+/* Brightness Popover */
+.brightness-popover {
+    background: transparent;
+}
+
+.brightness-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.brightness-slider {
+    min-width: 200px;
+}
+
+.brightness-slider slider {
+    background: #ffffff;
+    border-radius: 50%;
+    min-width: 16px;
+    min-height: 16px;
+}
+
+.brightness-slider trough {
+    background: #333333;
+    border-radius: 2px;
+    min-height: 6px;
+}
+
+.brightness-slider highlight {
+    background: linear-gradient(to right, #FFA726, #FFEB3B);
+    border-radius: 2px;
+}
+
+.brightness-slider-icon {
+    color: #aaaaaa;
+    font-size: 16px;
+}
+
+.brightness-auto-label {
+    font-size: 14px;
+    color: #ffffff;
+}
+
+.brightness-auto-switch {
+}

@@ -9,4 +9,5 @@ pub mod notification_service;
 pub mod keyboard_layout_service;
 pub mod system_resources_service;
 pub mod network_service;
+pub mod brightness_service;
 

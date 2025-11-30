@@ -55,6 +55,13 @@ A lightweight, self-contained system bar for Hyprland written in Rust with GTK4.
   - Connect to WiFi networks
   - Signal strength indicator
   - NetworkManager integration via D-Bus
+- 💡 **Brightness Control** - Display brightness management (requires Lumen)
+  - Real-time brightness display with percentage
+  - Interactive slider for brightness adjustment
+  - Auto-adjustment toggle
+  - D-Bus signal integration (instant updates!)
+  - Color-coded icons based on brightness level
+  - Debounced updates (200ms) for smooth transitions
 - 🎨 **Custom Styling** - CSS-based theming
 - 🚀 **Embedded Resources** - All SVG and CSS bundled into binary
 - 📦 **Self-Contained** - No external tools required
@@ -85,6 +92,7 @@ Clean architecture principles with clear layer separation:
 
 - **Domain Layer** (`src/domain/`) - Business logic, models, and service traits
   - Battery management
+  - Brightness control
   - Date/time handling
   - Keyboard layout
   - Notification system
@@ -98,6 +106,7 @@ Clean architecture principles with clear layer separation:
 - **Infrastructure Layer** (`src/infrastructure/`) - External integrations
   - D-Bus services (notifications, tray)
   - Hyprland IPC
+  - Lumen brightness control
   - PipeWire audio
   - System battery access
   - NetworkManager integration
@@ -152,6 +161,7 @@ Result: Workspace buttons show `1`, `2`, `Q` respectively.
 - **WirePlumber** - PipeWire session manager (provides `wpctl` utility)
 - **UPower** - Battery monitoring via D-Bus
 - **NetworkManager** - Network management via D-Bus
+- **Lumen** - Brightness control via D-Bus (optional, required for brightness widget)
 - **SQLite** - Notification history storage (bundled in binary)
 - **D-Bus** - System integration (pre-installed on most systems)
 - **GDK-PixBuf** - Image loading and manipulation
@@ -168,6 +178,7 @@ Result: Workspace buttons show `1`, `2`, `Q` respectively.
 - `tokio` - Async runtime
 - `pipewire` - PipeWire bindings
 - `rusqlite` - SQLite database (bundled)
+- `parking_lot` - High-performance synchronization primitives
 
 Everything else is embedded!
 
@@ -230,6 +241,13 @@ Everything else is embedded!
   - Подключение к WiFi сетям
   - Индикатор силы сигнала
   - Интеграция с NetworkManager через D-Bus
+- 💡 **Управление яркостью** - управление яркостью экрана (требуется Lumen)
+  - Отображение яркости в реальном времени с процентами
+  - Интерактивный слайдер для регулировки яркости
+  - Переключатель автоматической регулировки
+  - Интеграция через D-Bus сигналы (мгновенные обновления!)
+  - Цветные иконки в зависимости от уровня яркости
+  - Debounced обновления (200ms) для плавных переходов
 - 🎨 **Кастомизация** - темизация на основе CSS
 - 🚀 **Встроенные ресурсы** - все SVG и CSS упакованы в бинарник
 - 📦 **Автономность** - не требует внешних инструментов
@@ -260,6 +278,7 @@ exec-once = /path/to/hyprline
 
 - **Слой домена** (`src/domain/`) - бизнес-логика, модели и трейты сервисов
   - Управление батареей
+  - Управление яркостью
   - Обработка даты/времени
   - Раскладка клавиатуры
   - Система уведомлений
@@ -273,6 +292,7 @@ exec-once = /path/to/hyprline
 - **Слой инфраструктуры** (`src/infrastructure/`) - внешние интеграции
   - D-Bus сервисы (уведомления, трей)
   - Hyprland IPC
+  - Управление яркостью Lumen
   - PipeWire аудио
   - Доступ к системной батарее
   - Интеграция с NetworkManager
@@ -325,6 +345,9 @@ bind = SUPER, Q, workspace, 3
 - **gtk4-layer-shell** - протокол Wayland layer shell
 - **PipeWire** - управление аудио (через `libpipewire`)
 - **WirePlumber** - менеджер сессий PipeWire (предоставляет утилиту `wpctl`)
+- **UPower** - мониторинг батареи через D-Bus
+- **NetworkManager** - управление сетью через D-Bus
+- **Lumen** - управление яркостью через D-Bus (опционально, требуется для виджета яркости)
 - **SQLite** - хранение истории уведомлений (встроено в бинарник)
 - **D-Bus** - системная интеграция (предустановлен в большинстве систем)
 - **GDK-PixBuf** - загрузка и обработка изображений
@@ -337,10 +360,11 @@ bind = SUPER, Q, workspace, 3
 - `chrono` - обработка даты и времени
 - `zbus` - коммуникация с D-Bus
 - `async-channel` - асинхронные каналы для событий
-- `futures` - утилиты для асинхронного рантайма
+- `futures` / `futures-util` - утилиты для асинхронного рантайма и обработки потоков
 - `tokio` - асинхронный рантайм
 - `pipewire` - привязки PipeWire
 - `rusqlite` - база данных SQLite (встроена)
+- `parking_lot` - высокопроизводительные примитивы синхронизации
 
 Всё остальное встроено!
 

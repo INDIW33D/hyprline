@@ -11,5 +11,6 @@ pub mod hyprland_keyboard_layout;
 pub mod keyboard_layout_listener;
 pub mod system_resources;
 pub mod networkmanager;
+pub mod lumen_brightness;
 
 

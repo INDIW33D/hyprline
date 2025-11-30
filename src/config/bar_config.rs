@@ -29,6 +29,7 @@ pub enum WidgetType {
     KeyboardLayout,
     SystemResources,
     Network,
+    Brightness,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -125,6 +126,14 @@ impl Default for BarConfig {
             WidgetConfig {
                 zone: WidgetZone::Right,
                 order: 7,
+            },
+        );
+
+        widgets.insert(
+            WidgetType::Brightness,
+            WidgetConfig {
+                zone: WidgetZone::Right,
+                order: 8,
             },
         );
 
