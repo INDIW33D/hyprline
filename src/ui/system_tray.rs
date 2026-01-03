@@ -313,21 +313,36 @@ impl SystemTrayWidget {
                 }
             }
 
-            // Иконка элемента (если есть)
+            // Иконка элемента
+            let mut icon_added = false;
+
+            // Приоритет 1: icon-name из темы
             if let Some(ref icon_name) = item.icon_name {
                 if let Some(display) = gtk4::gdk::Display::default() {
                     let icon_theme = gtk4::IconTheme::for_display(&display);
-                    let paintable = icon_theme.lookup_icon(
-                        icon_name,
-                        &[],
-                        16,
-                        1,
-                        gtk4::TextDirection::None,
-                        gtk4::IconLookupFlags::empty(),
-                    );
-                    let image = gtk4::Image::from_paintable(Some(&paintable));
-                    image.set_pixel_size(16);
-                    menu_item_box.append(&image);
+                    if icon_theme.has_icon(icon_name) {
+                        let paintable = icon_theme.lookup_icon(
+                            icon_name,
+                            &[],
+                            16,
+                            1,
+                            gtk4::TextDirection::None,
+                            gtk4::IconLookupFlags::empty(),
+                        );
+                        let image = gtk4::Image::from_paintable(Some(&paintable));
+                        image.set_pixel_size(16);
+                        menu_item_box.append(&image);
+                        icon_added = true;
+                    }
+                }
+            }
+
+            // Приоритет 2: icon-data (PNG данные)
+            if !icon_added {
+                if let Some(ref icon_bytes) = item.icon_data {
+                    if let Some(image) = Self::create_image_from_png_data(icon_bytes, 16) {
+                        menu_item_box.append(&image);
+                    }
                 }
             }
 
@@ -439,6 +454,30 @@ impl SystemTrayWidget {
             }
         });
         menu_box.append(&quit_button);
+    }
+
+    /// Создаёт Image из PNG данных (icon-data)
+    fn create_image_from_png_data(data: &[u8], size: i32) -> Option<gtk4::Image> {
+        // Пробуем загрузить как PNG через GdkPixbuf
+        let bytes = gtk4::glib::Bytes::from(data);
+        let stream = gtk4::gio::MemoryInputStream::from_bytes(&bytes);
+
+        match gtk4::gdk_pixbuf::Pixbuf::from_stream(&stream, None::<&gtk4::gio::Cancellable>) {
+            Ok(pixbuf) => {
+                // Масштабируем если нужно
+                let scaled = if pixbuf.width() != size || pixbuf.height() != size {
+                    pixbuf.scale_simple(size, size, gtk4::gdk_pixbuf::InterpType::Bilinear)?
+                } else {
+                    pixbuf
+                };
+
+                let texture = gtk4::gdk::Texture::for_pixbuf(&scaled);
+                let image = gtk4::Image::from_paintable(Some(&texture));
+                image.set_pixel_size(size);
+                Some(image)
+            }
+            Err(_) => None,
+        }
     }
 
     /// Конвертирует IconPixmap в GdkPixbuf

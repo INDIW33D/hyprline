@@ -454,8 +454,19 @@ impl StatusNotifierTrayService {
                         }
                     }
                     "icon-data" => {
-                        // icon-data обычно передаётся как массив байтов, пропускаем пока
-                        // TODO: реализовать если нужно
+                        // icon-data передаётся как массив байтов (PNG данные)
+                        // Пробуем разные варианты типов
+                        if let Ok(array) = value_val.downcast_ref::<zbus::zvariant::Array>() {
+                            let mut bytes = Vec::new();
+                            for item in array.iter() {
+                                if let Ok(byte) = item.downcast_ref::<u8>() {
+                                    bytes.push(byte);
+                                }
+                            }
+                            if !bytes.is_empty() {
+                                icon_data = Some(bytes);
+                            }
+                        }
                     }
                     _ => {}
                 }
