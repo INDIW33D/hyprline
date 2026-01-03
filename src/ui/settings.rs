@@ -802,10 +802,12 @@ fn get_widget_from_box_child(widget: &gtk4::Widget) -> Option<(WidgetType, bool)
 pub fn show_settings(app: &gtk4::Application) {
     use crate::infrastructure::hyprland_ipc::HyprlandIpc;
 
-    let window = gtk4::ApplicationWindow::new(app);
+    // Создаём обычное окно настроек
+    let window = Window::new();
+    window.set_application(Some(app));
     window.set_title(Some("Hyprline Settings"));
     window.set_default_size(900, 600);
-    window.set_resizable(true);
+    window.set_resizable(false);
 
     // Создаём HeaderBar с кнопкой закрытия
     let header_bar = gtk4::HeaderBar::new();
@@ -822,6 +824,8 @@ pub fn show_settings(app: &gtk4::Application) {
     // Основной контейнер
     let main_box = GtkBox::new(Orientation::Horizontal, 0);
     main_box.add_css_class("settings-window");
+    main_box.set_vexpand(true);
+    main_box.set_hexpand(true);
 
     // Левая панель с меню
     let menu_box = GtkBox::new(Orientation::Vertical, 0);
@@ -868,6 +872,9 @@ pub fn show_settings(app: &gtk4::Application) {
     content_box.append(&content_container.borrow().clone());
     main_box.append(&content_box);
 
+    // Устанавливаем содержимое окна
+    window.set_child(Some(&main_box));
+
     // Обработчик выбора пункта меню
     let content_container_clone = content_container.clone();
     let workspace_service: std::sync::Arc<dyn crate::domain::workspace_service::WorkspaceService + Send + Sync>
@@ -908,7 +915,6 @@ pub fn show_settings(app: &gtk4::Application) {
         menu_list.select_row(Some(&first_row));
     }
 
-    window.set_child(Some(&main_box));
     window.present();
 }
 
