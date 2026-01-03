@@ -220,19 +220,20 @@ impl Bar {
         // Сбрасываем ссылки на виджеты
         *self.widgets.borrow_mut() = CreatedWidgets::new();
 
-        // Загружаем конфигурацию и копируем нужные данные
+        // Загружаем конфигурацию и получаем профиль для этого монитора
         let (left_widgets, center_widgets, right_widgets) = {
             let config = get_config().read().unwrap();
+            let profile = config.get_profile_for_monitor(&self.context.monitor_name);
 
-            let mut left: Vec<_> = config.widgets.iter()
+            let mut left: Vec<_> = profile.widgets.iter()
                 .filter(|w| w.enabled && w.position == WidgetPosition::Left)
                 .map(|w| (w.widget_type, w.order))
                 .collect();
-            let mut center: Vec<_> = config.widgets.iter()
+            let mut center: Vec<_> = profile.widgets.iter()
                 .filter(|w| w.enabled && w.position == WidgetPosition::Center)
                 .map(|w| (w.widget_type, w.order))
                 .collect();
-            let mut right: Vec<_> = config.widgets.iter()
+            let mut right: Vec<_> = profile.widgets.iter()
                 .filter(|w| w.enabled && w.position == WidgetPosition::Right)
                 .map(|w| (w.widget_type, w.order))
                 .collect();

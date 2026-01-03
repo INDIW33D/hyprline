@@ -949,6 +949,69 @@ box.zone-right {
     background: #000000DD;
 }
 
+/* HeaderBar для окна настроек */
+headerbar {
+    background: #000000DD;
+    border: none;
+    box-shadow: none;
+    min-height: 40px;
+    padding: 0 8px;
+}
+
+headerbar .title {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+headerbar button {
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: #cccccc;
+    min-height: 24px;
+    min-width: 24px;
+    padding: 4px;
+}
+
+headerbar button:hover {
+    background: #ffffff20;
+    color: #ffffff;
+}
+
+headerbar button:active {
+    background: #ffffff30;
+}
+
+/* Кнопки управления окном */
+headerbar windowcontrols button {
+    background: transparent;
+    border-radius: 50%;
+    min-height: 16px;
+    min-width: 16px;
+    margin: 0 4px;
+    padding: 4px;
+}
+
+headerbar windowcontrols button:hover {
+    background: transparent;
+}
+
+/* Кнопка закрытия */
+headerbar windowcontrols button.close {
+    background: transparent;
+}
+
+headerbar windowcontrols button.close:hover {
+    background: transparent;
+    color: #ff5555;
+}
+
+headerbar windowcontrols button.close:hover image {
+    -gtk-icon-palette: error #ff5555;
+    color: #ff5555;
+}
+
 .settings-container {
     background: transparent;
 }

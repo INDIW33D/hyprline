@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
@@ -89,23 +90,23 @@ pub struct WidgetConfig {
     pub order: i32,
 }
 
-/// Главная конфигурация панели
+/// Профиль виджетов - набор виджетов с определённой конфигурацией
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HyprlineConfig {
+pub struct WidgetProfile {
+    pub name: String,
     pub widgets: Vec<WidgetConfig>,
 }
 
-impl Default for HyprlineConfig {
+impl Default for WidgetProfile {
     fn default() -> Self {
         Self {
+            name: "Default".to_string(),
             widgets: vec![
                 // Left zone
                 WidgetConfig { widget_type: WidgetType::Menu, enabled: true, position: WidgetPosition::Left, order: 0 },
                 WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 1 },
                 WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Left, order: 2 },
-                
-                // Center zone
-                
+
                 // Right zone
                 WidgetConfig { widget_type: WidgetType::SystemTray, enabled: true, position: WidgetPosition::Right, order: 0 },
                 WidgetConfig { widget_type: WidgetType::SystemResources, enabled: true, position: WidgetPosition::Right, order: 1 },
@@ -121,6 +122,67 @@ impl Default for HyprlineConfig {
     }
 }
 
+/// Конфигурация для конкретного монитора
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MonitorConfig {
+    /// Имя профиля, используемого для этого монитора
+    /// Если None - используется активный профиль
+    pub profile_name: Option<String>,
+}
+
+impl Default for MonitorConfig {
+    fn default() -> Self {
+        Self {
+            profile_name: None,
+        }
+    }
+}
+
+/// Главная конфигурация панели
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HyprlineConfig {
+    /// Список профилей виджетов
+    pub profiles: Vec<WidgetProfile>,
+    /// Имя активного профиля (по умолчанию)
+    pub active_profile: String,
+    /// Настройки для конкретных мониторов (ключ - имя монитора)
+    pub monitors: HashMap<String, MonitorConfig>,
+
+    /// Обратная совместимость - старое поле widgets
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub widgets: Vec<WidgetConfig>,
+}
+
+impl Default for HyprlineConfig {
+    fn default() -> Self {
+        Self {
+            profiles: vec![
+                WidgetProfile::default(),
+                WidgetProfile {
+                    name: "Minimal".to_string(),
+                    widgets: vec![
+                        WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 0 },
+                        WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Center, order: 0 },
+                        WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Right, order: 0 },
+                    ],
+                },
+                WidgetProfile {
+                    name: "Secondary Monitor".to_string(),
+                    widgets: vec![
+                        WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 0 },
+                        WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Center, order: 0 },
+                        WidgetConfig { widget_type: WidgetType::SystemResources, enabled: true, position: WidgetPosition::Right, order: 0 },
+                        WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Right, order: 1 },
+                    ],
+                },
+            ],
+            active_profile: "Default".to_string(),
+            monitors: HashMap::new(),
+            widgets: Vec::new(),
+        }
+    }
+}
+
 impl HyprlineConfig {
     /// Путь к файлу конфигурации
     pub fn config_path() -> PathBuf {
@@ -130,20 +192,41 @@ impl HyprlineConfig {
                 let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
                 PathBuf::from(home).join(".config")
             });
-        
+
         config_dir.join("hyprline/config.json")
     }
 
     /// Загрузить конфигурацию из файла
     pub fn load() -> Self {
         let path = Self::config_path();
-        
+
         if path.exists() {
             match fs::read_to_string(&path) {
                 Ok(content) => {
-                    match serde_json::from_str(&content) {
-                        Ok(config) => {
+                    match serde_json::from_str::<HyprlineConfig>(&content) {
+                        Ok(mut config) => {
+                            // Миграция старого формата
+                            if !config.widgets.is_empty() && config.profiles.is_empty() {
+                                eprintln!("[Config] Migrating old config format...");
+                                config.profiles = vec![WidgetProfile {
+                                    name: "Default".to_string(),
+                                    widgets: config.widgets.clone(),
+                                }];
+                                config.active_profile = "Default".to_string();
+                                config.widgets.clear();
+                                // Сохраняем мигрированный конфиг
+                                let _ = config.save();
+                            }
+
+                            // Если профили пустые - добавляем дефолтный
+                            if config.profiles.is_empty() {
+                                config.profiles = vec![WidgetProfile::default()];
+                                config.active_profile = "Default".to_string();
+                            }
+
                             eprintln!("[Config] ✓ Loaded from {:?}", path);
+                            eprintln!("[Config] Active profile: {}", config.active_profile);
+                            eprintln!("[Config] Profiles: {:?}", config.profiles.iter().map(|p| &p.name).collect::<Vec<_>>());
                             return config;
                         }
                         Err(e) => {
@@ -156,7 +239,7 @@ impl HyprlineConfig {
                 }
             }
         }
-        
+
         eprintln!("[Config] Using default configuration");
         Self::default()
     }
@@ -164,52 +247,191 @@ impl HyprlineConfig {
     /// Сохранить конфигурацию в файл
     pub fn save(&self) -> Result<(), String> {
         let path = Self::config_path();
-        
-        // Создаём директорию, если не существует
+
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)
                 .map_err(|e| format!("Failed to create config directory: {}", e))?;
         }
-        
+
         let content = serde_json::to_string_pretty(self)
             .map_err(|e| format!("Failed to serialize config: {}", e))?;
-        
+
         fs::write(&path, content)
             .map_err(|e| format!("Failed to write config: {}", e))?;
-        
+
         eprintln!("[Config] ✓ Saved to {:?}", path);
         Ok(())
     }
 
-    /// Получить виджеты для указанной позиции (отсортированные по order)
+    /// Получить профиль по имени
+    pub fn get_profile(&self, name: &str) -> Option<&WidgetProfile> {
+        self.profiles.iter().find(|p| p.name == name)
+    }
+
+    /// Получить мутабельный профиль по имени
+    pub fn get_profile_mut(&mut self, name: &str) -> Option<&mut WidgetProfile> {
+        self.profiles.iter_mut().find(|p| p.name == name)
+    }
+
+    /// Получить активный профиль
+    pub fn get_active_profile(&self) -> &WidgetProfile {
+        self.get_profile(&self.active_profile)
+            .or_else(|| self.profiles.first())
+            .expect("At least one profile must exist")
+    }
+
+    /// Получить профиль для конкретного монитора
+    pub fn get_profile_for_monitor(&self, monitor_name: &str) -> &WidgetProfile {
+        // Проверяем, есть ли специфичная настройка для монитора
+        if let Some(monitor_config) = self.monitors.get(monitor_name) {
+            if let Some(ref profile_name) = monitor_config.profile_name {
+                if let Some(profile) = self.get_profile(profile_name) {
+                    return profile;
+                }
+            }
+        }
+
+        // Иначе используем активный профиль
+        self.get_active_profile()
+    }
+
+    /// Установить профиль для монитора
+    pub fn set_monitor_profile(&mut self, monitor_name: &str, profile_name: Option<String>) {
+        if let Some(ref name) = profile_name {
+            // Проверяем, что профиль существует
+            if self.get_profile(name).is_none() {
+                eprintln!("[Config] Warning: Profile '{}' not found", name);
+                return;
+            }
+        }
+
+        self.monitors
+            .entry(monitor_name.to_string())
+            .or_insert_with(MonitorConfig::default)
+            .profile_name = profile_name;
+    }
+
+    /// Создать новый профиль
+    pub fn create_profile(&mut self, name: &str) -> bool {
+        if self.get_profile(name).is_some() {
+            return false; // Уже существует
+        }
+
+        self.profiles.push(WidgetProfile {
+            name: name.to_string(),
+            widgets: self.get_active_profile().widgets.clone(),
+        });
+        true
+    }
+
+    /// Удалить профиль
+    pub fn delete_profile(&mut self, name: &str) -> bool {
+        if name == "Default" {
+            return false; // Нельзя удалить дефолтный
+        }
+
+        if let Some(pos) = self.profiles.iter().position(|p| p.name == name) {
+            self.profiles.remove(pos);
+
+            // Если удалили активный профиль - переключаемся на Default
+            if self.active_profile == name {
+                self.active_profile = "Default".to_string();
+            }
+
+            // Удаляем ссылки на профиль из мониторов
+            for monitor_config in self.monitors.values_mut() {
+                if monitor_config.profile_name.as_deref() == Some(name) {
+                    monitor_config.profile_name = None;
+                }
+            }
+
+            return true;
+        }
+        false
+    }
+
+    /// Переименовать профиль
+    pub fn rename_profile(&mut self, old_name: &str, new_name: &str) -> bool {
+        if old_name == "Default" {
+            return false;
+        }
+
+        if self.get_profile(new_name).is_some() {
+            return false; // Новое имя уже занято
+        }
+
+        if let Some(profile) = self.get_profile_mut(old_name) {
+            profile.name = new_name.to_string();
+
+            // Обновляем ссылки
+            if self.active_profile == old_name {
+                self.active_profile = new_name.to_string();
+            }
+
+            for monitor_config in self.monitors.values_mut() {
+                if monitor_config.profile_name.as_deref() == Some(old_name) {
+                    monitor_config.profile_name = Some(new_name.to_string());
+                }
+            }
+
+            return true;
+        }
+        false
+    }
+
+    /// Дублировать профиль
+    pub fn duplicate_profile(&mut self, name: &str, new_name: &str) -> bool {
+        if self.get_profile(new_name).is_some() {
+            return false;
+        }
+
+        if let Some(profile) = self.get_profile(name).cloned() {
+            self.profiles.push(WidgetProfile {
+                name: new_name.to_string(),
+                widgets: profile.widgets,
+            });
+            return true;
+        }
+        false
+    }
+
+    /// Получить список имён профилей
+    pub fn get_profile_names(&self) -> Vec<&str> {
+        self.profiles.iter().map(|p| p.name.as_str()).collect()
+    }
+
+    /// Получить виджеты для позиции (для обратной совместимости)
     pub fn widgets_for_position(&self, position: WidgetPosition) -> Vec<&WidgetConfig> {
-        let mut widgets: Vec<_> = self.widgets
+        let profile = self.get_active_profile();
+        let mut widgets: Vec<_> = profile.widgets
             .iter()
             .filter(|w| w.enabled && w.position == position)
             .collect();
-        
         widgets.sort_by_key(|w| w.order);
         widgets
     }
 
     /// Получить конфигурацию виджета по типу
     pub fn get_widget(&self, widget_type: WidgetType) -> Option<&WidgetConfig> {
-        self.widgets.iter().find(|w| w.widget_type == widget_type)
+        self.get_active_profile().widgets.iter().find(|w| w.widget_type == widget_type)
     }
 
     /// Обновить конфигурацию виджета
     pub fn update_widget(&mut self, widget_type: WidgetType, enabled: bool, position: WidgetPosition, order: i32) {
-        if let Some(widget) = self.widgets.iter_mut().find(|w| w.widget_type == widget_type) {
-            widget.enabled = enabled;
-            widget.position = position;
-            widget.order = order;
-        } else {
-            self.widgets.push(WidgetConfig {
-                widget_type,
-                enabled,
-                position,
-                order,
-            });
+        let active_profile = self.active_profile.clone();
+        if let Some(profile) = self.get_profile_mut(&active_profile) {
+            if let Some(widget) = profile.widgets.iter_mut().find(|w| w.widget_type == widget_type) {
+                widget.enabled = enabled;
+                widget.position = position;
+                widget.order = order;
+            } else {
+                profile.widgets.push(WidgetConfig {
+                    widget_type,
+                    enabled,
+                    position,
+                    order,
+                });
+            }
         }
     }
 }
@@ -229,10 +451,9 @@ pub fn get_config() -> &'static RwLock<HyprlineConfig> {
 pub fn save_config() -> Result<(), String> {
     let config = get_config().read().unwrap();
     config.save()?;
-    
-    // Уведомляем подписчиков об изменении конфигурации
+
     notify_config_changed();
-    
+
     Ok(())
 }
 
