@@ -4,9 +4,12 @@ use gtk4::{
 };
 use std::sync::Arc;
 use crate::domain::brightness_service::BrightnessService;
+use crate::shared_state::get_shared_state;
 
 pub struct BrightnessWidget {
     pub container: GtkBox,
+    icon_label: Label,
+    percentage_label: Label,
 }
 
 impl BrightnessWidget {
@@ -25,10 +28,10 @@ impl BrightnessWidget {
         container.append(&icon_label);
         container.append(&percentage_label);
 
-        // Обновляем начальное состояние
-        if let Ok(brightness) = brightness_service.get_brightness() {
-            Self::update_display(&icon_label, &percentage_label, brightness);
-        }
+        // Обновляем начальное состояние из SharedState
+        let shared_state = get_shared_state();
+        let brightness = shared_state.get_brightness();
+        Self::update_display(&icon_label, &percentage_label, brightness);
 
         // Создаем popover для управления яркостью
         let popover = Self::create_brightness_popover(brightness_service.clone());
@@ -44,25 +47,36 @@ impl BrightnessWidget {
         }
         container.add_controller(gesture);
 
-        // Подписка на изменения яркости через D-Bus сигналы
-        let (tx, rx) = async_channel::unbounded::<u32>();
+        // Подписка на изменения яркости через SharedState
+        let (tx, rx) = async_channel::unbounded::<()>();
 
-        brightness_service.subscribe_brightness_changed(Arc::new(move |value| {
-            let _ = tx.try_send(value);
-        }));
+        shared_state.subscribe_brightness(move || {
+            let _ = tx.send_blocking(());
+        });
 
         // Обрабатываем обновления в главном потоке GTK
         let icon_clone = icon_label.clone();
         let percentage_clone = percentage_label.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-            while let Ok(brightness) = rx.try_recv() {
+        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            while rx.try_recv().is_ok() {
+                let brightness = get_shared_state().get_brightness();
                 Self::update_display(&icon_clone, &percentage_clone, brightness);
             }
             glib::ControlFlow::Continue
         });
 
 
-        Self { container }
+        Self {
+            container,
+            icon_label,
+            percentage_label,
+        }
+    }
+
+    pub fn update(&self) {
+        let shared_state = get_shared_state();
+        let brightness = shared_state.get_brightness();
+        Self::update_display(&self.icon_label, &self.percentage_label, brightness);
     }
 
     fn update_display(icon_label: &Label, percentage_label: &Label, brightness: u32) {

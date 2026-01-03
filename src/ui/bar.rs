@@ -9,12 +9,13 @@ use crate::domain::keyboard_layout_service::KeyboardLayoutService;
 use crate::domain::system_resources_service::SystemResourcesService;
 use crate::domain::network_service::NetworkService;
 use crate::domain::brightness_service::BrightnessService;
-use crate::domain::models::{TrayItem, DateTimeConfig, Notification};
+use crate::domain::models::DateTimeConfig;
 use crate::infrastructure::event_listener;
+use crate::shared_state::SharedState;
 use crate::ui::{
     active_window::ActiveWindowWidget, datetime::DateTimeWidget, menu::Menu,
     system_tray::SystemTrayWidget, workspaces::WorkspacesWidget, battery::BatteryWidget,
-    volume::VolumeWidget, notifications::NotificationWidget, notification_popup::NotificationPopup,
+    volume::VolumeWidget, notifications::NotificationWidget,
     keyboard_layout::KeyboardLayoutWidget, system_resources::SystemResourcesWidget,
     network::NetworkWidget, brightness::BrightnessWidget,
 };
@@ -39,6 +40,7 @@ pub struct Bar {
     network_widget: Option<NetworkWidget>,
     brightness_widget: Option<BrightnessWidget>,
     app: gtk4::Application,
+    shared_state: Arc<SharedState>,
 }
 
 impl Bar {
@@ -57,6 +59,7 @@ impl Bar {
         system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
         network_service: Arc<dyn NetworkService + Send + Sync>,
         brightness_service: Arc<dyn BrightnessService + Send + Sync>,
+        shared_state: Arc<SharedState>,
     ) -> Self {
         let window = gtk4::ApplicationWindow::new(app);
 
@@ -237,26 +240,20 @@ impl Bar {
             network_widget,
             brightness_widget,
             app: app.clone(),
+            shared_state,
         }
     }
 
-    pub fn setup_event_listener(
-        &self,
-        tray_rx: async_channel::Receiver<Vec<TrayItem>>,
-        volume_rx: async_channel::Receiver<()>,
-        notification_rx: async_channel::Receiver<Notification>,
-        keyboard_layout_rx: async_channel::Receiver<()>,
-        battery_rx: async_channel::Receiver<()>,
-    ) {
+    pub fn setup_event_listener(&self) {
         let (tx, rx) = mpsc::channel();
 
         event_listener::start_event_listener(move || {
             let _ = tx.send(());
         });
 
+        // Обработка событий Hyprland (workspaces, active window)
         let workspaces_widget = self.workspaces_widget.clone();
         let active_window_widget = self.active_window_widget.clone();
-        let keyboard_layout_widget = self.keyboard_layout_widget.clone();
         glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
             let mut should_update = false;
 
@@ -269,9 +266,6 @@ impl Bar {
                     widget.lock().unwrap().update();
                 }
                 if let Some(ref widget) = active_window_widget {
-                    widget.lock().unwrap().update();
-                }
-                if let Some(ref widget) = keyboard_layout_widget {
                     widget.lock().unwrap().update();
                 }
             }
@@ -288,66 +282,94 @@ impl Bar {
             glib::ControlFlow::Continue
         });
 
-        // Обновление системного трея
-        let system_tray_widget = self.system_tray_widget.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-            while let Ok(items) = tray_rx.try_recv() {
-                if let Some(ref widget) = system_tray_widget {
+        // === ПОДПИСКИ НА SHARED STATE ===
+
+        // Подписка на обновления батареи
+        if let Some(ref widget) = self.battery_widget {
+            let widget = widget.clone();
+            let (sender, receiver) = async_channel::unbounded::<()>();
+
+            self.shared_state.subscribe_battery(move || {
+                let _ = sender.send_blocking(());
+            });
+
+            glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+                while receiver.try_recv().is_ok() {
+                    widget.lock().unwrap().update();
+                }
+                glib::ControlFlow::Continue
+            });
+        }
+
+        // Подписка на обновления громкости
+        if let Some(ref widget) = self.volume_widget {
+            let widget = widget.clone();
+            let (sender, receiver) = async_channel::unbounded::<()>();
+
+            self.shared_state.subscribe_volume(move || {
+                let _ = sender.send_blocking(());
+            });
+
+            glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+                while receiver.try_recv().is_ok() {
+                    widget.lock().unwrap().update();
+                }
+                glib::ControlFlow::Continue
+            });
+        }
+
+        // Подписка на обновления трея
+        if let Some(ref widget) = self.system_tray_widget {
+            let widget = widget.clone();
+            let shared_state = self.shared_state.clone();
+            let (sender, receiver) = async_channel::unbounded::<()>();
+
+            self.shared_state.subscribe_tray(move || {
+                let _ = sender.send_blocking(());
+            });
+
+            glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+                while receiver.try_recv().is_ok() {
+                    let items = shared_state.get_tray();
                     widget.lock().unwrap().update(&items);
                 }
-            }
-            glib::ControlFlow::Continue
-        });
+                glib::ControlFlow::Continue
+            });
+        }
 
-        // Обновление батареи по событиям от UPower D-Bus
-        let battery_widget = self.battery_widget.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-            while let Ok(_) = battery_rx.try_recv() {
-                if let Some(ref widget) = battery_widget {
+        // Подписка на обновления раскладки клавиатуры
+        if let Some(ref widget) = self.keyboard_layout_widget {
+            let widget = widget.clone();
+            let (sender, receiver) = async_channel::unbounded::<()>();
+
+            self.shared_state.subscribe_keyboard_layout(move || {
+                let _ = sender.send_blocking(());
+            });
+
+            glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+                while receiver.try_recv().is_ok() {
                     widget.lock().unwrap().update();
                 }
-            }
-            glib::ControlFlow::Continue
-        });
+                glib::ControlFlow::Continue
+            });
+        }
 
-        // Обновление громкости по событиям от PipeWire
-        let volume_widget = self.volume_widget.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-            while let Ok(_) = volume_rx.try_recv() {
-                if let Some(ref widget) = volume_widget {
+        // Подписка на обновления уведомлений
+        if let Some(ref widget) = self.notifications_widget {
+            let widget = widget.clone();
+            let (sender, receiver) = async_channel::unbounded::<()>();
+
+            self.shared_state.subscribe_notifications(move || {
+                let _ = sender.send_blocking(());
+            });
+
+            glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+                while receiver.try_recv().is_ok() {
                     widget.lock().unwrap().update();
                 }
-            }
-            glib::ControlFlow::Continue
-        });
-
-        // Обработка уведомлений
-        let notifications_widget = self.notifications_widget.clone();
-        let app = self.app.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-            while let Ok(notification) = notification_rx.try_recv() {
-                // Показываем popup на 5 секунд
-                let popup = NotificationPopup::new(notification, &app);
-                popup.show(5);
-
-                // Обновляем виджет уведомлений (счётчик)
-                if let Some(ref widget) = notifications_widget {
-                    widget.lock().unwrap().update();
-                }
-            }
-            glib::ControlFlow::Continue
-        });
-
-        // Обработка событий смены раскладки клавиатуры
-        let keyboard_layout_widget = self.keyboard_layout_widget.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
-            while let Ok(_) = keyboard_layout_rx.try_recv() {
-                if let Some(ref widget) = keyboard_layout_widget {
-                    widget.lock().unwrap().update();
-                }
-            }
-            glib::ControlFlow::Continue
-        });
+                glib::ControlFlow::Continue
+            });
+        }
 
         // Обновление системных ресурсов каждые 2 секунды
         let system_resources_widget = self.system_resources_widget.clone();

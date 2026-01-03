@@ -1,6 +1,7 @@
 mod config;
 mod domain;
 mod infrastructure;
+mod shared_state;
 mod ui;
 
 use config::parse_workspace_bindings;
@@ -28,6 +29,7 @@ use infrastructure::hyprland_keyboard_layout::HyprlandKeyboardLayoutService;
 use infrastructure::lumen_brightness::LumenBrightnessService;
 use ui::bar::Bar;
 use ui::volume_osd::VolumeOsd;
+use shared_state::get_shared_state;
 
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
@@ -52,6 +54,25 @@ fn main() -> glib::ExitCode {
     });
 
     app.run()
+}
+
+/// Преобразует имя раскладки в короткое представление
+fn get_layout_full_name(short_name: &str) -> String {
+    match short_name.to_lowercase().as_str() {
+        "russian" | "ru" => "RU".to_string(),
+        "english (us)" | "us" | "english" => "US".to_string(),
+        "german" | "de" => "DE".to_string(),
+        "french" | "fr" => "FR".to_string(),
+        "spanish" | "es" => "ES".to_string(),
+        "italian" | "it" => "IT".to_string(),
+        "portuguese" | "pt" => "PT".to_string(),
+        "polish" | "pl" => "PL".to_string(),
+        "ukrainian" | "ua" => "UA".to_string(),
+        "japanese" | "jp" => "JP".to_string(),
+        "korean" | "kr" => "KR".to_string(),
+        "chinese" | "cn" => "CN".to_string(),
+        _ => short_name.chars().take(2).collect::<String>().to_uppercase(),
+    }
 }
 
 fn build_ui(app: &gtk4::Application) {
@@ -91,18 +112,6 @@ fn build_ui(app: &gtk4::Application) {
 
     // Создаём Volume OSD (On-Screen Display)
     let volume_osd = Arc::new(VolumeOsd::new(app));
-
-    // Подписываемся на события громкости для отображения OSD
-    let volume_osd_clone = volume_osd.clone();
-    let volume_service_clone = volume_service.clone();
-    glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-        while let Ok(_) = volume_osd_rx.try_recv() {
-            if let Some(info) = volume_service_clone.get_volume_info() {
-                volume_osd_clone.show_volume(info.volume, info.muted);
-            }
-        }
-        glib::ControlFlow::Continue
-    });
 
     // Создаём Notification сервис с мониторингом
     let (notification_tx, notification_rx) = infrastructure::dbus_notification_service::create_notification_channel();
@@ -151,6 +160,12 @@ fn build_ui(app: &gtk4::Application) {
         }
     };
 
+    // Подписываемся на изменения яркости и будем обновлять SharedState
+    let shared_state_brightness = get_shared_state();
+    brightness_service.subscribe_brightness_changed(Arc::new(move |value| {
+        shared_state_brightness.update_brightness(value);
+    }));
+
     // Создаём канал для обновлений трея
     let (tray_tx, tray_rx) = async_channel::unbounded();
     
@@ -173,13 +188,118 @@ fn build_ui(app: &gtk4::Application) {
         
         eprintln!("[Main] Cleanup completed");
     });
-    
+
+    // === ЦЕНТРАЛИЗОВАННАЯ ОБРАБОТКА СОБЫТИЙ ===
+    let shared_state = get_shared_state();
+
+    // Обработка событий громкости
+    {
+        let shared_state = shared_state.clone();
+        let volume_service = volume_service.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            while let Ok(_) = volume_rx.try_recv() {
+                if let Some(info) = volume_service.get_volume_info() {
+                    shared_state.update_volume(Some(info));
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Обработка событий батареи
+    {
+        let shared_state = shared_state.clone();
+        let battery_service = battery_service.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            while let Ok(_) = battery_rx.try_recv() {
+                let info = battery_service.get_battery_info();
+                shared_state.update_battery(info);
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Обработка событий трея
+    {
+        let shared_state = shared_state.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            while let Ok(items) = tray_rx.try_recv() {
+                shared_state.update_tray(items);
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Обработка событий раскладки клавиатуры
+    {
+        let shared_state = shared_state.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            while let Ok(layout_name) = keyboard_layout_rx.try_recv() {
+                let full_name = get_layout_full_name(&layout_name);
+                let layout = domain::models::KeyboardLayout {
+                    short_name: layout_name,
+                    full_name,
+                };
+                shared_state.update_keyboard_layout(layout);
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Обработка уведомлений
+    {
+        let shared_state = shared_state.clone();
+        let notification_service = notification_service.clone();
+        let app = app.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            while let Ok(notification) = notification_rx.try_recv() {
+                // Показываем popup на 5 секунд
+                let popup = ui::notification_popup::NotificationPopup::new(notification, &app);
+                popup.show(5);
+
+                // Обновляем количество уведомлений
+                let count = notification_service.get_history().len();
+                shared_state.update_notifications(count);
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Volume OSD обработка
+    {
+        let volume_osd_clone = volume_osd.clone();
+        let volume_service_clone = volume_service.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            while let Ok(_) = volume_osd_rx.try_recv() {
+                if let Some(info) = volume_service_clone.get_volume_info() {
+                    volume_osd_clone.show_volume(info.volume, info.muted);
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Инициализация начального состояния
+    if let Some(info) = battery_service.get_battery_info() {
+        shared_state.update_battery(Some(info));
+    }
+    if let Some(info) = volume_service.get_volume_info() {
+        shared_state.update_volume(Some(info));
+    }
+    if let Some(layout) = keyboard_layout_service.get_current_layout() {
+        shared_state.update_keyboard_layout(layout);
+    }
+    shared_state.update_notifications(notification_service.get_history().len());
+    if let Ok(brightness) = brightness_service.get_brightness() {
+        shared_state.update_brightness(brightness);
+    }
+
     let workspace_keys = parse_workspace_bindings();
     let monitors = service.get_monitors();
 
-    if monitors.is_empty() {
-        let bar = Bar::new(
-            app, 
+    let bars: Vec<Bar> = if monitors.is_empty() {
+        vec![Bar::new(
+            app,
             "default", 
             workspace_keys, 
             service, 
@@ -193,36 +313,32 @@ fn build_ui(app: &gtk4::Application) {
             system_resources_service,
             network_service,
             brightness_service,
-        );
-        bar.setup_event_listener(tray_rx, volume_rx, notification_rx, keyboard_layout_rx, battery_rx);
-        bar.present();
-        return;
-    }
+            shared_state.clone(),
+        )]
+    } else {
+        monitors.iter().map(|monitor| {
+            Bar::new(
+                app,
+                &monitor.name,
+                workspace_keys.clone(),
+                service.clone(),
+                tray_service.clone(),
+                datetime_service.clone(),
+                datetime_config.clone(),
+                battery_service.clone(),
+                volume_service.clone(),
+                notification_service.clone(),
+                keyboard_layout_service.clone(),
+                system_resources_service.clone(),
+                network_service.clone(),
+                brightness_service.clone(),
+                shared_state.clone(),
+            )
+        }).collect()
+    };
 
-    for monitor in &monitors {
-        let bar = Bar::new(
-            app,
-            &monitor.name,
-            workspace_keys.clone(),
-            service.clone(),
-            tray_service.clone(),
-            datetime_service.clone(),
-            datetime_config.clone(),
-            battery_service.clone(),
-            volume_service.clone(),
-            notification_service.clone(),
-            keyboard_layout_service.clone(),
-            system_resources_service.clone(),
-            network_service.clone(),
-            brightness_service.clone(),
-        );
-        bar.setup_event_listener(
-            tray_rx.clone(), 
-            volume_rx.clone(), 
-            notification_rx.clone(),
-            keyboard_layout_rx.clone(),
-            battery_rx.clone(),
-        );
+    for bar in bars {
+        bar.setup_event_listener();
         bar.present();
     }
 }

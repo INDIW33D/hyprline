@@ -4,7 +4,8 @@ use std::thread;
 use async_channel::Sender;
 
 /// Запускает мониторинг событий смены раскладки клавиатуры
-pub fn start_keyboard_layout_listener(tx: Sender<()>) {
+/// Теперь отправляет имя раскладки через канал
+pub fn start_keyboard_layout_listener(tx: Sender<String>) {
     thread::spawn(move || {
         let socket_path = find_event_socket();
 
@@ -23,8 +24,17 @@ pub fn start_keyboard_layout_listener(tx: Sender<()>) {
                         Ok(n) if n > 0 => {
                             let event = String::from_utf8_lossy(&buffer[..n]);
                             // Событие activelayout генерируется при смене раскладки
-                            if event.contains("activelayout") {
-                                let _ = tx.try_send(());
+                            // Формат: activelayout>>keyboard_name,layout_name
+                            for line in event.lines() {
+                                if line.starts_with("activelayout>>") {
+                                    if let Some(data) = line.strip_prefix("activelayout>>") {
+                                        // Формат: keyboard_name,layout_name
+                                        if let Some(comma_pos) = data.rfind(',') {
+                                            let layout_name = &data[comma_pos + 1..];
+                                            let _ = tx.try_send(layout_name.to_string());
+                                        }
+                                    }
+                                }
                             }
                         }
                         _ => break,
@@ -49,8 +59,8 @@ fn find_event_socket() -> String {
     String::new()
 }
 
-/// Создаёт канал для событий смены раскладки
-pub fn create_keyboard_layout_channel() -> (Sender<()>, async_channel::Receiver<()>) {
+/// Создаёт канал для событий смены раскладки (теперь передаёт имя раскладки)
+pub fn create_keyboard_layout_channel() -> (Sender<String>, async_channel::Receiver<String>) {
     async_channel::unbounded()
 }
 
