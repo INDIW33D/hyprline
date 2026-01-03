@@ -1,4 +1,4 @@
-use crate::config::bar_config::{load_bar_config, WidgetType, WidgetZone};
+use crate::config::{get_config, subscribe_config_changes, WidgetType, WidgetPosition};
 use crate::domain::workspace_service::WorkspaceService;
 use crate::domain::system_tray_service::SystemTrayService;
 use crate::domain::datetime_service::DateTimeService;
@@ -22,24 +22,71 @@ use crate::ui::{
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::{mpsc, Arc, Mutex};
+
+/// Контекст для создания виджетов (все сервисы)
+#[derive(Clone)]
+pub struct WidgetContext {
+    pub app: gtk4::Application,
+    pub monitor_name: String,
+    pub workspace_keys: HashMap<i32, String>,
+    pub workspace_service: Arc<dyn WorkspaceService + Send + Sync>,
+    pub tray_service: Arc<dyn SystemTrayService + Send + Sync>,
+    pub datetime_service: Arc<dyn DateTimeService + Send + Sync>,
+    pub datetime_config: DateTimeConfig,
+    pub battery_service: Arc<dyn BatteryService + Send + Sync>,
+    pub volume_service: Arc<dyn VolumeService + Send + Sync>,
+    pub notification_service: Arc<dyn NotificationService + Send + Sync>,
+    pub keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync>,
+    pub system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
+    pub network_service: Arc<dyn NetworkService + Send + Sync>,
+    pub brightness_service: Arc<dyn BrightnessService + Send + Sync>,
+    pub shared_state: Arc<SharedState>,
+}
+
+/// Созданные виджеты
+struct CreatedWidgets {
+    workspaces: Option<Arc<Mutex<WorkspacesWidget>>>,
+    active_window: Option<Arc<Mutex<ActiveWindowWidget>>>,
+    datetime: Option<Arc<Mutex<DateTimeWidget>>>,
+    system_tray: Option<Arc<Mutex<SystemTrayWidget>>>,
+    battery: Option<Arc<Mutex<BatteryWidget>>>,
+    volume: Option<Arc<Mutex<VolumeWidget>>>,
+    notifications: Option<Arc<Mutex<NotificationWidget>>>,
+    keyboard_layout: Option<Arc<Mutex<KeyboardLayoutWidget>>>,
+    system_resources: Option<Arc<Mutex<SystemResourcesWidget>>>,
+    network: Option<NetworkWidget>,
+    brightness: Option<BrightnessWidget>,
+}
+
+impl CreatedWidgets {
+    fn new() -> Self {
+        Self {
+            workspaces: None,
+            active_window: None,
+            datetime: None,
+            system_tray: None,
+            battery: None,
+            volume: None,
+            notifications: None,
+            keyboard_layout: None,
+            system_resources: None,
+            network: None,
+            brightness: None,
+        }
+    }
+}
 
 pub struct Bar {
     window: gtk4::ApplicationWindow,
-    workspaces_widget: Option<Arc<Mutex<WorkspacesWidget>>>,
-    active_window_widget: Option<Arc<Mutex<ActiveWindowWidget>>>,
-    datetime_widget: Option<Arc<Mutex<DateTimeWidget>>>,
-    #[allow(dead_code)]
-    system_tray_widget: Option<Arc<Mutex<SystemTrayWidget>>>,
-    battery_widget: Option<Arc<Mutex<BatteryWidget>>>,
-    volume_widget: Option<Arc<Mutex<VolumeWidget>>>,
-    notifications_widget: Option<Arc<Mutex<NotificationWidget>>>,
-    keyboard_layout_widget: Option<Arc<Mutex<KeyboardLayoutWidget>>>,
-    system_resources_widget: Option<Arc<Mutex<SystemResourcesWidget>>>,
-    network_widget: Option<NetworkWidget>,
-    brightness_widget: Option<BrightnessWidget>,
-    app: gtk4::Application,
+    left_box: gtk4::Box,
+    center_box: gtk4::Box,
+    right_box: gtk4::Box,
+    context: Rc<WidgetContext>,
+    widgets: Rc<RefCell<CreatedWidgets>>,
     shared_state: Arc<SharedState>,
 }
 
@@ -88,9 +135,6 @@ impl Bar {
         window.auto_exclusive_zone_enable();
         window.add_css_class("window");
 
-        // Загружаем конфигурацию
-        let config = load_bar_config();
-
         // Создаём три зоны
         let left_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         left_box.add_css_class("zone-left");
@@ -112,135 +156,187 @@ impl Bar {
         main_box.append(&center_box);
         main_box.append(&right_box);
 
-        // Создаём виджеты
-        let mut workspaces_widget = None;
-        let mut active_window_widget = None;
-        let mut datetime_widget = None;
-        let mut system_tray_widget = None;
-        let mut battery_widget = None;
-        let mut volume_widget = None;
-        let mut notifications_widget = None;
-        let mut keyboard_layout_widget = None;
-        let mut system_resources_widget = None;
-        let mut network_widget = None;
-        let mut brightness_widget = None;
-
-        // Создаём список виджетов с их конфигурацией
-        let mut widgets_to_place: Vec<(WidgetType, WidgetZone, usize)> = config
-            .widgets
-            .iter()
-            .map(|(wtype, wconfig)| (wtype.clone(), wconfig.zone.clone(), wconfig.order))
-            .collect();
-
-        // Сортируем по порядку
-        widgets_to_place.sort_by_key(|(_, _, order)| *order);
-
-        // Группируем по зонам
-        let mut zones: HashMap<WidgetZone, Vec<(WidgetType, usize)>> = HashMap::new();
-        for (wtype, zone, order) in widgets_to_place {
-            zones.entry(zone).or_default().push((wtype, order));
-        }
-
-        // Размещаем виджеты по зонам
-        for (zone, mut widgets) in zones {
-            widgets.sort_by_key(|(_, order)| *order);
-
-            let target_box = match zone {
-                WidgetZone::Left => &left_box,
-                WidgetZone::Center => &center_box,
-                WidgetZone::Right => &right_box,
-            };
-
-            for (wtype, _) in widgets {
-                match wtype {
-                    WidgetType::Menu => {
-                        let menu = Menu::new();
-                        let button = menu.create_button();
-                        target_box.append(&button);
-                    }
-                    WidgetType::Workspaces => {
-                        let widget = Arc::new(Mutex::new(WorkspacesWidget::new(
-                            monitor_name.to_string(),
-                            workspace_keys.clone(),
-                            service.clone(),
-                        )));
-                        target_box.append(widget.lock().unwrap().widget());
-                        workspaces_widget = Some(widget);
-                    }
-                    WidgetType::ActiveWindow => {
-                        let widget = Arc::new(Mutex::new(ActiveWindowWidget::new(service.clone())));
-                        target_box.append(widget.lock().unwrap().widget());
-                        active_window_widget = Some(widget);
-                    }
-                    WidgetType::DateTime => {
-                        let widget = Arc::new(Mutex::new(DateTimeWidget::new(
-                            datetime_service.clone(),
-                            datetime_config.clone(),
-                        )));
-                        target_box.append(widget.lock().unwrap().widget());
-                        datetime_widget = Some(widget);
-                    }
-                    WidgetType::SystemTray => {
-                        let widget = Arc::new(Mutex::new(SystemTrayWidget::new(tray_service.clone())));
-                        target_box.append(widget.lock().unwrap().widget());
-                        system_tray_widget = Some(widget);
-                    }
-                    WidgetType::Battery => {
-                        let widget = Arc::new(Mutex::new(BatteryWidget::new(battery_service.clone())));
-                        target_box.append(widget.lock().unwrap().widget());
-                        battery_widget = Some(widget);
-                    }
-                    WidgetType::Volume => {
-                        let widget = Arc::new(Mutex::new(VolumeWidget::new(volume_service.clone())));
-                        target_box.append(widget.lock().unwrap().widget());
-                        volume_widget = Some(widget);
-                    }
-                    WidgetType::Notifications => {
-                        let widget = Arc::new(Mutex::new(NotificationWidget::new(notification_service.clone())));
-                        target_box.append(widget.lock().unwrap().widget());
-                        notifications_widget = Some(widget);
-                    }
-                    WidgetType::KeyboardLayout => {
-                        let widget = Arc::new(Mutex::new(KeyboardLayoutWidget::new(keyboard_layout_service.clone())));
-                        target_box.append(widget.lock().unwrap().widget());
-                        keyboard_layout_widget = Some(widget);
-                    }
-                    WidgetType::SystemResources => {
-                        let widget = Arc::new(Mutex::new(SystemResourcesWidget::new(system_resources_service.clone())));
-                        target_box.append(widget.lock().unwrap().widget());
-                        system_resources_widget = Some(widget);
-                    }
-                    WidgetType::Network => {
-                        let widget = NetworkWidget::new(network_service.clone());
-                        target_box.append(&widget.container);
-                        network_widget = Some(widget);
-                    }
-                    WidgetType::Brightness => {
-                        let widget = BrightnessWidget::new(brightness_service.clone());
-                        target_box.append(&widget.container);
-                        brightness_widget = Some(widget);
-                    }
-                }
-            }
-        }
-
         window.set_child(Some(&main_box));
 
-        Self {
-            window,
-            workspaces_widget,
-            active_window_widget,
-            datetime_widget,
-            system_tray_widget,
-            battery_widget,
-            volume_widget,
-            notifications_widget,
-            keyboard_layout_widget,
-            system_resources_widget,
-            network_widget,
-            brightness_widget,
+        // Создаём контекст для виджетов
+        let context = Rc::new(WidgetContext {
             app: app.clone(),
+            monitor_name: monitor_name.to_string(),
+            workspace_keys,
+            workspace_service: service,
+            tray_service,
+            datetime_service,
+            datetime_config,
+            battery_service,
+            volume_service,
+            notification_service,
+            keyboard_layout_service,
+            system_resources_service,
+            network_service,
+            brightness_service,
+            shared_state: shared_state.clone(),
+        });
+
+        let widgets = Rc::new(RefCell::new(CreatedWidgets::new()));
+
+        let mut bar = Self {
+            window,
+            left_box,
+            center_box,
+            right_box,
+            context,
+            widgets,
             shared_state,
+        };
+
+        // Создаём виджеты из конфигурации
+        bar.rebuild_widgets();
+
+        bar
+    }
+
+    /// Очищает все зоны
+    fn clear_zones(&self) {
+        while let Some(child) = self.left_box.first_child() {
+            self.left_box.remove(&child);
+        }
+        while let Some(child) = self.center_box.first_child() {
+            self.center_box.remove(&child);
+        }
+        while let Some(child) = self.right_box.first_child() {
+            self.right_box.remove(&child);
+        }
+    }
+
+    /// Перестраивает виджеты на основе конфигурации
+    pub fn rebuild_widgets(&mut self) {
+        // Очищаем зоны
+        self.clear_zones();
+
+        // Сбрасываем ссылки на виджеты
+        *self.widgets.borrow_mut() = CreatedWidgets::new();
+
+        // Загружаем конфигурацию и копируем нужные данные
+        let (left_widgets, center_widgets, right_widgets) = {
+            let config = get_config().read().unwrap();
+
+            let mut left: Vec<_> = config.widgets.iter()
+                .filter(|w| w.enabled && w.position == WidgetPosition::Left)
+                .map(|w| (w.widget_type, w.order))
+                .collect();
+            let mut center: Vec<_> = config.widgets.iter()
+                .filter(|w| w.enabled && w.position == WidgetPosition::Center)
+                .map(|w| (w.widget_type, w.order))
+                .collect();
+            let mut right: Vec<_> = config.widgets.iter()
+                .filter(|w| w.enabled && w.position == WidgetPosition::Right)
+                .map(|w| (w.widget_type, w.order))
+                .collect();
+
+            left.sort_by_key(|(_, order)| *order);
+            center.sort_by_key(|(_, order)| *order);
+            right.sort_by_key(|(_, order)| *order);
+
+            (left, center, right)
+        };
+
+        // Создаём виджеты для каждой зоны
+        for (widget_type, _) in left_widgets {
+            self.create_widget(widget_type, &self.left_box.clone());
+        }
+        for (widget_type, _) in center_widgets {
+            self.create_widget(widget_type, &self.center_box.clone());
+        }
+        for (widget_type, _) in right_widgets {
+            self.create_widget(widget_type, &self.right_box.clone());
+        }
+
+        // Обновляем все виджеты с текущими данными
+        self.initial_update();
+
+        // Обновляем трей с текущими данными
+        let items = self.shared_state.get_tray();
+        let widgets = self.widgets.borrow();
+        if let Some(ref widget) = widgets.system_tray {
+            widget.lock().unwrap().update(&items);
+        }
+
+        eprintln!("[Bar] ✓ Widgets rebuilt");
+    }
+
+    /// Создаёт виджет и добавляет его в контейнер
+    fn create_widget(&self, widget_type: WidgetType, container: &gtk4::Box) {
+        let ctx = &self.context;
+        let mut widgets = self.widgets.borrow_mut();
+
+        match widget_type {
+            WidgetType::Menu => {
+                let menu = Menu::new();
+                let button = menu.create_button(&ctx.app);
+                container.append(&button);
+            }
+            WidgetType::Workspaces => {
+                let widget = Arc::new(Mutex::new(WorkspacesWidget::new(
+                    ctx.monitor_name.clone(),
+                    ctx.workspace_keys.clone(),
+                    ctx.workspace_service.clone(),
+                )));
+                container.append(widget.lock().unwrap().widget());
+                widgets.workspaces = Some(widget);
+            }
+            WidgetType::ActiveWindow => {
+                let widget = Arc::new(Mutex::new(ActiveWindowWidget::new(ctx.workspace_service.clone())));
+                container.append(widget.lock().unwrap().widget());
+                widgets.active_window = Some(widget);
+            }
+            WidgetType::DateTime => {
+                let widget = Arc::new(Mutex::new(DateTimeWidget::new(
+                    ctx.datetime_service.clone(),
+                    ctx.datetime_config.clone(),
+                )));
+                container.append(widget.lock().unwrap().widget());
+                widgets.datetime = Some(widget);
+            }
+            WidgetType::SystemTray => {
+                let widget = Arc::new(Mutex::new(SystemTrayWidget::new(ctx.tray_service.clone())));
+                container.append(widget.lock().unwrap().widget());
+                widgets.system_tray = Some(widget);
+            }
+            WidgetType::Battery => {
+                let widget = Arc::new(Mutex::new(BatteryWidget::new(ctx.battery_service.clone())));
+                container.append(widget.lock().unwrap().widget());
+                widgets.battery = Some(widget);
+            }
+            WidgetType::Volume => {
+                let widget = Arc::new(Mutex::new(VolumeWidget::new(ctx.volume_service.clone())));
+                container.append(widget.lock().unwrap().widget());
+                widgets.volume = Some(widget);
+            }
+            WidgetType::Notifications => {
+                let widget = Arc::new(Mutex::new(NotificationWidget::new(ctx.notification_service.clone())));
+                container.append(widget.lock().unwrap().widget());
+                widgets.notifications = Some(widget);
+            }
+            WidgetType::KeyboardLayout => {
+                let widget = Arc::new(Mutex::new(KeyboardLayoutWidget::new(ctx.keyboard_layout_service.clone())));
+                container.append(widget.lock().unwrap().widget());
+                widgets.keyboard_layout = Some(widget);
+            }
+            WidgetType::SystemResources => {
+                let widget = Arc::new(Mutex::new(SystemResourcesWidget::new(ctx.system_resources_service.clone())));
+                container.append(widget.lock().unwrap().widget());
+                widgets.system_resources = Some(widget);
+            }
+            WidgetType::Network => {
+                let widget = NetworkWidget::new(ctx.network_service.clone());
+                container.append(&widget.container);
+                widgets.network = Some(widget);
+            }
+            WidgetType::Brightness => {
+                let widget = BrightnessWidget::new(ctx.brightness_service.clone());
+                container.append(&widget.container);
+                widgets.brightness = Some(widget);
+            }
         }
     }
 
@@ -252,8 +348,7 @@ impl Bar {
         });
 
         // Обработка событий Hyprland (workspaces, active window)
-        let workspaces_widget = self.workspaces_widget.clone();
-        let active_window_widget = self.active_window_widget.clone();
+        let widgets = self.widgets.clone();
         glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
             let mut should_update = false;
 
@@ -262,10 +357,11 @@ impl Bar {
             }
 
             if should_update {
-                if let Some(ref widget) = workspaces_widget {
+                let widgets = widgets.borrow();
+                if let Some(ref widget) = widgets.workspaces {
                     widget.lock().unwrap().update();
                 }
-                if let Some(ref widget) = active_window_widget {
+                if let Some(ref widget) = widgets.active_window {
                     widget.lock().unwrap().update();
                 }
             }
@@ -274,19 +370,26 @@ impl Bar {
         });
 
         // Обновление времени каждую секунду
-        let datetime_widget = self.datetime_widget.clone();
+        let widgets = self.widgets.clone();
         glib::timeout_add_local(std::time::Duration::from_secs(1), move || {
-            if let Some(ref widget) = datetime_widget {
+            let widgets = widgets.borrow();
+            if let Some(ref widget) = widgets.datetime {
                 widget.lock().unwrap().update_time();
             }
             glib::ControlFlow::Continue
         });
 
         // === ПОДПИСКИ НА SHARED STATE ===
+        self.setup_shared_state_subscriptions();
 
+        // Первоначальное обновление
+        self.initial_update();
+    }
+
+    fn setup_shared_state_subscriptions(&self) {
         // Подписка на обновления батареи
-        if let Some(ref widget) = self.battery_widget {
-            let widget = widget.clone();
+        {
+            let widgets = self.widgets.clone();
             let (sender, receiver) = async_channel::unbounded::<()>();
 
             self.shared_state.subscribe_battery(move || {
@@ -295,15 +398,18 @@ impl Bar {
 
             glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
                 while receiver.try_recv().is_ok() {
-                    widget.lock().unwrap().update();
+                    let widgets = widgets.borrow();
+                    if let Some(ref widget) = widgets.battery {
+                        widget.lock().unwrap().update();
+                    }
                 }
                 glib::ControlFlow::Continue
             });
         }
 
         // Подписка на обновления громкости
-        if let Some(ref widget) = self.volume_widget {
-            let widget = widget.clone();
+        {
+            let widgets = self.widgets.clone();
             let (sender, receiver) = async_channel::unbounded::<()>();
 
             self.shared_state.subscribe_volume(move || {
@@ -312,15 +418,18 @@ impl Bar {
 
             glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
                 while receiver.try_recv().is_ok() {
-                    widget.lock().unwrap().update();
+                    let widgets = widgets.borrow();
+                    if let Some(ref widget) = widgets.volume {
+                        widget.lock().unwrap().update();
+                    }
                 }
                 glib::ControlFlow::Continue
             });
         }
 
         // Подписка на обновления трея
-        if let Some(ref widget) = self.system_tray_widget {
-            let widget = widget.clone();
+        {
+            let widgets = self.widgets.clone();
             let shared_state = self.shared_state.clone();
             let (sender, receiver) = async_channel::unbounded::<()>();
 
@@ -331,15 +440,18 @@ impl Bar {
             glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
                 while receiver.try_recv().is_ok() {
                     let items = shared_state.get_tray();
-                    widget.lock().unwrap().update(&items);
+                    let widgets = widgets.borrow();
+                    if let Some(ref widget) = widgets.system_tray {
+                        widget.lock().unwrap().update(&items);
+                    }
                 }
                 glib::ControlFlow::Continue
             });
         }
 
         // Подписка на обновления раскладки клавиатуры
-        if let Some(ref widget) = self.keyboard_layout_widget {
-            let widget = widget.clone();
+        {
+            let widgets = self.widgets.clone();
             let (sender, receiver) = async_channel::unbounded::<()>();
 
             self.shared_state.subscribe_keyboard_layout(move || {
@@ -348,15 +460,18 @@ impl Bar {
 
             glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
                 while receiver.try_recv().is_ok() {
-                    widget.lock().unwrap().update();
+                    let widgets = widgets.borrow();
+                    if let Some(ref widget) = widgets.keyboard_layout {
+                        widget.lock().unwrap().update();
+                    }
                 }
                 glib::ControlFlow::Continue
             });
         }
 
         // Подписка на обновления уведомлений
-        if let Some(ref widget) = self.notifications_widget {
-            let widget = widget.clone();
+        {
+            let widgets = self.widgets.clone();
             let (sender, receiver) = async_channel::unbounded::<()>();
 
             self.shared_state.subscribe_notifications(move || {
@@ -365,15 +480,18 @@ impl Bar {
 
             glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
                 while receiver.try_recv().is_ok() {
-                    widget.lock().unwrap().update();
+                    let widgets = widgets.borrow();
+                    if let Some(ref widget) = widgets.notifications {
+                        widget.lock().unwrap().update();
+                    }
                 }
                 glib::ControlFlow::Continue
             });
         }
 
         // Подписка на обновления системных ресурсов
-        if let Some(ref widget) = self.system_resources_widget {
-            let widget = widget.clone();
+        {
+            let widgets = self.widgets.clone();
             let (sender, receiver) = async_channel::unbounded::<()>();
 
             self.shared_state.subscribe_system_resources(move || {
@@ -382,41 +500,52 @@ impl Bar {
 
             glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
                 while receiver.try_recv().is_ok() {
-                    widget.lock().unwrap().update();
+                    let widgets = widgets.borrow();
+                    if let Some(ref widget) = widgets.system_resources {
+                        widget.lock().unwrap().update();
+                    }
                 }
                 glib::ControlFlow::Continue
             });
         }
+    }
 
-        // Первоначальное обновление
-        if let Some(ref widget) = self.workspaces_widget {
+    fn initial_update(&self) {
+        let widgets = self.widgets.borrow();
+
+        if let Some(ref widget) = widgets.workspaces {
             widget.lock().unwrap().update();
         }
-        if let Some(ref widget) = self.active_window_widget {
+        if let Some(ref widget) = widgets.active_window {
             widget.lock().unwrap().update();
         }
-        if let Some(ref widget) = self.datetime_widget {
+        if let Some(ref widget) = widgets.datetime {
             widget.lock().unwrap().update_time();
         }
-        if let Some(ref widget) = self.battery_widget {
+        if let Some(ref widget) = widgets.battery {
             widget.lock().unwrap().update();
         }
-        if let Some(ref widget) = self.volume_widget {
+        if let Some(ref widget) = widgets.volume {
             widget.lock().unwrap().update();
         }
-        if let Some(ref widget) = self.notifications_widget {
+        if let Some(ref widget) = widgets.notifications {
             widget.lock().unwrap().update();
         }
-        if let Some(ref widget) = self.keyboard_layout_widget {
+        if let Some(ref widget) = widgets.keyboard_layout {
             widget.lock().unwrap().update();
         }
-        if let Some(ref widget) = self.system_resources_widget {
+        if let Some(ref widget) = widgets.system_resources {
             widget.lock().unwrap().update();
         }
     }
 
     pub fn present(&self) {
         self.window.present();
+    }
+
+    /// Получить ссылку на контейнеры для hot reload
+    pub fn get_zone_boxes(&self) -> (gtk4::Box, gtk4::Box, gtk4::Box) {
+        (self.left_box.clone(), self.center_box.clone(), self.right_box.clone())
     }
 }
 

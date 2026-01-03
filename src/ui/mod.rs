@@ -9,9 +9,9 @@ pub mod battery;
 pub mod volume;
 pub mod volume_osd;
 pub mod notifications;
-pub mod notification_popup;
 pub mod keyboard_layout;
 pub mod system_resources;
 pub mod network;
 pub mod brightness;
+pub mod settings;
 

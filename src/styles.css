@@ -388,6 +388,14 @@ box.zone-right {
     font-size: 16px;
 }
 
+.notification-icon-disconnected {
+    color: #666666;
+}
+
+.notification-disconnected {
+    opacity: 0.5;
+}
+
 .notification-count {
     color: #55aaff;
     font-size: 12px;
@@ -891,3 +899,279 @@ box.zone-right {
 
 .brightness-auto-switch {
 }
+
+/* ===== Settings Window Styles ===== */
+.settings-window {
+    background: #000000DD;
+}
+
+.settings-container {
+    background: transparent;
+}
+
+.settings-sidebar {
+    background: #1a1a1a;
+    padding: 8px 0;
+}
+
+.settings-sidebar-header {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+    padding: 16px;
+    margin-bottom: 8px;
+}
+
+.settings-menu {
+    background: transparent;
+}
+
+.settings-menu-item {
+    background: transparent;
+    border-radius: 4px;
+    margin: 2px 8px;
+}
+
+.settings-menu-item:selected {
+    background: #333333;
+}
+
+.settings-menu-item:hover {
+    background: #2a2a2a;
+}
+
+.settings-menu-icon {
+    font-size: 18px;
+    color: #888888;
+}
+
+.settings-menu-item:selected .settings-menu-icon {
+    color: #55aaff;
+}
+
+.settings-menu-label {
+    font-size: 14px;
+    color: #cccccc;
+}
+
+.settings-menu-item:selected .settings-menu-label {
+    color: #ffffff;
+}
+
+.settings-separator {
+    background: #333333;
+    min-width: 1px;
+}
+
+.settings-content {
+    background: transparent;
+    padding: 0;
+}
+
+.settings-widgets {
+    background: transparent;
+}
+
+.settings-section-header {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.settings-section-description {
+    font-size: 13px;
+    color: #888888;
+    margin-bottom: 16px;
+}
+
+.settings-position-frame {
+    background: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+
+.settings-position-frame > label {
+    color: #55aaff;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 0 8px;
+}
+
+.settings-widget-list {
+    background: transparent;
+}
+
+.settings-widget-row {
+    background: transparent;
+    border-radius: 4px;
+    margin: 2px 0;
+}
+
+.settings-widget-row:hover {
+    background: #252525;
+}
+
+.settings-widget-icon {
+    font-size: 18px;
+    color: #888888;
+    min-width: 24px;
+}
+
+.settings-widget-name {
+    font-size: 13px;
+    color: #cccccc;
+}
+
+.settings-widget-switch {
+}
+
+.settings-zone-frame {
+    background: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+
+.settings-zone-frame > label {
+    color: #55aaff;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 0 8px;
+}
+
+.settings-zone-list {
+    background: transparent;
+}
+
+.settings-move-btn {
+    background: transparent;
+    border: none;
+    color: #666666;
+    font-size: 12px;
+    min-width: 20px;
+    min-height: 16px;
+    padding: 0;
+}
+
+.settings-move-btn:hover {
+    color: #ffffff;
+    background: #333333;
+}
+
+.settings-zone-btn {
+    background: #333333;
+    border: none;
+    color: #888888;
+    font-size: 14px;
+    min-width: 28px;
+    min-height: 24px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.settings-zone-btn:hover {
+    background: #444444;
+    color: #ffffff;
+}
+
+.settings-zone-btn:disabled {
+    opacity: 0.3;
+}
+
+.settings-position-combo {
+    background: #333333;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    min-width: 80px;
+    color: #cccccc;
+}
+
+.settings-position-combo button {
+    background: transparent;
+    border: none;
+    color: #cccccc;
+}
+
+.settings-position-combo:hover {
+    background: #444444;
+}
+
+.settings-widget-list-container {
+    background: transparent;
+}
+
+.settings-button-secondary {
+    background: #333333;
+    color: #cccccc;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+}
+
+.settings-button-secondary:hover {
+    background: #444444;
+}
+
+.settings-button-primary {
+    background: #55aaff;
+    color: #000000;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-weight: bold;
+}
+
+.settings-button-primary:hover {
+    background: #66bbff;
+}
+
+.settings-close-button {
+    background: transparent;
+    color: #888888;
+    border: 1px solid #444444;
+    border-radius: 4px;
+}
+
+.settings-close-button:hover {
+    background: #333333;
+    color: #ffffff;
+}
+
+.menu-separator {
+    background: #444444;
+    min-height: 1px;
+}
+
+/* Settings Dialog */
+.settings-dialog {
+    background: #1a1a1a;
+}
+
+.settings-dialog .dialog-content {
+    background: #1a1a1a;
+    padding: 20px;
+}
+
+.settings-dialog button {
+    background: #333333;
+    color: #cccccc;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    margin: 4px;
+}
+
+.settings-dialog button:hover {
+    background: #444444;
+}
+
+.settings-dialog button:last-child {
+    background: #55aaff;
+    color: #000000;
+}
+
+.settings-dialog button:last-child:hover {
+    background: #66bbff;
+}
+

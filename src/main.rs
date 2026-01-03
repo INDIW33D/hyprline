@@ -24,7 +24,7 @@ use infrastructure::system_battery::SystemBatteryService;
 use infrastructure::system_resources::LinuxSystemResources;
 use infrastructure::networkmanager::NetworkManagerService;
 use infrastructure::dbus_status_notifier_watcher::DbusStatusNotifierWatcher;
-use infrastructure::dbus_notification_service::DbusNotificationService;
+use infrastructure::remote_notification_service::RemoteNotificationService;
 use infrastructure::hyprland_keyboard_layout::HyprlandKeyboardLayoutService;
 use infrastructure::lumen_brightness::LumenBrightnessService;
 use ui::bar::Bar;
@@ -113,13 +113,9 @@ fn build_ui(app: &gtk4::Application) {
     // Создаём Volume OSD (On-Screen Display)
     let volume_osd = Arc::new(VolumeOsd::new(app));
 
-    // Создаём Notification сервис с мониторингом
-    let (notification_tx, notification_rx) = infrastructure::dbus_notification_service::create_notification_channel();
-    let notification_service_impl = Arc::new(DbusNotificationService::new());
-    if let Err(e) = notification_service_impl.start(notification_tx) {
-        eprintln!("[Main] Warning: Failed to start NotificationService: {}", e);
-    }
-    let notification_service: Arc<dyn NotificationService + Send + Sync> = notification_service_impl;
+    // Создаём Notification сервис (подключается к hyprline-notifications через D-Bus)
+    let notification_service: Arc<dyn NotificationService + Send + Sync> =
+        Arc::new(RemoteNotificationService::new());
 
     // Создаём KeyboardLayout сервис
     let keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync> = 
@@ -246,25 +242,6 @@ fn build_ui(app: &gtk4::Application) {
         });
     }
 
-    // Обработка уведомлений
-    {
-        let shared_state = shared_state.clone();
-        let notification_service = notification_service.clone();
-        let app = app.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-            while let Ok(notification) = notification_rx.try_recv() {
-                // Показываем popup на 5 секунд
-                let popup = ui::notification_popup::NotificationPopup::new(notification, &app);
-                popup.show(5);
-
-                // Обновляем количество уведомлений
-                let count = notification_service.get_history().len();
-                shared_state.update_notifications(count);
-            }
-            glib::ControlFlow::Continue
-        });
-    }
-
     // Volume OSD обработка
     {
         let volume_osd_clone = volume_osd.clone();
@@ -311,7 +288,10 @@ fn build_ui(app: &gtk4::Application) {
     if let Some(layout) = keyboard_layout_service.get_current_layout() {
         shared_state.update_keyboard_layout(layout);
     }
-    shared_state.update_notifications(notification_service.get_history().len());
+    // Инициализация уведомлений (если сервис доступен)
+    if notification_service.is_connected() {
+        shared_state.update_notifications(notification_service.get_count());
+    }
     if let Ok(brightness) = brightness_service.get_brightness() {
         shared_state.update_brightness(brightness);
     }
@@ -320,51 +300,113 @@ fn build_ui(app: &gtk4::Application) {
     // Инициализация сети
     shared_state.update_network(network_service.get_current_connection());
 
+    // Подписка на события сервиса уведомлений в реальном времени
+    {
+        use infrastructure::notification_client::NotificationEvent;
+        
+        let shared_state_for_listener = shared_state.clone();
+        let (tx, rx) = async_channel::unbounded::<NotificationEvent>();
+        
+        // Запускаем listener в отдельном потоке
+        infrastructure::notification_client::start_notification_listener(Arc::new(move |event| {
+            let _ = tx.send_blocking(event);
+        }));
+        
+        // Обрабатываем события в главном потоке GTK
+        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            while let Ok(event) = rx.try_recv() {
+                match event {
+                    NotificationEvent::CountChanged(count) => {
+                        shared_state_for_listener.update_notifications(count as usize);
+                    }
+                    NotificationEvent::ServiceAvailable => {
+                        eprintln!("[Main] Notification service connected");
+                        shared_state_for_listener.set_notification_service_available(true);
+                    }
+                    NotificationEvent::ServiceUnavailable => {
+                        eprintln!("[Main] Notification service disconnected");
+                        shared_state_for_listener.set_notification_service_available(false);
+                        shared_state_for_listener.update_notifications(0);
+                    }
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
     let workspace_keys = parse_workspace_bindings();
     let monitors = service.get_monitors();
 
-    let bars: Vec<Bar> = if monitors.is_empty() {
-        vec![Bar::new(
-            app,
-            "default", 
-            workspace_keys, 
-            service, 
-            tray_service, 
-            datetime_service, 
-            datetime_config, 
-            battery_service, 
-            volume_service, 
-            notification_service,
-            keyboard_layout_service,
-            system_resources_service,
-            network_service,
-            brightness_service,
-            shared_state.clone(),
-        )]
-    } else {
-        monitors.iter().map(|monitor| {
-            Bar::new(
+    // Создаём bars и храним их для hot reload
+    let bars: Arc<std::sync::Mutex<Vec<Bar>>> = Arc::new(std::sync::Mutex::new(
+        if monitors.is_empty() {
+            vec![Bar::new(
                 app,
-                &monitor.name,
-                workspace_keys.clone(),
-                service.clone(),
-                tray_service.clone(),
-                datetime_service.clone(),
-                datetime_config.clone(),
-                battery_service.clone(),
-                volume_service.clone(),
+                "default", 
+                workspace_keys.clone(), 
+                service.clone(), 
+                tray_service.clone(), 
+                datetime_service.clone(), 
+                datetime_config.clone(), 
+                battery_service.clone(), 
+                volume_service.clone(), 
                 notification_service.clone(),
                 keyboard_layout_service.clone(),
                 system_resources_service.clone(),
                 network_service.clone(),
                 brightness_service.clone(),
                 shared_state.clone(),
-            )
-        }).collect()
-    };
+            )]
+        } else {
+            monitors.iter().map(|monitor| {
+                Bar::new(
+                    app,
+                    &monitor.name,
+                    workspace_keys.clone(),
+                    service.clone(),
+                    tray_service.clone(),
+                    datetime_service.clone(),
+                    datetime_config.clone(),
+                    battery_service.clone(),
+                    volume_service.clone(),
+                    notification_service.clone(),
+                    keyboard_layout_service.clone(),
+                    system_resources_service.clone(),
+                    network_service.clone(),
+                    brightness_service.clone(),
+                    shared_state.clone(),
+                )
+            }).collect()
+        }
+    ));
 
-    for bar in bars {
-        bar.setup_event_listener();
-        bar.present();
+    // Подписка на изменения конфигурации для hot reload
+    {
+        let bars_for_config = bars.clone();
+        let (config_tx, config_rx) = async_channel::unbounded::<()>();
+        
+        config::subscribe_config_changes(move || {
+            let _ = config_tx.send_blocking(());
+        });
+        
+        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            while config_rx.try_recv().is_ok() {
+                eprintln!("[Main] Config changed, rebuilding widgets...");
+                let mut bars = bars_for_config.lock().unwrap();
+                for bar in bars.iter_mut() {
+                    bar.rebuild_widgets();
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Setup и present для всех баров
+    {
+        let bars = bars.lock().unwrap();
+        for bar in bars.iter() {
+            bar.setup_event_listener();
+            bar.present();
+        }
     }
 }

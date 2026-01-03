@@ -3,10 +3,12 @@ use gtk4::glib;
 use std::sync::Arc;
 use crate::domain::notification_service::NotificationService;
 use crate::domain::models::{Notification, NotificationUrgency};
+ use crate::shared_state::get_shared_state;
 
 pub struct NotificationWidget {
     button: gtk4::Button,
     service: Arc<dyn NotificationService + Send + Sync>,
+    #[allow(dead_code)]
     unread_count: std::cell::RefCell<usize>,
 }
 
@@ -21,7 +23,10 @@ impl NotificationWidget {
         let button_weak = button.downgrade();
         button.connect_clicked(move |_| {
             if let Some(btn) = button_weak.upgrade() {
-                Self::show_history(&btn, service_clone.clone());
+                let shared_state = get_shared_state();
+                if shared_state.is_notification_service_available() {
+                    Self::show_history(&btn, service_clone.clone());
+                }
             }
         });
 
@@ -37,51 +42,86 @@ impl NotificationWidget {
     }
 
     pub fn update(&self) {
-        let history = self.service.get_history();
-        let count = history.len();
+        let shared_state = get_shared_state();
 
         // Создаём контейнер для иконки и счётчика
         let container = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
 
-        // Иконка колокольчика
-        let icon = gtk4::Label::new(Some("󰂚")); // Nerd Font: bell
-        icon.add_css_class("notification-icon");
-        container.append(&icon);
+        if shared_state.is_notification_service_available() {
+            let count = shared_state.get_notification_count();
 
-        // Показываем количество уведомлений, если есть
-        if count > 0 {
-            let count_label = gtk4::Label::new(Some(&count.to_string()));
-            count_label.add_css_class("notification-count");
-            container.append(&count_label);
+            // Иконка колокольчика
+            let icon = gtk4::Label::new(Some("󰂚")); // Nerd Font: bell
+            icon.add_css_class("notification-icon");
+            container.append(&icon);
+
+            // Показываем количество уведомлений, если есть
+            if count > 0 {
+                let count_label = gtk4::Label::new(Some(&count.to_string()));
+                count_label.add_css_class("notification-count");
+                container.append(&count_label);
+            }
+
+            self.button.set_tooltip_text(Some(&format!("{} notifications", count)));
+            self.button.remove_css_class("notification-disconnected");
+        } else {
+            // Сервис не подключен - показываем иконку с перечёркиванием
+            let icon = gtk4::Label::new(Some("󰂛")); // Nerd Font: bell-off
+            icon.add_css_class("notification-icon");
+            icon.add_css_class("notification-icon-disconnected");
+            container.append(&icon);
+
+            self.button.set_tooltip_text(Some("Notification service not running"));
+            self.button.add_css_class("notification-disconnected");
         }
 
         self.button.set_child(Some(&container));
-        // Обработчик клика уже зарегистрирован в конструкторе - не регистрируем заново!
     }
 
-    fn update_button_badge(button: &gtk4::Button, service: &Arc<dyn NotificationService + Send + Sync>) {
-        let count = service.get_history().len();
+    fn update_button_badge(button: &gtk4::Button, _service: &Arc<dyn NotificationService + Send + Sync>) {
+        let shared_state = get_shared_state();
 
         // Создаём контейнер для иконки и счётчика
         let container = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
 
-        // Иконка колокольчика
-        let icon = gtk4::Label::new(Some("󰂚")); // Nerd Font: bell
-        icon.add_css_class("notification-icon");
-        container.append(&icon);
+        if shared_state.is_notification_service_available() {
+            let count = shared_state.get_notification_count();
 
-        // Показываем количество уведомлений, если есть
-        if count > 0 {
-            let count_label = gtk4::Label::new(Some(&count.to_string()));
-            count_label.add_css_class("notification-count");
-            container.append(&count_label);
+            // Иконка колокольчика
+            let icon = gtk4::Label::new(Some("󰂚")); // Nerd Font: bell
+            icon.add_css_class("notification-icon");
+            container.append(&icon);
+
+            // Показываем количество уведомлений, если есть
+            if count > 0 {
+                let count_label = gtk4::Label::new(Some(&count.to_string()));
+                count_label.add_css_class("notification-count");
+                container.append(&count_label);
+            }
+
+            button.set_tooltip_text(Some(&format!("{} notifications", count)));
+            button.remove_css_class("notification-disconnected");
+        } else {
+            // Сервис не подключен
+            let icon = gtk4::Label::new(Some("󰂛")); // Nerd Font: bell-off
+            icon.add_css_class("notification-icon");
+            icon.add_css_class("notification-icon-disconnected");
+            container.append(&icon);
+
+            button.set_tooltip_text(Some("Notification service not running"));
+            button.add_css_class("notification-disconnected");
         }
 
         button.set_child(Some(&container));
-        eprintln!("[UI] Badge updated: {} notifications", count);
     }
 
     fn show_history(button: &gtk4::Button, service: Arc<dyn NotificationService + Send + Sync>) {
+        // Проверяем подключение перед показом
+        let shared_state = get_shared_state();
+        if !shared_state.is_notification_service_available() {
+            return;
+        }
+
         let popover = gtk4::Popover::new();
         popover.set_parent(button);
         popover.set_position(gtk4::PositionType::Bottom);

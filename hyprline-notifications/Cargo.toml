@@ -1,0 +1,33 @@
+[package]
+name = "hyprline-notifications"
+version = "0.1.0"
+edition = "2021"
+description = "Notification daemon for Hyprline"
+authors = ["AI Generated with Claude Sonnet 4.5"]
+
+[dependencies]
+# GTK4 for UI
+gtk4 = "0.9"
+gtk4-layer-shell = "0.4"
+
+# D-Bus
+zbus = { version = "4", default-features = false, features = ["tokio"] }
+
+# Async runtime
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+async-channel = "2"
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+

@@ -33,6 +33,7 @@ pub struct SharedState {
     pub tray_items: RwLock<Vec<TrayItem>>,
     pub keyboard_layout: RwLock<Option<KeyboardLayout>>,
     pub notification_count: RwLock<usize>,
+    pub notification_service_available: RwLock<bool>,
     pub brightness: RwLock<u32>,
     pub system_resources: RwLock<Option<SystemResources>>,
     pub network_connection: RwLock<Option<NetworkConnection>>,
@@ -46,6 +47,7 @@ pub struct SharedState {
     brightness_callbacks: Mutex<Callbacks>,
     system_resources_callbacks: Mutex<Callbacks>,
     network_callbacks: Mutex<Callbacks>,
+    config_changed_callbacks: Mutex<Callbacks>,
 }
 
 impl SharedState {
@@ -56,6 +58,7 @@ impl SharedState {
             tray_items: RwLock::new(Vec::new()),
             keyboard_layout: RwLock::new(None),
             notification_count: RwLock::new(0),
+            notification_service_available: RwLock::new(false),
             brightness: RwLock::new(100),
             system_resources: RwLock::new(None),
             network_connection: RwLock::new(None),
@@ -67,6 +70,7 @@ impl SharedState {
             brightness_callbacks: Mutex::new(Callbacks::new()),
             system_resources_callbacks: Mutex::new(Callbacks::new()),
             network_callbacks: Mutex::new(Callbacks::new()),
+            config_changed_callbacks: Mutex::new(Callbacks::new()),
         }
     }
 
@@ -144,6 +148,16 @@ impl SharedState {
         self.notification_callbacks.lock().unwrap().notify_all();
     }
 
+    pub fn set_notification_service_available(&self, available: bool) {
+        *self.notification_service_available.write().unwrap() = available;
+        // Также уведомляем подписчиков
+        self.notification_callbacks.lock().unwrap().notify_all();
+    }
+
+    pub fn is_notification_service_available(&self) -> bool {
+        *self.notification_service_available.read().unwrap()
+    }
+
     pub fn get_notification_count(&self) -> usize {
         *self.notification_count.read().unwrap()
     }
@@ -204,6 +218,18 @@ impl SharedState {
         F: Fn() + Send + Sync + 'static,
     {
         self.network_callbacks.lock().unwrap().add(Box::new(callback));
+    }
+
+    // === Config Changed ===
+    pub fn notify_config_changed(&self) {
+        self.config_changed_callbacks.lock().unwrap().notify_all();
+    }
+
+    pub fn subscribe_config_changed<F>(&self, callback: F)
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.config_changed_callbacks.lock().unwrap().add(Box::new(callback));
     }
 }
 
