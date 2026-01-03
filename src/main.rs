@@ -15,6 +15,7 @@ use domain::keyboard_layout_service::KeyboardLayoutService;
 use domain::system_resources_service::SystemResourcesService;
 use domain::network_service::NetworkService;
 use domain::brightness_service::BrightnessService;
+use domain::submap_service::SubmapService;
 use domain::status_notifier_watcher_service::StatusNotifierWatcherService;
 use domain::models::DateTimeConfig;
 use infrastructure::hyprland_ipc::HyprlandIpc;
@@ -27,6 +28,7 @@ use infrastructure::dbus_status_notifier_watcher::DbusStatusNotifierWatcher;
 use infrastructure::remote_notification_service::RemoteNotificationService;
 use infrastructure::hyprland_keyboard_layout::HyprlandKeyboardLayoutService;
 use infrastructure::lumen_brightness::LumenBrightnessService;
+use infrastructure::hyprland_submap::HyprlandSubmapService;
 use infrastructure::monitor_listener::{start_monitor_listener, MonitorEvent};
 use ui::bar::Bar;
 use ui::volume_osd::VolumeOsd;
@@ -163,6 +165,20 @@ fn build_ui(app: &gtk4::Application) {
         shared_state_brightness.update_brightness(value);
     }));
 
+    // Создаём Submap сервис
+    let submap_service_impl = Arc::new(HyprlandSubmapService::new());
+    let submap_service: Arc<dyn SubmapService + Send + Sync> = submap_service_impl.clone();
+
+    // Создаём канал для событий submap
+    let (submap_tx, submap_rx) = infrastructure::submap_listener::create_submap_channel();
+
+    // Запускаем мониторинг событий submap
+    infrastructure::submap_listener::start_submap_listener(submap_tx);
+
+    // Запускаем мониторинг изменений конфига Hyprland для обновления названий биндингов
+    let (config_change_tx, config_change_rx) = async_channel::unbounded::<()>();
+    submap_service_impl.clone().start_config_monitoring(config_change_tx);
+
     // Создаём канал для обновлений трея
     let (tray_tx, tray_rx) = async_channel::unbounded();
     
@@ -238,6 +254,47 @@ fn build_ui(app: &gtk4::Application) {
                     full_name,
                 };
                 shared_state.update_keyboard_layout(layout);
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Обработка событий submap
+    {
+        let shared_state = shared_state.clone();
+        let submap_service_clone = submap_service.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            while let Ok(submap_name) = submap_rx.try_recv() {
+                eprintln!("[Main] Submap changed: '{}' (active: {})", submap_name, !submap_name.is_empty());
+                let bindings = submap_service_clone.get_submap_bindings(&submap_name);
+                eprintln!("[Main] Found {} bindings for submap", bindings.len());
+                let submap = domain::models::SubmapInfo {
+                    name: submap_name,
+                    bindings,
+                };
+                shared_state.update_submap(submap);
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Обработка изменений конфига Hyprland (обновление названий биндингов)
+    {
+        let shared_state = shared_state.clone();
+        let submap_service_clone = submap_service.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            while config_change_rx.try_recv().is_ok() {
+                // Если мы сейчас в submap - обновляем его с новыми данными
+                let current_submap = shared_state.get_submap();
+                if current_submap.is_active() {
+                    let bindings = submap_service_clone.get_submap_bindings(&current_submap.name);
+                    let updated_submap = domain::models::SubmapInfo {
+                        name: current_submap.name,
+                        bindings,
+                    };
+                    shared_state.update_submap(updated_submap);
+                    eprintln!("[Main] Submap bindings updated from config change");
+                }
             }
             glib::ControlFlow::Continue
         });
@@ -356,6 +413,7 @@ fn build_ui(app: &gtk4::Application) {
                 system_resources_service.clone(),
                 network_service.clone(),
                 brightness_service.clone(),
+                submap_service.clone(),
                 shared_state.clone(),
             )]
         } else {
@@ -375,6 +433,7 @@ fn build_ui(app: &gtk4::Application) {
                     system_resources_service.clone(),
                     network_service.clone(),
                     brightness_service.clone(),
+                    submap_service.clone(),
                     shared_state.clone(),
                 )
             }).collect()
@@ -424,6 +483,7 @@ fn build_ui(app: &gtk4::Application) {
         let system_resources_service_clone = system_resources_service.clone();
         let network_service_clone = network_service.clone();
         let brightness_service_clone = brightness_service.clone();
+        let submap_service_clone = submap_service.clone();
         let shared_state_clone = shared_state.clone();
 
         glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
@@ -445,6 +505,7 @@ fn build_ui(app: &gtk4::Application) {
                         let system_resources_service = system_resources_service_clone.clone();
                         let network_service = network_service_clone.clone();
                         let brightness_service = brightness_service_clone.clone();
+                        let submap_service = submap_service_clone.clone();
                         let shared_state = shared_state_clone.clone();
 
                         glib::timeout_add_local_once(std::time::Duration::from_millis(300), move || {
@@ -473,6 +534,7 @@ fn build_ui(app: &gtk4::Application) {
                                 system_resources_service,
                                 network_service,
                                 brightness_service,
+                                submap_service,
                                 shared_state,
                             );
 

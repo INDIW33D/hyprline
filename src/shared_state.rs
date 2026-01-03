@@ -1,4 +1,4 @@
-use crate::domain::models::{BatteryInfo, KeyboardLayout, NetworkConnection, SystemResources, TrayItem, VolumeInfo};
+use crate::domain::models::{BatteryInfo, KeyboardLayout, NetworkConnection, SubmapInfo, SystemResources, TrayItem, VolumeInfo};
 use std::sync::{Arc, Mutex, RwLock};
 
 /// Тип callback-функции для обновления виджетов
@@ -37,6 +37,7 @@ pub struct SharedState {
     pub brightness: RwLock<u32>,
     pub system_resources: RwLock<Option<SystemResources>>,
     pub network_connection: RwLock<Option<NetworkConnection>>,
+    pub submap: RwLock<SubmapInfo>,
 
     // Callback-и для обновления UI
     battery_callbacks: Mutex<Callbacks>,
@@ -48,6 +49,7 @@ pub struct SharedState {
     system_resources_callbacks: Mutex<Callbacks>,
     network_callbacks: Mutex<Callbacks>,
     config_changed_callbacks: Mutex<Callbacks>,
+    submap_callbacks: Mutex<Callbacks>,
 }
 
 impl SharedState {
@@ -62,6 +64,7 @@ impl SharedState {
             brightness: RwLock::new(100),
             system_resources: RwLock::new(None),
             network_connection: RwLock::new(None),
+            submap: RwLock::new(SubmapInfo::default()),
             battery_callbacks: Mutex::new(Callbacks::new()),
             volume_callbacks: Mutex::new(Callbacks::new()),
             tray_callbacks: Mutex::new(Callbacks::new()),
@@ -71,6 +74,7 @@ impl SharedState {
             system_resources_callbacks: Mutex::new(Callbacks::new()),
             network_callbacks: Mutex::new(Callbacks::new()),
             config_changed_callbacks: Mutex::new(Callbacks::new()),
+            submap_callbacks: Mutex::new(Callbacks::new()),
         }
     }
 
@@ -230,6 +234,23 @@ impl SharedState {
         F: Fn() + Send + Sync + 'static,
     {
         self.config_changed_callbacks.lock().unwrap().add(Box::new(callback));
+    }
+
+    // === Submap ===
+    pub fn update_submap(&self, submap: SubmapInfo) {
+        *self.submap.write().unwrap() = submap;
+        self.submap_callbacks.lock().unwrap().notify_all();
+    }
+
+    pub fn get_submap(&self) -> SubmapInfo {
+        self.submap.read().unwrap().clone()
+    }
+
+    pub fn subscribe_submap<F>(&self, callback: F)
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.submap_callbacks.lock().unwrap().add(Box::new(callback));
     }
 }
 

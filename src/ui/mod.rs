@@ -14,4 +14,5 @@ pub mod system_resources;
 pub mod network;
 pub mod brightness;
 pub mod settings;
+pub mod submap;
 

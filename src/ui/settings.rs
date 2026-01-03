@@ -800,6 +800,7 @@ fn get_widget_from_box_child(widget: &gtk4::Widget) -> Option<(WidgetType, bool)
                 9 => WidgetType::KeyboardLayout,
                 10 => WidgetType::Notifications,
                 11 => WidgetType::DateTime,
+                12 => WidgetType::Submap,
                 _ => return None,
             };
             return Some((widget_type, en != 0));

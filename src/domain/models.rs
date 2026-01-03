@@ -209,3 +209,41 @@ pub struct KeyboardLayout {
     pub full_name: String,
 }
 
+// Submap models
+#[derive(Debug, Clone, PartialEq)]
+pub struct SubmapInfo {
+    /// Имя текущего submap ("" если в обычном режиме)
+    pub name: String,
+    /// Список биндингов в этом submap
+    pub bindings: Vec<SubmapBinding>,
+}
+
+impl SubmapInfo {
+    pub fn is_active(&self) -> bool {
+        !self.name.is_empty()
+    }
+}
+
+impl Default for SubmapInfo {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            bindings: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SubmapBinding {
+    /// Модификаторы (например: "SUPER", "CTRL+SHIFT")
+    pub mods: String,
+    /// Клавиша (например: "Return", "Q")
+    pub key: String,
+    /// Диспатчер (например: "exec", "killactive", "submap")
+    pub dispatcher: String,
+    /// Аргумент диспатчера
+    pub arg: String,
+    /// Человекочитаемое название из комментария #$name = ...
+    pub display_name: Option<String>,
+}
+

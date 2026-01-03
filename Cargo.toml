@@ -18,3 +18,4 @@ tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "macros", 
 pipewire = "0.8"
 rusqlite = { version = "0.32", features = ["bundled"] }
 parking_lot = "0.12"
+notify = "6.1"

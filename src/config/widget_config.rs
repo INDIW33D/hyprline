@@ -26,6 +26,7 @@ pub enum WidgetType {
     KeyboardLayout,
     Notifications,
     DateTime,
+    Submap,
 }
 
 impl WidgetType {
@@ -43,6 +44,7 @@ impl WidgetType {
             WidgetType::KeyboardLayout => "Keyboard Layout",
             WidgetType::Notifications => "Notifications",
             WidgetType::DateTime => "Date & Time",
+            WidgetType::Submap => "Submap",
         }
     }
 
@@ -60,6 +62,7 @@ impl WidgetType {
             WidgetType::KeyboardLayout => "󰌌",
             WidgetType::Notifications => "󰂚",
             WidgetType::DateTime => "󰥔",
+            WidgetType::Submap => "󰌌",
         }
     }
 
@@ -77,6 +80,7 @@ impl WidgetType {
             WidgetType::KeyboardLayout,
             WidgetType::Notifications,
             WidgetType::DateTime,
+            WidgetType::Submap,
         ]
     }
 }
@@ -106,6 +110,7 @@ impl Default for WidgetProfile {
                 WidgetConfig { widget_type: WidgetType::Menu, enabled: true, position: WidgetPosition::Left, order: 0 },
                 WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 1 },
                 WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Left, order: 2 },
+                WidgetConfig { widget_type: WidgetType::Submap, enabled: true, position: WidgetPosition::Left, order: 3 },
 
                 // Right zone
                 WidgetConfig { widget_type: WidgetType::SystemTray, enabled: true, position: WidgetPosition::Right, order: 0 },

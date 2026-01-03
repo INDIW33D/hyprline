@@ -13,5 +13,7 @@ pub mod networkmanager;
 pub mod lumen_brightness;
 pub mod notification_client;
 pub mod remote_notification_service;
+pub mod hyprland_submap;
+pub mod submap_listener;
 
 

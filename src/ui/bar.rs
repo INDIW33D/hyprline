@@ -9,6 +9,7 @@ use crate::domain::keyboard_layout_service::KeyboardLayoutService;
 use crate::domain::system_resources_service::SystemResourcesService;
 use crate::domain::network_service::NetworkService;
 use crate::domain::brightness_service::BrightnessService;
+use crate::domain::submap_service::SubmapService;
 use crate::domain::models::DateTimeConfig;
 use crate::infrastructure::event_listener;
 use crate::shared_state::SharedState;
@@ -17,7 +18,7 @@ use crate::ui::{
     system_tray::SystemTrayWidget, workspaces::WorkspacesWidget, battery::BatteryWidget,
     volume::VolumeWidget, notifications::NotificationWidget,
     keyboard_layout::KeyboardLayoutWidget, system_resources::SystemResourcesWidget,
-    network::NetworkWidget, brightness::BrightnessWidget,
+    network::NetworkWidget, brightness::BrightnessWidget, submap::SubmapWidget,
 };
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
@@ -44,6 +45,7 @@ pub struct WidgetContext {
     pub system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
     pub network_service: Arc<dyn NetworkService + Send + Sync>,
     pub brightness_service: Arc<dyn BrightnessService + Send + Sync>,
+    pub submap_service: Arc<dyn SubmapService + Send + Sync>,
     pub shared_state: Arc<SharedState>,
 }
 
@@ -60,6 +62,7 @@ struct CreatedWidgets {
     system_resources: Option<Arc<Mutex<SystemResourcesWidget>>>,
     network: Option<NetworkWidget>,
     brightness: Option<BrightnessWidget>,
+    submap: Option<Arc<Mutex<SubmapWidget>>>,
 }
 
 impl CreatedWidgets {
@@ -76,6 +79,7 @@ impl CreatedWidgets {
             system_resources: None,
             network: None,
             brightness: None,
+            submap: None,
         }
     }
 }
@@ -106,6 +110,7 @@ impl Bar {
         system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
         network_service: Arc<dyn NetworkService + Send + Sync>,
         brightness_service: Arc<dyn BrightnessService + Send + Sync>,
+        submap_service: Arc<dyn SubmapService + Send + Sync>,
         shared_state: Arc<SharedState>,
     ) -> Self {
         let window = gtk4::ApplicationWindow::new(app);
@@ -178,6 +183,7 @@ impl Bar {
             system_resources_service,
             network_service,
             brightness_service,
+            submap_service,
             shared_state: shared_state.clone(),
         });
 
@@ -341,6 +347,11 @@ impl Bar {
                 let widget = BrightnessWidget::new(ctx.brightness_service.clone());
                 container.append(&widget.container);
                 widgets.brightness = Some(widget);
+            }
+            WidgetType::Submap => {
+                let widget = Arc::new(Mutex::new(SubmapWidget::new(ctx.submap_service.clone())));
+                container.append(widget.lock().unwrap().widget());
+                widgets.submap = Some(widget);
             }
         }
     }
@@ -507,6 +518,26 @@ impl Bar {
                 while receiver.try_recv().is_ok() {
                     let widgets = widgets.borrow();
                     if let Some(ref widget) = widgets.system_resources {
+                        widget.lock().unwrap().update();
+                    }
+                }
+                glib::ControlFlow::Continue
+            });
+        }
+
+        // Подписка на обновления submap
+        {
+            let widgets = self.widgets.clone();
+            let (sender, receiver) = async_channel::unbounded::<()>();
+
+            self.shared_state.subscribe_submap(move || {
+                let _ = sender.send_blocking(());
+            });
+
+            glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+                while receiver.try_recv().is_ok() {
+                    let widgets = widgets.borrow();
+                    if let Some(ref widget) = widgets.submap {
                         widget.lock().unwrap().update();
                     }
                 }
