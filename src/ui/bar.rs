@@ -115,18 +115,22 @@ impl Bar {
         window.set_layer(Layer::Top);
 
         // Привязка к монитору
-        if let Some(display) = gdk::Display::default() {
-            let monitors = display.monitors();
-            for i in 0..monitors.n_items() {
-                if let Some(monitor) = monitors.item(i).and_then(|m| m.downcast::<gdk::Monitor>().ok()) {
-                    if let Some(connector) = monitor.connector() {
-                        if connector.as_str() == monitor_name {
-                            window.set_monitor(Some(&monitor));
-                            break;
-                        }
+        let monitor_found = Self::try_bind_to_monitor(&window, monitor_name);
+
+        // Если монитор не найден сразу - пробуем через задержку
+        // (монитор может ещё не быть зарегистрирован в GDK)
+        if !monitor_found && monitor_name != "default" {
+            let window_weak = window.downgrade();
+            let monitor_name_owned = monitor_name.to_string();
+            glib::timeout_add_local_once(std::time::Duration::from_millis(500), move || {
+                if let Some(win) = window_weak.upgrade() {
+                    if Self::try_bind_to_monitor(&win, &monitor_name_owned) {
+                        eprintln!("[Bar] ✓ Delayed binding to monitor: {}", monitor_name_owned);
+                    } else {
+                        eprintln!("[Bar] ✗ Monitor not found after delay: {}", monitor_name_owned);
                     }
                 }
-            }
+            });
         }
 
         window.set_anchor(Edge::Top, true);
@@ -543,9 +547,39 @@ impl Bar {
         self.window.present();
     }
 
+    /// Получить имя монитора, к которому привязан бар
+    pub fn monitor_name(&self) -> &str {
+        &self.context.monitor_name
+    }
+
+    /// Закрыть окно бара
+    pub fn close(&self) {
+        self.window.close();
+    }
+
     /// Получить ссылку на контейнеры для hot reload
     pub fn get_zone_boxes(&self) -> (gtk4::Box, gtk4::Box, gtk4::Box) {
         (self.left_box.clone(), self.center_box.clone(), self.right_box.clone())
+    }
+
+    /// Пытается привязать окно к монитору по имени
+    /// Возвращает true если монитор найден и привязан
+    fn try_bind_to_monitor(window: &gtk4::ApplicationWindow, monitor_name: &str) -> bool {
+        if let Some(display) = gdk::Display::default() {
+            let monitors = display.monitors();
+            for i in 0..monitors.n_items() {
+                if let Some(monitor) = monitors.item(i).and_then(|m| m.downcast::<gdk::Monitor>().ok()) {
+                    if let Some(connector) = monitor.connector() {
+                        if connector.as_str() == monitor_name {
+                            window.set_monitor(Some(&monitor));
+                            eprintln!("[Bar] Bound to monitor: {}", monitor_name);
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        false
     }
 }
 

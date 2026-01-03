@@ -27,6 +27,7 @@ use infrastructure::dbus_status_notifier_watcher::DbusStatusNotifierWatcher;
 use infrastructure::remote_notification_service::RemoteNotificationService;
 use infrastructure::hyprland_keyboard_layout::HyprlandKeyboardLayoutService;
 use infrastructure::lumen_brightness::LumenBrightnessService;
+use infrastructure::monitor_listener::{start_monitor_listener, MonitorEvent};
 use ui::bar::Bar;
 use ui::volume_osd::VolumeOsd;
 use shared_state::get_shared_state;
@@ -303,15 +304,15 @@ fn build_ui(app: &gtk4::Application) {
     // Подписка на события сервиса уведомлений в реальном времени
     {
         use infrastructure::notification_client::NotificationEvent;
-        
+
         let shared_state_for_listener = shared_state.clone();
         let (tx, rx) = async_channel::unbounded::<NotificationEvent>();
-        
+
         // Запускаем listener в отдельном потоке
         infrastructure::notification_client::start_notification_listener(Arc::new(move |event| {
             let _ = tx.send_blocking(event);
         }));
-        
+
         // Обрабатываем события в главном потоке GTK
         glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
             while let Ok(event) = rx.try_recv() {
@@ -337,19 +338,19 @@ fn build_ui(app: &gtk4::Application) {
     let workspace_keys = parse_workspace_bindings();
     let monitors = service.get_monitors();
 
-    // Создаём bars и храним их для hot reload
+    // Создаём bars и храним их для hot reload и динамического управления
     let bars: Arc<std::sync::Mutex<Vec<Bar>>> = Arc::new(std::sync::Mutex::new(
         if monitors.is_empty() {
             vec![Bar::new(
                 app,
-                "default", 
-                workspace_keys.clone(), 
-                service.clone(), 
-                tray_service.clone(), 
-                datetime_service.clone(), 
-                datetime_config.clone(), 
-                battery_service.clone(), 
-                volume_service.clone(), 
+                "default",
+                workspace_keys.clone(),
+                service.clone(),
+                tray_service.clone(),
+                datetime_service.clone(),
+                datetime_config.clone(),
+                battery_service.clone(),
+                volume_service.clone(),
                 notification_service.clone(),
                 keyboard_layout_service.clone(),
                 system_resources_service.clone(),
@@ -384,17 +385,117 @@ fn build_ui(app: &gtk4::Application) {
     {
         let bars_for_config = bars.clone();
         let (config_tx, config_rx) = async_channel::unbounded::<()>();
-        
+
         config::subscribe_config_changes(move || {
             let _ = config_tx.send_blocking(());
         });
-        
+
         glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
             while config_rx.try_recv().is_ok() {
                 eprintln!("[Main] Config changed, rebuilding widgets...");
                 let mut bars = bars_for_config.lock().unwrap();
                 for bar in bars.iter_mut() {
                     bar.rebuild_widgets();
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Подписка на события мониторов (добавление/удаление)
+    {
+        let (monitor_tx, monitor_rx) = async_channel::unbounded::<MonitorEvent>();
+
+        start_monitor_listener(move |event| {
+            let _ = monitor_tx.send_blocking(event);
+        });
+
+        let bars_for_monitors = bars.clone();
+        let app_clone = app.clone();
+        let workspace_keys_clone = workspace_keys.clone();
+        let service_clone = service.clone();
+        let tray_service_clone = tray_service.clone();
+        let datetime_service_clone = datetime_service.clone();
+        let datetime_config_clone = datetime_config.clone();
+        let battery_service_clone = battery_service.clone();
+        let volume_service_clone = volume_service.clone();
+        let notification_service_clone = notification_service.clone();
+        let keyboard_layout_service_clone = keyboard_layout_service.clone();
+        let system_resources_service_clone = system_resources_service.clone();
+        let network_service_clone = network_service.clone();
+        let brightness_service_clone = brightness_service.clone();
+        let shared_state_clone = shared_state.clone();
+
+        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            while let Ok(event) = monitor_rx.try_recv() {
+                match event {
+                    MonitorEvent::Added(monitor_name) => {
+                        // Задержка, чтобы GDK успел зарегистрировать новый монитор
+                        let bars_clone = bars_for_monitors.clone();
+                        let app = app_clone.clone();
+                        let workspace_keys = workspace_keys_clone.clone();
+                        let service = service_clone.clone();
+                        let tray_service = tray_service_clone.clone();
+                        let datetime_service = datetime_service_clone.clone();
+                        let datetime_config = datetime_config_clone.clone();
+                        let battery_service = battery_service_clone.clone();
+                        let volume_service = volume_service_clone.clone();
+                        let notification_service = notification_service_clone.clone();
+                        let keyboard_layout_service = keyboard_layout_service_clone.clone();
+                        let system_resources_service = system_resources_service_clone.clone();
+                        let network_service = network_service_clone.clone();
+                        let brightness_service = brightness_service_clone.clone();
+                        let shared_state = shared_state_clone.clone();
+
+                        glib::timeout_add_local_once(std::time::Duration::from_millis(300), move || {
+                            let mut bars = bars_clone.lock().unwrap();
+
+                            // Проверяем, нет ли уже бара для этого монитора
+                            if bars.iter().any(|b| b.monitor_name() == monitor_name) {
+                                eprintln!("[Main] Bar for monitor {} already exists", monitor_name);
+                                return;
+                            }
+
+                            eprintln!("[Main] Creating bar for new monitor: {}", monitor_name);
+
+                            let bar = Bar::new(
+                                &app,
+                                &monitor_name,
+                                workspace_keys,
+                                service,
+                                tray_service,
+                                datetime_service,
+                                datetime_config,
+                                battery_service,
+                                volume_service,
+                                notification_service,
+                                keyboard_layout_service,
+                                system_resources_service,
+                                network_service,
+                                brightness_service,
+                                shared_state,
+                            );
+
+                            bar.setup_event_listener();
+                            bar.present();
+                            bars.push(bar);
+
+                            eprintln!("[Main] ✓ Bar created for monitor: {}", monitor_name);
+                        });
+                    }
+                    MonitorEvent::Removed(monitor_name) => {
+                        let mut bars = bars_for_monitors.lock().unwrap();
+
+                        // Находим и удаляем бар для этого монитора
+                        if let Some(pos) = bars.iter().position(|b| b.monitor_name() == monitor_name) {
+                            eprintln!("[Main] Removing bar for monitor: {}", monitor_name);
+                            let bar = bars.remove(pos);
+                            bar.close();
+                            eprintln!("[Main] ✓ Bar removed for monitor: {}", monitor_name);
+                        } else {
+                            eprintln!("[Main] No bar found for monitor: {}", monitor_name);
+                        }
+                    }
                 }
             }
             glib::ControlFlow::Continue

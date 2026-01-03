@@ -1,5 +1,6 @@
 pub mod hyprland_ipc;
 pub mod event_listener;
+pub mod monitor_listener;
 pub mod status_notifier_tray;
 pub mod system_datetime;
 pub mod dbus_status_notifier_watcher;
