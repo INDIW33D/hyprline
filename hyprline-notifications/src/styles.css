@@ -180,3 +180,37 @@
     font-size: 12px;
 }
 
+/* Action buttons in popup */
+.notification-popup-actions {
+    border-top: 1px solid #333333;
+    padding-top: 8px;
+    margin-top: 4px;
+}
+
+.notification-popup-action-button {
+    background: #333333;
+    border: none;
+    color: #ffffff;
+    font-size: 12px;
+    padding: 6px 16px;
+    border-radius: 4px;
+    min-height: 28px;
+}
+
+.notification-popup-action-button:hover {
+    background: #444444;
+}
+
+.notification-popup-action-button:active {
+    background: #555555;
+}
+
+/* Low urgency notifications */
+.notification-popup-low .notification-popup-container {
+    opacity: 0.9;
+}
+
+.notification-popup-low .notification-popup-icon {
+    color: #888888;
+}
+

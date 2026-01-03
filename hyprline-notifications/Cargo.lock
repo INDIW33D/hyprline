@@ -872,6 +872,7 @@ dependencies = [
  "chrono",
  "gtk4",
  "gtk4-layer-shell",
+ "regex-lite",
  "rusqlite",
  "serde",
  "serde_json",
@@ -1189,6 +1190,12 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.16",
 ]
+
+[[package]]
+name = "regex-lite"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d942b98df5e658f56f20d592c7f868833fe38115e65c33003d8cd224b0155da"
 
 [[package]]
 name = "rusqlite"

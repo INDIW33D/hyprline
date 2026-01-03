@@ -10,6 +10,7 @@ use tokio::sync::Mutex;
 
 use dbus_service::NotificationDbusService;
 use repository::NotificationRepository;
+use ui::popup::PopupEvent;
 
 fn main() {
     // Инициализация логирования
@@ -32,9 +33,8 @@ fn main() {
         );
 
         // Держим приложение активным (это демон, не должен завершаться)
-        // Guard хранится в static для предотвращения завершения
         let _guard = app.hold();
-        std::mem::forget(_guard); // Намеренно "утекаем" guard чтобы держать app активным
+        std::mem::forget(_guard);
 
         setup_service(app);
     });
@@ -57,16 +57,36 @@ fn setup_service(app: &gtk4::Application) {
     // Создаём канал для уведомлений
     let (notification_tx, notification_rx) = async_channel::unbounded();
 
-    // Создаём канал для событий UI (показ popup, обновление истории)
+    // Создаём канал для событий UI
     let (ui_tx, ui_rx) = async_channel::unbounded();
+
+    // Создаём канал для событий от popup (action invoked, dismissed)
+    let (popup_event_tx, popup_event_rx) = async_channel::unbounded::<PopupEvent>();
 
     // Запускаем D-Bus сервис в отдельном потоке
     let repo_for_dbus = repository.clone();
     let ui_tx_for_dbus = ui_tx.clone();
+    let popup_event_rx_clone = popup_event_rx.clone();
 
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
+            // Запускаем обработчик popup событий для отправки D-Bus сигналов
+            let popup_handler = tokio::spawn(async move {
+                while let Ok(event) = popup_event_rx_clone.recv().await {
+                    match event {
+                        PopupEvent::ActionInvoked { id, action_key } => {
+                            eprintln!("[NotificationService] Action invoked: id={}, key={}", id, action_key);
+                            // Отправляем D-Bus сигнал ActionInvoked
+                            // (это будет обработано в dbus_service)
+                        }
+                        PopupEvent::Dismissed { id } => {
+                            eprintln!("[NotificationService] Notification dismissed: id={}", id);
+                        }
+                    }
+                }
+            });
+
             if let Err(e) = NotificationDbusService::start(
                 repo_for_dbus,
                 notification_tx,
@@ -74,24 +94,30 @@ fn setup_service(app: &gtk4::Application) {
             ).await {
                 eprintln!("[NotificationService] Failed to start D-Bus service: {}", e);
             }
+
+            popup_handler.abort();
         });
     });
 
     // Обработка новых уведомлений - показываем popup
     let app_clone = app.clone();
-    glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+    let popup_event_tx_clone = popup_event_tx.clone();
+    glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
         while let Ok(notification) = notification_rx.try_recv() {
-            ui::popup::show_notification_popup(&app_clone, notification);
+            ui::popup::show_notification_popup(
+                &app_clone,
+                notification,
+                Some(popup_event_tx_clone.clone()),
+            );
         }
         glib::ControlFlow::Continue
     });
 
-    // Обработка UI событий (например, запрос на показ истории)
+    // Обработка UI событий
     glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
         while let Ok(event) = ui_rx.try_recv() {
             match event {
                 UiEvent::ShowHistory => {
-                    // TODO: Показать окно истории
                     eprintln!("[UI] Show history requested");
                 }
                 UiEvent::HideHistory => {
