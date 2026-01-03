@@ -371,14 +371,22 @@ impl Bar {
             });
         }
 
-        // Обновление системных ресурсов каждые 2 секунды
-        let system_resources_widget = self.system_resources_widget.clone();
-        glib::timeout_add_local(std::time::Duration::from_secs(2), move || {
-            if let Some(ref widget) = system_resources_widget {
-                widget.lock().unwrap().update();
-            }
-            glib::ControlFlow::Continue
-        });
+        // Подписка на обновления системных ресурсов
+        if let Some(ref widget) = self.system_resources_widget {
+            let widget = widget.clone();
+            let (sender, receiver) = async_channel::unbounded::<()>();
+
+            self.shared_state.subscribe_system_resources(move || {
+                let _ = sender.send_blocking(());
+            });
+
+            glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+                while receiver.try_recv().is_ok() {
+                    widget.lock().unwrap().update();
+                }
+                glib::ControlFlow::Continue
+            });
+        }
 
         // Первоначальное обновление
         if let Some(ref widget) = self.workspaces_widget {

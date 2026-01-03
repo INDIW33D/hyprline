@@ -1,4 +1,4 @@
-use crate::domain::models::{BatteryInfo, KeyboardLayout, TrayItem, VolumeInfo};
+use crate::domain::models::{BatteryInfo, KeyboardLayout, NetworkConnection, SystemResources, TrayItem, VolumeInfo};
 use std::sync::{Arc, Mutex, RwLock};
 
 /// Тип callback-функции для обновления виджетов
@@ -34,6 +34,8 @@ pub struct SharedState {
     pub keyboard_layout: RwLock<Option<KeyboardLayout>>,
     pub notification_count: RwLock<usize>,
     pub brightness: RwLock<u32>,
+    pub system_resources: RwLock<Option<SystemResources>>,
+    pub network_connection: RwLock<Option<NetworkConnection>>,
 
     // Callback-и для обновления UI
     battery_callbacks: Mutex<Callbacks>,
@@ -42,6 +44,8 @@ pub struct SharedState {
     keyboard_layout_callbacks: Mutex<Callbacks>,
     notification_callbacks: Mutex<Callbacks>,
     brightness_callbacks: Mutex<Callbacks>,
+    system_resources_callbacks: Mutex<Callbacks>,
+    network_callbacks: Mutex<Callbacks>,
 }
 
 impl SharedState {
@@ -53,12 +57,16 @@ impl SharedState {
             keyboard_layout: RwLock::new(None),
             notification_count: RwLock::new(0),
             brightness: RwLock::new(100),
+            system_resources: RwLock::new(None),
+            network_connection: RwLock::new(None),
             battery_callbacks: Mutex::new(Callbacks::new()),
             volume_callbacks: Mutex::new(Callbacks::new()),
             tray_callbacks: Mutex::new(Callbacks::new()),
             keyboard_layout_callbacks: Mutex::new(Callbacks::new()),
             notification_callbacks: Mutex::new(Callbacks::new()),
             brightness_callbacks: Mutex::new(Callbacks::new()),
+            system_resources_callbacks: Mutex::new(Callbacks::new()),
+            network_callbacks: Mutex::new(Callbacks::new()),
         }
     }
 
@@ -162,6 +170,40 @@ impl SharedState {
         F: Fn() + Send + Sync + 'static,
     {
         self.brightness_callbacks.lock().unwrap().add(Box::new(callback));
+    }
+
+    // === System Resources ===
+    pub fn update_system_resources(&self, resources: Option<SystemResources>) {
+        *self.system_resources.write().unwrap() = resources;
+        self.system_resources_callbacks.lock().unwrap().notify_all();
+    }
+
+    pub fn get_system_resources(&self) -> Option<SystemResources> {
+        self.system_resources.read().unwrap().clone()
+    }
+
+    pub fn subscribe_system_resources<F>(&self, callback: F)
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.system_resources_callbacks.lock().unwrap().add(Box::new(callback));
+    }
+
+    // === Network ===
+    pub fn update_network(&self, connection: Option<NetworkConnection>) {
+        *self.network_connection.write().unwrap() = connection;
+        self.network_callbacks.lock().unwrap().notify_all();
+    }
+
+    pub fn get_network(&self) -> Option<NetworkConnection> {
+        self.network_connection.read().unwrap().clone()
+    }
+
+    pub fn subscribe_network<F>(&self, callback: F)
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.network_callbacks.lock().unwrap().add(Box::new(callback));
     }
 }
 

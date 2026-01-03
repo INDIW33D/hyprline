@@ -6,6 +6,7 @@ use gtk4::{
 use std::sync::Arc;
 use crate::domain::network_service::NetworkService;
 use crate::domain::models::{NetworkConnection, NetworkConnectionType, WiFiNetwork};
+use crate::shared_state::get_shared_state;
 
 pub struct NetworkWidget {
     pub container: GtkBox,
@@ -22,8 +23,9 @@ impl NetworkWidget {
 
         container.append(&icon_label);
 
-        // Обновляем начальное состояние
-        Self::update_display(&icon_label, network_service.get_current_connection());
+        // Обновляем начальное состояние из SharedState
+        let shared_state = get_shared_state();
+        Self::update_display(&icon_label, shared_state.get_network());
 
         // Создаем popover для управления сетями
         let popover = Self::create_network_popover(network_service.clone());
@@ -39,17 +41,20 @@ impl NetworkWidget {
         }
         container.add_controller(gesture);
 
-        // Подписка на обновления
+        // Подписка на обновления через SharedState
+        let (tx, rx) = async_channel::unbounded::<()>();
         let icon_label_clone = icon_label.clone();
-        let network_service_clone = network_service.clone();
 
-        glib::spawn_future_local(async move {
-            loop {
-                glib::timeout_future(std::time::Duration::from_secs(2)).await;
+        shared_state.subscribe_network(move || {
+            let _ = tx.send_blocking(());
+        });
 
-                let connection = network_service_clone.get_current_connection();
+        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            while rx.try_recv().is_ok() {
+                let connection = get_shared_state().get_network();
                 Self::update_display(&icon_label_clone, connection);
             }
+            glib::ControlFlow::Continue
         });
 
         Self { container }

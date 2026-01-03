@@ -1,9 +1,11 @@
 use gtk4::prelude::*;
 use std::sync::Arc;
 use crate::domain::system_resources_service::SystemResourcesService;
+use crate::shared_state::get_shared_state;
 
 pub struct SystemResourcesWidget {
     container: gtk4::Box,
+    #[allow(dead_code)]
     service: Arc<dyn SystemResourcesService + Send + Sync>,
 }
 
@@ -28,8 +30,9 @@ impl SystemResourcesWidget {
             self.container.remove(&child);
         }
 
-        // Получаем информацию о ресурсах
-        if let Some(resources) = self.service.get_resources() {
+        // Получаем информацию о ресурсах из SharedState
+        let shared_state = get_shared_state();
+        if let Some(resources) = shared_state.get_system_resources() {
             // CPU иконка и процент
             let cpu_icon = gtk4::Label::new(Some("󰘚")); // Nerd Font: nf-md-cpu_64_bit
             cpu_icon.add_css_class("system-resources-icon");

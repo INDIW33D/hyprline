@@ -279,6 +279,28 @@ fn build_ui(app: &gtk4::Application) {
         });
     }
 
+    // Централизованное обновление системных ресурсов каждые 2 секунды
+    {
+        let shared_state = shared_state.clone();
+        let system_resources_service = system_resources_service.clone();
+        glib::timeout_add_local(std::time::Duration::from_secs(2), move || {
+            let resources = system_resources_service.get_resources();
+            shared_state.update_system_resources(resources);
+            glib::ControlFlow::Continue
+        });
+    }
+
+    // Централизованное обновление сети каждые 2 секунды
+    {
+        let shared_state = shared_state.clone();
+        let network_service = network_service.clone();
+        glib::timeout_add_local(std::time::Duration::from_secs(2), move || {
+            let connection = network_service.get_current_connection();
+            shared_state.update_network(connection);
+            glib::ControlFlow::Continue
+        });
+    }
+
     // Инициализация начального состояния
     if let Some(info) = battery_service.get_battery_info() {
         shared_state.update_battery(Some(info));
@@ -293,6 +315,10 @@ fn build_ui(app: &gtk4::Application) {
     if let Ok(brightness) = brightness_service.get_brightness() {
         shared_state.update_brightness(brightness);
     }
+    // Инициализация системных ресурсов
+    shared_state.update_system_resources(system_resources_service.get_resources());
+    // Инициализация сети
+    shared_state.update_network(network_service.get_current_connection());
 
     let workspace_keys = parse_workspace_bindings();
     let monitors = service.get_monitors();
