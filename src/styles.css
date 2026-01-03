@@ -1113,6 +1113,7 @@ headerbar windowcontrols button.close:hover image {
     background: transparent;
     border-radius: 4px;
     margin: 2px 0;
+    padding: 4px;
 }
 
 .settings-widget-row:hover {
@@ -1120,9 +1121,9 @@ headerbar windowcontrols button.close:hover image {
 }
 
 .settings-widget-icon {
-    font-size: 18px;
+    font-size: 16px;
     color: #888888;
-    min-width: 24px;
+    min-width: 20px;
 }
 
 .settings-widget-name {
@@ -1136,14 +1137,14 @@ headerbar windowcontrols button.close:hover image {
 .settings-zone-frame {
     background: #1a1a1a;
     border: 1px solid #333333;
-    border-radius: 8px;
+    border-radius: 6px;
 }
 
 .settings-zone-frame > label {
     color: #55aaff;
     font-weight: bold;
-    font-size: 14px;
-    padding: 0 8px;
+    font-size: 12px;
+    padding: 0 4px;
 }
 
 .settings-zone-list {
@@ -1154,9 +1155,9 @@ headerbar windowcontrols button.close:hover image {
     background: transparent;
     border: none;
     color: #666666;
-    font-size: 12px;
-    min-width: 20px;
-    min-height: 16px;
+    font-size: 10px;
+    min-width: 16px;
+    min-height: 12px;
     padding: 0;
 }
 
@@ -1169,11 +1170,11 @@ headerbar windowcontrols button.close:hover image {
     background: #333333;
     border: none;
     color: #888888;
-    font-size: 14px;
-    min-width: 28px;
-    min-height: 24px;
-    padding: 2px 6px;
-    border-radius: 4px;
+    font-size: 12px;
+    min-width: 22px;
+    min-height: 18px;
+    padding: 1px 4px;
+    border-radius: 3px;
 }
 
 .settings-zone-btn:hover {

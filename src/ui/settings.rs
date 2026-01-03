@@ -347,34 +347,31 @@ impl SettingsWindow {
     }
 
     pub fn create_widgets_settings() -> GtkBox {
-        let container = GtkBox::new(Orientation::Vertical, 16);
+        let container = GtkBox::new(Orientation::Vertical, 8);
         container.add_css_class("settings-widgets");
-        container.set_margin_start(16);
-        container.set_margin_end(16);
-        container.set_margin_top(16);
-        container.set_margin_bottom(16);
+        container.set_margin_start(8);
+        container.set_margin_end(8);
+        container.set_margin_top(8);
+        container.set_margin_bottom(8);
 
-        // Заголовок
+        // Заголовок и описание в одну строку
+        let header_box = GtkBox::new(Orientation::Horizontal, 12);
+        header_box.set_halign(gtk4::Align::Start);
+
         let header = Label::new(Some("Widget Layout"));
         header.add_css_class("settings-section-header");
-        header.set_halign(gtk4::Align::Start);
-        container.append(&header);
+        header_box.append(&header);
 
         // Показываем какой профиль редактируется
         let profile_info = {
             let config = get_config().read().unwrap();
-            format!("Editing profile: {}", config.active_profile)
+            format!("({})", config.active_profile)
         };
         let profile_label = Label::new(Some(&profile_info));
         profile_label.add_css_class("settings-profile-info");
-        profile_label.set_halign(gtk4::Align::Start);
-        container.append(&profile_label);
+        header_box.append(&profile_label);
 
-        let description = Label::new(Some("Use arrows to reorder widgets and move between zones."));
-        description.add_css_class("settings-description");
-        description.set_halign(gtk4::Align::Start);
-        description.set_wrap(true);
-        container.append(&description);
+        container.append(&header_box);
 
         // Загружаем данные из конфигурации
         let left_widgets: Rc<RefCell<Vec<(WidgetType, bool)>>> = Rc::new(RefCell::new(Vec::new()));
@@ -408,13 +405,13 @@ impl SettingsWindow {
         }
 
         // Создаём Box для каждой зоны с уникальными CSS классами
-        let left_list = Rc::new(GtkBox::new(Orientation::Vertical, 4));
+        let left_list = Rc::new(GtkBox::new(Orientation::Vertical, 2));
         left_list.add_css_class("zone-left-list");
 
-        let center_list = Rc::new(GtkBox::new(Orientation::Vertical, 4));
+        let center_list = Rc::new(GtkBox::new(Orientation::Vertical, 2));
         center_list.add_css_class("zone-center-list");
 
-        let right_list = Rc::new(GtkBox::new(Orientation::Vertical, 4));
+        let right_list = Rc::new(GtkBox::new(Orientation::Vertical, 2));
         right_list.add_css_class("zone-right-list");
 
         // Скроллируемый контейнер для зон
@@ -422,14 +419,15 @@ impl SettingsWindow {
         zones_scroll.set_vexpand(true);
         zones_scroll.set_hexpand(true);
         zones_scroll.set_policy(gtk4::PolicyType::Automatic, gtk4::PolicyType::Automatic);
-        zones_scroll.set_margin_top(8);
+        zones_scroll.set_margin_top(4);
 
-        // Контейнер для трёх зон - вертикальный для адаптивности
-        let zones_box = GtkBox::new(Orientation::Vertical, 12);
-        zones_box.set_margin_start(8);
-        zones_box.set_margin_end(8);
-        zones_box.set_margin_top(8);
-        zones_box.set_margin_bottom(8);
+        // Контейнер для трёх зон - горизонтальный
+        let zones_box = GtkBox::new(Orientation::Horizontal, 8);
+        zones_box.set_margin_start(4);
+        zones_box.set_margin_end(4);
+        zones_box.set_margin_top(4);
+        zones_box.set_homogeneous(true); // Равномерное распределение ширины;
+        zones_box.set_margin_bottom(4);
 
         // Функция для создания колонки зоны (компактная версия)
         fn create_zone_column(
@@ -444,14 +442,17 @@ impl SettingsWindow {
             let frame = Frame::new(Some(title));
             frame.add_css_class("settings-zone-frame");
             frame.set_hexpand(true);
+            frame.set_vexpand(true);
 
-            let content = GtkBox::new(Orientation::Vertical, 4);
-            content.set_margin_start(8);
-            content.set_margin_end(8);
-            content.set_margin_top(8);
-            content.set_margin_bottom(8);
+            let content = GtkBox::new(Orientation::Vertical, 2);
+            content.set_margin_start(4);
+            content.set_margin_end(4);
+            content.set_margin_top(4);
+            content.set_margin_bottom(4);
+            content.set_vexpand(true);
 
             list_box.add_css_class("settings-zone-list");
+            list_box.set_vexpand(true);
 
             // Заполняем список
             for (widget_type, enabled) in widgets.borrow().iter() {
@@ -625,12 +626,12 @@ fn create_widget_row(
     center_list: Rc<GtkBox>,
     right_list: Rc<GtkBox>,
 ) -> GtkBox {
-    let row = GtkBox::new(Orientation::Horizontal, 8);
+    let row = GtkBox::new(Orientation::Vertical, 2);
     row.add_css_class("settings-widget-row");
-    row.set_margin_start(8);
-    row.set_margin_end(8);
-    row.set_margin_top(4);
-    row.set_margin_bottom(4);
+    row.set_margin_start(4);
+    row.set_margin_end(4);
+    row.set_margin_top(2);
+    row.set_margin_bottom(2);
 
     // Сохраняем тип виджета в data
     unsafe {
@@ -638,8 +639,11 @@ fn create_widget_row(
         row.set_data("enabled", enabled as i32);
     }
 
+    // Верхняя строка: кнопки вверх/вниз, иконка и название
+    let top_row = GtkBox::new(Orientation::Horizontal, 4);
+
     // Кнопки вверх/вниз
-    let move_box = GtkBox::new(Orientation::Vertical, 2);
+    let move_box = GtkBox::new(Orientation::Horizontal, 1);
 
     let up_btn = Button::new();
     up_btn.set_label("󰁝");
@@ -677,22 +681,27 @@ fn create_widget_row(
 
     move_box.append(&up_btn);
     move_box.append(&down_btn);
-    row.append(&move_box);
+    top_row.append(&move_box);
 
     // Иконка
     let icon = Label::new(Some(widget_type.icon()));
     icon.add_css_class("settings-widget-icon");
-    row.append(&icon);
+    top_row.append(&icon);
 
     // Название
     let name = Label::new(Some(widget_type.name()));
     name.add_css_class("settings-widget-name");
     name.set_halign(gtk4::Align::Start);
     name.set_hexpand(true);
-    row.append(&name);
+    top_row.append(&name);
+
+    row.append(&top_row);
+
+    // Нижняя строка: кнопки зон и переключатель
+    let bottom_row = GtkBox::new(Orientation::Horizontal, 4);
 
     // Кнопки перемещения между зонами
-    let zone_box = GtkBox::new(Orientation::Horizontal, 4);
+    let zone_box = GtkBox::new(Orientation::Horizontal, 2);
 
     let left_btn = Button::new();
     left_btn.set_label("󰁍");
@@ -748,9 +757,9 @@ fn create_widget_row(
 
     zone_box.append(&left_btn);
     zone_box.append(&right_btn);
-    row.append(&zone_box);
+    bottom_row.append(&zone_box);
 
-    // Переключатель
+    // Переключатель сразу после кнопок зон
     let switch = Switch::new();
     switch.set_active(enabled);
     switch.add_css_class("settings-widget-switch");
@@ -765,7 +774,8 @@ fn create_widget_row(
         glib::Propagation::Proceed
     });
 
-    row.append(&switch);
+    bottom_row.append(&switch);
+    row.append(&bottom_row);
 
     row
 }
