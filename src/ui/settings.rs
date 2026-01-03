@@ -185,9 +185,6 @@ impl SettingsWindow {
         let reset_button = Button::with_label("Reset to Default");
         reset_button.add_css_class("settings-button-secondary");
 
-        let left_list_clone = left_list.clone();
-        let center_list_clone = center_list.clone();
-        let right_list_clone = right_list.clone();
 
         reset_button.connect_clicked(move |btn| {
             // Сохраняем дефолтный конфиг

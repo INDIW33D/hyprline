@@ -232,7 +232,7 @@ box.zone-right {
 .tray-context-menu {
     background: transparent;
     padding: 4px;
-    min-width: 120px;
+    min-width: 150px;
 }
 
 .menu-header {
@@ -245,17 +245,61 @@ box.zone-right {
 
 .menu-item {
     color: #ffffff;
-    padding: 6px 12px;
+    padding: 2px 4px;
     text-align: left;
     border-radius: 2px;
 }
 
-.menu-item:hover {
+.menu-item-button {
+    padding: 0;
+    margin: 0;
+}
+
+.menu-item-button:hover .menu-item {
     background: #ffffff20;
 }
 
-.menu-item:disabled {
+.menu-item-disabled {
     color: #666666;
+}
+
+.menu-toggle-icon {
+    color: #55aaff;
+    font-size: 14px;
+    min-width: 20px;
+}
+
+.menu-separator {
+    background: #444444;
+    min-height: 1px;
+    margin: 4px 8px;
+}
+
+/* Submenu */
+.submenu-container {
+    margin: 0;
+}
+
+.submenu-header {
+    color: #ffffff;
+    padding: 4px 8px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.submenu-header:hover {
+    background: #ffffff20;
+}
+
+.submenu-arrow {
+    color: #888888;
+    font-size: 12px;
+}
+
+.submenu-children {
+    border-left: 1px solid #444444;
+    margin-left: 8px;
+    padding-left: 4px;
 }
 
 /* Battery Widget */

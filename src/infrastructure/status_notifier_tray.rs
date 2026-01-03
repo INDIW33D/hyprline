@@ -359,12 +359,11 @@ impl StatusNotifierTrayService {
             .build()
             .await?;
 
-        // Получаем layout меню (parent_id=0 для root, recursion_depth=1 для одного уровня)
-        let (_, layout) = menu_proxy.get_layout(0, 1, vec![]).await?;
+        // Получаем layout меню (parent_id=0 для root, recursion_depth=-1 для полной рекурсии)
+        let (_, layout) = menu_proxy.get_layout(0, -1, vec![]).await?;
 
         // Парсим layout - теперь это кортеж (id, properties, children)
         let items = Self::parse_menu_from_tuple(&layout)?;
-
 
         Ok(items)
     }
@@ -378,66 +377,118 @@ impl StatusNotifierTrayService {
         let (_id, _properties, children) = layout;
 
         for child in children.iter() {
-            // Каждый child это тоже структура (id, properties, children)
-            if let Ok(child_struct) = child.downcast_ref::<zbus::zvariant::Structure>() {
-                let fields = child_struct.fields();
+            if let Some(item) = Self::parse_menu_item(child) {
+                items.push(item);
+            }
+        }
 
-                if fields.len() >= 2 {
-                    // id
-                    let id = if let Ok(id_val) = fields[0].downcast_ref::<i32>() {
-                        id_val
-                    } else {
-                        0
-                    };
+        Ok(items)
+    }
 
-                    // properties (Dict)
-                    if let Ok(props) = fields[1].downcast_ref::<zbus::zvariant::Dict>() {
-                        let mut label = String::new();
-                        let mut enabled = true;
-                        let mut visible = true;
-                        let mut is_separator = false;
+    fn parse_menu_item(value: &zbus::zvariant::OwnedValue) -> Option<crate::domain::models::MenuItem> {
+        use crate::domain::models::MenuItem;
 
-                        for (key_val, value_val) in props.iter() {
-                            if let Ok(key_str) = key_val.downcast_ref::<&str>() {
-                                match key_str {
-                                    "label" => {
-                                        if let Ok(s) = value_val.downcast_ref::<&str>() {
-                                            label = s.to_string();
-                                        }
-                                    }
-                                    "enabled" => {
-                                        if let Ok(b) = value_val.downcast_ref::<bool>() {
-                                            enabled = b;
-                                        }
-                                    }
-                                    "visible" => {
-                                        if let Ok(b) = value_val.downcast_ref::<bool>() {
-                                            visible = b;
-                                        }
-                                    }
-                                    "type" => {
-                                        if let Ok(s) = value_val.downcast_ref::<&str>() {
-                                            is_separator = s == "separator";
-                                        }
-                                    }
-                                    _ => {}
-                                }
+        // Каждый child это структура (id, properties, children)
+        let child_struct = value.downcast_ref::<zbus::zvariant::Structure>().ok()?;
+        let fields = child_struct.fields();
+
+        if fields.len() < 2 {
+            return None;
+        }
+
+        // id
+        let id = fields[0].downcast_ref::<i32>().unwrap_or(0);
+
+        // properties (Dict)
+        let props = fields[1].downcast_ref::<zbus::zvariant::Dict>().ok()?;
+
+        let mut label = String::new();
+        let mut enabled = true;
+        let mut visible = true;
+        let mut is_separator = false;
+        let mut toggle_type: Option<String> = None;
+        let mut toggle_state: i32 = -1;
+        let mut icon_name: Option<String> = None;
+        let mut icon_data: Option<Vec<u8>> = None;
+
+        for (key_val, value_val) in props.iter() {
+            if let Ok(key_str) = key_val.downcast_ref::<&str>() {
+                match key_str {
+                    "label" => {
+                        if let Ok(s) = value_val.downcast_ref::<&str>() {
+                            label = s.to_string();
+                        }
+                    }
+                    "enabled" => {
+                        if let Ok(b) = value_val.downcast_ref::<bool>() {
+                            enabled = b;
+                        }
+                    }
+                    "visible" => {
+                        if let Ok(b) = value_val.downcast_ref::<bool>() {
+                            visible = b;
+                        }
+                    }
+                    "type" => {
+                        if let Ok(s) = value_val.downcast_ref::<&str>() {
+                            is_separator = s == "separator";
+                        }
+                    }
+                    "toggle-type" => {
+                        if let Ok(s) = value_val.downcast_ref::<&str>() {
+                            if !s.is_empty() {
+                                toggle_type = Some(s.to_string());
                             }
                         }
+                    }
+                    "toggle-state" => {
+                        if let Ok(state) = value_val.downcast_ref::<i32>() {
+                            toggle_state = state;
+                        }
+                    }
+                    "icon-name" => {
+                        if let Ok(s) = value_val.downcast_ref::<&str>() {
+                            if !s.is_empty() {
+                                icon_name = Some(s.to_string());
+                            }
+                        }
+                    }
+                    "icon-data" => {
+                        // icon-data обычно передаётся как массив байтов, пропускаем пока
+                        // TODO: реализовать если нужно
+                    }
+                    _ => {}
+                }
+            }
+        }
 
-                        items.push(MenuItem {
-                            id,
-                            label,
-                            enabled,
-                            visible,
-                            is_separator,
-                        });
+        // Парсим дочерние элементы если есть
+        let mut children_items = Vec::new();
+        if fields.len() >= 3 {
+            if let Ok(children_array) = fields[2].downcast_ref::<zbus::zvariant::Array>() {
+                for child_val in children_array.iter() {
+                    // Конвертируем Value в OwnedValue правильно
+                    if let Ok(owned) = zbus::zvariant::OwnedValue::try_from(child_val.clone()) {
+                        if let Some(child_item) = Self::parse_menu_item(&owned) {
+                            children_items.push(child_item);
+                        }
                     }
                 }
             }
         }
 
-        Ok(items)
+        Some(MenuItem {
+            id,
+            label,
+            enabled,
+            visible,
+            is_separator,
+            toggle_type,
+            toggle_state,
+            icon_name,
+            icon_data,
+            children: children_items,
+        })
     }
 
     async fn activate_menu_item_async(service: &str, menu_path: &str, item_id: i32) {

@@ -68,6 +68,11 @@ pub struct MenuItem {
     pub enabled: bool,
     pub visible: bool,
     pub is_separator: bool,
+    pub toggle_type: Option<String>,  // "checkmark" or "radio"
+    pub toggle_state: i32,            // 0 = off, 1 = on, -1 = indeterminate
+    pub icon_name: Option<String>,
+    pub icon_data: Option<Vec<u8>>,
+    pub children: Vec<MenuItem>,      // Для подменю
 }
 
 // DateTime models

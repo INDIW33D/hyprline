@@ -212,13 +212,138 @@ impl SystemTrayWidget {
 
             if item.is_separator {
                 let separator = gtk4::Separator::new(gtk4::Orientation::Horizontal);
+                separator.add_css_class("menu-separator");
                 menu_box.append(&separator);
                 continue;
             }
 
+            // Удаляем мнемонические underscore из label (например "_File" -> "File")
+            let clean_label = Self::remove_mnemonic(&item.label);
+
+            // Проверяем, есть ли подменю
+            if !item.children.is_empty() {
+                // Создаём expander для подменю
+                let submenu_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+                submenu_box.add_css_class("submenu-container");
+
+                let header = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
+                header.add_css_class("submenu-header");
+                header.set_margin_start(8);
+                header.set_margin_end(8);
+                header.set_margin_top(4);
+                header.set_margin_bottom(4);
+
+                let label_widget = gtk4::Label::new(Some(&clean_label));
+                label_widget.set_halign(gtk4::Align::Start);
+                label_widget.set_hexpand(true);
+                header.append(&label_widget);
+
+                let arrow = gtk4::Label::new(Some(""));
+                arrow.add_css_class("submenu-arrow");
+                header.append(&arrow);
+
+                submenu_box.append(&header);
+
+                // Контейнер для дочерних элементов (изначально скрыт)
+                let children_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+                children_box.add_css_class("submenu-children");
+                children_box.set_margin_start(16);
+                children_box.set_visible(false);
+
+                Self::build_menu_items(
+                    &children_box,
+                    &item.children,
+                    service.clone(),
+                    service_name.clone(),
+                    menu_path.clone(),
+                    popover.clone(),
+                );
+
+                submenu_box.append(&children_box);
+
+                // Toggle подменю по клику
+                let gesture = gtk4::GestureClick::new();
+                let children_box_weak = children_box.downgrade();
+                let arrow_weak = arrow.downgrade();
+                gesture.connect_released(move |_, _, _, _| {
+                    if let Some(children) = children_box_weak.upgrade() {
+                        let is_visible = children.is_visible();
+                        children.set_visible(!is_visible);
+
+                        if let Some(arrow_label) = arrow_weak.upgrade() {
+                            arrow_label.set_text(if is_visible { "" } else { "" });
+                        }
+                    }
+                });
+                header.add_controller(gesture);
+
+                menu_box.append(&submenu_box);
+                continue;
+            }
+
+            // Обычный пункт меню
+            let menu_item_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
+            menu_item_box.add_css_class("menu-item");
+            menu_item_box.set_margin_start(8);
+            menu_item_box.set_margin_end(8);
+            menu_item_box.set_margin_top(4);
+            menu_item_box.set_margin_bottom(4);
+
+            // Иконка toggle (checkbox/radio)
+            if let Some(ref toggle_type) = item.toggle_type {
+                let toggle_icon = if toggle_type == "checkmark" {
+                    match item.toggle_state {
+                        1 => "󰄵", // checked
+                        0 => "󰄱", // unchecked
+                        _ => "󰄮", // indeterminate
+                    }
+                } else if toggle_type == "radio" {
+                    match item.toggle_state {
+                        1 => "󰋙", // selected
+                        _ => "󰋘", // unselected
+                    }
+                } else {
+                    ""
+                };
+
+                if !toggle_icon.is_empty() {
+                    let toggle_label = gtk4::Label::new(Some(toggle_icon));
+                    toggle_label.add_css_class("menu-toggle-icon");
+                    menu_item_box.append(&toggle_label);
+                }
+            }
+
+            // Иконка элемента (если есть)
+            if let Some(ref icon_name) = item.icon_name {
+                if let Some(display) = gtk4::gdk::Display::default() {
+                    let icon_theme = gtk4::IconTheme::for_display(&display);
+                    let paintable = icon_theme.lookup_icon(
+                        icon_name,
+                        &[],
+                        16,
+                        1,
+                        gtk4::TextDirection::None,
+                        gtk4::IconLookupFlags::empty(),
+                    );
+                    let image = gtk4::Image::from_paintable(Some(&paintable));
+                    image.set_pixel_size(16);
+                    menu_item_box.append(&image);
+                }
+            }
+
+            // Label
+            let label = gtk4::Label::new(Some(&clean_label));
+            label.set_halign(gtk4::Align::Start);
+            label.set_hexpand(true);
+            if !item.enabled {
+                label.add_css_class("menu-item-disabled");
+            }
+            menu_item_box.append(&label);
+
+            // Создаём кнопку
             let menu_button = gtk4::Button::new();
-            menu_button.set_label(&item.label);
-            menu_button.add_css_class("menu-item");
+            menu_button.set_child(Some(&menu_item_box));
+            menu_button.add_css_class("menu-item-button");
             menu_button.set_has_frame(false);
             menu_button.set_halign(gtk4::Align::Fill);
             menu_button.set_sensitive(item.enabled);
@@ -238,6 +363,28 @@ impl SystemTrayWidget {
 
             menu_box.append(&menu_button);
         }
+    }
+
+    /// Удаляет мнемонические underscore из строки
+    /// "_File" -> "File", "E_xit" -> "Exit", "__Test" -> "_Test"
+    fn remove_mnemonic(s: &str) -> String {
+        let mut result = String::with_capacity(s.len());
+        let mut chars = s.chars().peekable();
+
+        while let Some(c) = chars.next() {
+            if c == '_' {
+                // Если следующий символ тоже '_', то оставляем один
+                if chars.peek() == Some(&'_') {
+                    result.push('_');
+                    chars.next(); // Пропускаем второй underscore
+                }
+                // Иначе просто пропускаем underscore (это мнемоника)
+            } else {
+                result.push(c);
+            }
+        }
+
+        result
     }
 
     /// Показать fallback меню (когда DBusMenu недоступно)
