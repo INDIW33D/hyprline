@@ -6,6 +6,7 @@ use std::rc::Rc;
 use crate::domain::notification_service::NotificationService;
 use crate::domain::models::{Notification, NotificationUrgency};
 use crate::shared_state::get_shared_state;
+use crate::config::get_config;
 
 pub struct NotificationWidget {
     button: gtk4::Button,
@@ -149,14 +150,23 @@ impl NotificationWidget {
             return;
         }
 
+        // Загружаем конфигурацию центра уведомлений
+        let config = get_config().read().unwrap();
+        let nc_config = config.notification_center.clone();
+        drop(config); // Освобождаем lock сразу
+
+        // Создаём Popover
         let popover = gtk4::Popover::new();
         popover.set_parent(button);
-        popover.set_position(gtk4::PositionType::Bottom);
+        popover.set_autohide(true);
+        popover.add_css_class("notification-popover");
 
         let main_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         main_box.add_css_class("notification-history");
-        main_box.set_width_request(350);
-        main_box.set_height_request(400);
+        
+        // Устанавливаем размеры из конфигурации
+        main_box.set_width_request(nc_config.width);
+        main_box.set_height_request(nc_config.height);
 
         // Заголовок с кнопкой очистки
         let header = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
@@ -298,7 +308,7 @@ impl NotificationWidget {
             }
         });
 
-        // Также добавляем GestureClick
+        // Также добавляем GestureClick для Clear All
         let gesture_clear = gtk4::GestureClick::new();
         let service_gesture_clear = Arc::clone(&service);
         let notifications_box_gesture_clear = notifications_box.clone();

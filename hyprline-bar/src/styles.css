@@ -465,22 +465,26 @@ box.zone-right {
     font-weight: bold;
 }
 
+/* Notification Center Window (layer-shell) */
+.notification-center-window {
+    background: #000000EE;
+}
+
 /* Notification History Popover */
 .notification-history {
-    background: #000000DD;
+    background: transparent;
     padding: 8px;
-    border-radius: 4px;
 }
 
 .notification-header {
-    padding: 8px;
+    padding: 12px;
     border-bottom: 1px solid #333333;
     margin-bottom: 8px;
 }
 
 .notification-title {
     color: #ffffff;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
 }
 
@@ -497,6 +501,17 @@ box.zone-right {
 
 .notification-clear-button:active {
     background: #ffffff30;
+}
+
+.notification-close-window {
+    color: #888888;
+    padding: 6px;
+    border-radius: 4px;
+}
+
+.notification-close-window:hover {
+    background: #ffffff20;
+    color: #ffffff;
 }
 
 .notifications-list {

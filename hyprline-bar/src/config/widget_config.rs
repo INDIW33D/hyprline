@@ -112,16 +112,18 @@ impl Default for WidgetProfile {
                 WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Left, order: 2 },
                 WidgetConfig { widget_type: WidgetType::Submap, enabled: true, position: WidgetPosition::Left, order: 3 },
 
+                // Center zone
+                WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Center, order: 0 },
+
                 // Right zone
                 WidgetConfig { widget_type: WidgetType::SystemTray, enabled: true, position: WidgetPosition::Right, order: 0 },
                 WidgetConfig { widget_type: WidgetType::SystemResources, enabled: true, position: WidgetPosition::Right, order: 1 },
                 WidgetConfig { widget_type: WidgetType::Network, enabled: true, position: WidgetPosition::Right, order: 2 },
                 WidgetConfig { widget_type: WidgetType::Volume, enabled: true, position: WidgetPosition::Right, order: 3 },
-                WidgetConfig { widget_type: WidgetType::Brightness, enabled: true, position: WidgetPosition::Right, order: 4 },
-                WidgetConfig { widget_type: WidgetType::Battery, enabled: true, position: WidgetPosition::Right, order: 5 },
-                WidgetConfig { widget_type: WidgetType::KeyboardLayout, enabled: true, position: WidgetPosition::Right, order: 6 },
+                WidgetConfig { widget_type: WidgetType::KeyboardLayout, enabled: true, position: WidgetPosition::Right, order: 4 },
+                WidgetConfig { widget_type: WidgetType::Brightness, enabled: true, position: WidgetPosition::Right, order: 5 },
+                WidgetConfig { widget_type: WidgetType::Battery, enabled: true, position: WidgetPosition::Right, order: 6 },
                 WidgetConfig { widget_type: WidgetType::Notifications, enabled: true, position: WidgetPosition::Right, order: 7 },
-                WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Right, order: 8 },
             ],
         }
     }
@@ -156,19 +158,37 @@ impl Default for BarPadding {
     fn default() -> Self {
         Self {
             top: 4,
-            bottom: 4,
-            left: 20,
-            right: 20,
+            bottom: 3,
+            left: 7,
+            right: 7,
         }
     }
 }
 
 fn default_widget_spacing() -> i32 {
-    8
+    2
 }
 
 fn default_notification_monitor() -> String {
     "".to_string() // Пустая строка = первый доступный монитор
+}
+
+/// Настройки центра уведомлений (Popover)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationCenterConfig {
+    /// Ширина панели в пикселях
+    pub width: i32,
+    /// Высота панели в пикселях
+    pub height: i32,
+}
+
+impl Default for NotificationCenterConfig {
+    fn default() -> Self {
+        Self {
+            width: 400,
+            height: 910,
+        }
+    }
 }
 
 /// Главная конфигурация панели
@@ -189,6 +209,9 @@ pub struct HyprlineConfig {
     /// Монитор для показа уведомлений (пустая строка = первый доступный)
     #[serde(default = "default_notification_monitor")]
     pub notification_monitor: String,
+    /// Настройки центра уведомлений
+    #[serde(default)]
+    pub notification_center: NotificationCenterConfig,
 
     /// Обратная совместимость - старое поле widgets
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -223,6 +246,7 @@ impl Default for HyprlineConfig {
             padding: BarPadding::default(),
             widget_spacing: default_widget_spacing(),
             notification_monitor: default_notification_monitor(),
+            notification_center: NotificationCenterConfig::default(),
             widgets: Vec::new(),
         }
     }

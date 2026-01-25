@@ -5,15 +5,20 @@ BINDIR = $(PREFIX)/bin
 SYSTEMD_USER_DIR = $(HOME)/.config/systemd/user
 
 build:
-	@touch hyprline-bar/src/main.rs hyprline-notifications/src/main.rs
+	@rm -f target/release/hyprline-bar target/release/hyprline-notifications
+	@rm -rf target/release/deps/hyprline*
 	cargo build --release
 
 install: build
 	@echo "Stopping services for update..."
 	-@systemctl --user stop hyprline-bar.service 2>/dev/null || true
 	-@systemctl --user stop hyprline-notifications.service 2>/dev/null || true
+	-@pkill -9 hyprline-bar 2>/dev/null || true
+	-@pkill -9 hyprline-notifications 2>/dev/null || true
+	@sleep 1
 	@echo "Installing binaries to $(BINDIR)..."
 	@mkdir -p $(BINDIR)
+	@rm -f $(BINDIR)/hyprline-bar $(BINDIR)/hyprline-notifications
 	@cp target/release/hyprline-bar $(BINDIR)/
 	@cp target/release/hyprline-notifications $(BINDIR)/
 	@echo "Installing systemd user services..."
@@ -45,8 +50,11 @@ reinstall: uninstall install enable
 
 enable:
 	@echo "Enabling and starting services..."
-	@systemctl --user enable --now hyprline-bar.service
-	@systemctl --user enable --now hyprline-notifications.service
+	@systemctl --user enable hyprline-notifications.service
+	@systemctl --user enable hyprline-bar.service
+	@systemctl --user start hyprline-notifications.service
+	@sleep 1
+	@systemctl --user start hyprline-bar.service
 	@echo "Services enabled and started!"
 
 disable:
