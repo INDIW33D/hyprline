@@ -8,6 +8,7 @@ pub mod workspaces;
 pub mod battery;
 pub mod volume;
 pub mod volume_osd;
+pub mod volume_slider;
 pub mod notifications;
 pub mod keyboard_layout;
 pub mod system_resources;

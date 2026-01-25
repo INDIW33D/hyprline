@@ -3,10 +3,11 @@ use gtk4::{glib, Application};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use super::volume_slider::VolumeSlider;
 
 pub struct VolumeOsd {
     window: gtk4::Window,
-    progressbar: gtk4::ProgressBar,
+    slider: VolumeSlider,
     hide_timeout: Arc<Mutex<Option<glib::SourceId>>>,
 }
 
@@ -27,35 +28,22 @@ impl VolumeOsd {
         // Создаём контейнер
         let container = gtk4::Box::new(gtk4::Orientation::Vertical, 8);
         container.add_css_class("volume-osd");
-        container.set_width_request(80);
-        container.set_height_request(200);
+        container.set_margin_top(12);
+        container.set_margin_bottom(12);
+        container.set_margin_start(12);
+        container.set_margin_end(12);
 
-        // Иконка максимума (вверху)
-        let icon_max = gtk4::Label::new(Some("󰕾")); // volume high
-        icon_max.add_css_class("volume-osd-icon");
-        icon_max.add_css_class("volume-osd-icon-max");
-        container.append(&icon_max);
+        // Создаём слайдер (не интерактивный для OSD)
+        let slider = VolumeSlider::new(50, 180, false);
 
-        // Вертикальный прогресс-бар
-        let progressbar = gtk4::ProgressBar::new();
-        progressbar.set_orientation(gtk4::Orientation::Vertical);
-        progressbar.set_inverted(true); // Заполнение снизу вверх
-        progressbar.add_css_class("volume-osd-progress");
-        progressbar.set_vexpand(true);
-        container.append(&progressbar);
-
-        // Иконка минимума (внизу)
-        let icon_min = gtk4::Label::new(Some("󰕿")); // volume low
-        icon_min.add_css_class("volume-osd-icon");
-        icon_min.add_css_class("volume-osd-icon-min");
-        container.append(&icon_min);
+        container.append(slider.widget());
 
         window.set_child(Some(&container));
         window.add_css_class("volume-osd-window");
 
         Self {
             window,
-            progressbar,
+            slider,
             hide_timeout: Arc::new(Mutex::new(None)),
         }
     }
@@ -67,25 +55,17 @@ impl VolumeOsd {
             timeout_id.remove();
         }
 
-        // Обновляем значение прогресс-бара
-        let fraction = (volume as f64) / 100.0;
-        self.progressbar.set_fraction(fraction);
-
-        // Обновляем стиль в зависимости от состояния
-        if muted {
-            self.progressbar.add_css_class("volume-osd-muted");
-        } else {
-            self.progressbar.remove_css_class("volume-osd-muted");
-        }
+        // Обновляем слайдер с состоянием muted
+        self.slider.set_volume_state(volume, muted);
 
         // Показываем окно
         self.window.set_visible(true);
 
-        // Устанавливаем таймаут на скрытие через 3 секунды
+        // Устанавливаем таймаут на скрытие через 2 секунды
         let window = self.window.clone();
         let hide_timeout = self.hide_timeout.clone();
 
-        let timeout_id = glib::timeout_add_local(Duration::from_secs(3), move || {
+        let timeout_id = glib::timeout_add_local(Duration::from_secs(2), move || {
             window.set_visible(false);
             *hide_timeout.lock().unwrap() = None;
             glib::ControlFlow::Break
@@ -103,4 +83,3 @@ impl VolumeOsd {
         self.window.set_visible(false);
     }
 }
-
