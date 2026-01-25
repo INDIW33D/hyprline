@@ -1,9 +1,11 @@
 use gtk4::prelude::*;
 use gtk4::glib;
 use std::sync::Arc;
+use std::cell::Cell;
+use std::rc::Rc;
 use crate::domain::notification_service::NotificationService;
 use crate::domain::models::{Notification, NotificationUrgency};
- use crate::shared_state::get_shared_state;
+use crate::shared_state::get_shared_state;
 
 pub struct NotificationWidget {
     button: gtk4::Button,
@@ -39,6 +41,31 @@ impl NotificationWidget {
 
     pub fn widget(&self) -> &gtk4::Button {
         &self.button
+    }
+
+    /// Запускает анимацию моргания зелёным цветом
+    pub fn start_alert_animation(&self) {
+        let button = self.button.clone();
+        let blink_count = Rc::new(Cell::new(0));
+        let max_blinks = 6; // 3 полных цикла (вкл-выкл)
+
+        glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
+            let count = blink_count.get();
+            if count >= max_blinks {
+                button.remove_css_class("notification-alert");
+                get_shared_state().clear_notification_alert();
+                return glib::ControlFlow::Break;
+            }
+
+            if count % 2 == 0 {
+                button.add_css_class("notification-alert");
+            } else {
+                button.remove_css_class("notification-alert");
+            }
+
+            blink_count.set(count + 1);
+            glib::ControlFlow::Continue
+        });
     }
 
     pub fn update(&self) {

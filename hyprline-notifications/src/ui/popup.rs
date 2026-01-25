@@ -68,12 +68,32 @@ thread_local! {
     static POPUP_STATE: RefCell<PopupState> = RefCell::new(PopupState::new());
 }
 
+/// Находит монитор по имени
+fn find_monitor_by_name(name: &str) -> Option<gtk4::gdk::Monitor> {
+    let display = gtk4::gdk::Display::default()?;
+    let monitors = display.monitors();
+    
+    for i in 0..monitors.n_items() {
+        if let Some(monitor) = monitors.item(i).and_downcast::<gtk4::gdk::Monitor>() {
+            if let Some(connector) = monitor.connector() {
+                if connector == name {
+                    return Some(monitor);
+                }
+            }
+        }
+    }
+    None
+}
+
 /// Показывает popup-уведомление с поддержкой actions
 pub fn show_notification_popup(
     app: &Application,
     notification: Notification,
     event_tx: Option<Sender<PopupEvent>>,
 ) {
+    // Загружаем конфиг для получения целевого монитора
+    let config = crate::config::HyprlineConfig::load();
+    
     let window = gtk4::Window::new();
     window.set_application(Some(app));
 
@@ -81,6 +101,13 @@ pub fn show_notification_popup(
     window.init_layer_shell();
     window.set_layer(Layer::Overlay);
     window.set_keyboard_mode(KeyboardMode::None);
+
+    // Привязываем к выбранному монитору (если указан)
+    if let Some(monitor_name) = config.get_notification_monitor() {
+        if let Some(monitor) = find_monitor_by_name(&monitor_name) {
+            window.set_monitor(&monitor);
+        }
+    }
 
     // Позиционирование справа вверху
     window.set_anchor(Edge::Top, true);

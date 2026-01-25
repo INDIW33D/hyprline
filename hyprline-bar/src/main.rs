@@ -383,11 +383,22 @@ fn build_ui(app: &gtk4::Application) {
         }));
 
         // Обрабатываем события в главном потоке GTK
+        let prev_count = std::rc::Rc::new(std::cell::RefCell::new(0usize));
+        let prev_count_clone = prev_count.clone();
         glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
             while let Ok(event) = rx.try_recv() {
                 match event {
                     NotificationEvent::CountChanged(count) => {
-                        shared_state_for_listener.update_notifications(count as usize);
+                        let new_count = count as usize;
+                        let old_count = *prev_count_clone.borrow();
+                        
+                        // Если количество увеличилось - пришло новое уведомление
+                        if new_count > old_count && old_count > 0 {
+                            shared_state_for_listener.trigger_notification_alert();
+                        }
+                        
+                        *prev_count_clone.borrow_mut() = new_count;
+                        shared_state_for_listener.update_notifications(new_count);
                     }
                     NotificationEvent::ServiceAvailable => {
                         eprintln!("[Main] Notification service connected");
@@ -397,6 +408,7 @@ fn build_ui(app: &gtk4::Application) {
                         eprintln!("[Main] Notification service disconnected");
                         shared_state_for_listener.set_notification_service_available(false);
                         shared_state_for_listener.update_notifications(0);
+                        *prev_count_clone.borrow_mut() = 0;
                     }
                 }
             }

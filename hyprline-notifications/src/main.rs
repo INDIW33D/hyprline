@@ -1,3 +1,4 @@
+mod config;
 mod dbus_service;
 mod notification;
 mod repository;

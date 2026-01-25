@@ -543,6 +543,26 @@ impl Bar {
             });
         }
 
+        // Подписка на alert уведомлений (моргание)
+        {
+            let widgets = self.widgets.clone();
+            let (sender, receiver) = async_channel::unbounded::<()>();
+
+            self.shared_state.subscribe_notification_alert(move || {
+                let _ = sender.send_blocking(());
+            });
+
+            glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+                while receiver.try_recv().is_ok() {
+                    let widgets = widgets.borrow();
+                    if let Some(ref widget) = widgets.notifications {
+                        widget.lock().unwrap().start_alert_animation();
+                    }
+                }
+                glib::ControlFlow::Continue
+            });
+        }
+
         // Подписка на обновления системных ресурсов
         {
             let widgets = self.widgets.clone();

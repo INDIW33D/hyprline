@@ -154,23 +154,20 @@ impl NotificationDbusService {
         id
     }
 
-    /// Закрыть уведомление
+    /// Закрыть уведомление (закрывает popup, но НЕ удаляет из истории)
     async fn close_notification(
         &self,
         #[zbus(signal_context)] ctxt: SignalContext<'_>,
         id: u32,
     ) -> zbus::fdo::Result<()> {
-        // Удаляем из БД
-        {
-            let mut repo = self.repository.lock().await;
-            let _ = repo.delete(id);
-        }
+        eprintln!("[NotificationService] CloseNotification called for id={} (popup only, keeping in history)", id);
+        
+        // НЕ удаляем из БД - только закрываем popup
+        // Уведомление остаётся в истории для просмотра пользователем
+        // Удаление из истории происходит только через DeleteNotification
 
-        // Отправляем сигнал о закрытии
+        // Отправляем сигнал о закрытии popup
         Self::notification_closed(&ctxt, id, 3).await?; // 3 = closed by CloseNotification
-
-        // Отправляем сигнал об изменении количества
-        self.emit_count_changed(&ctxt).await;
 
         Ok(())
     }

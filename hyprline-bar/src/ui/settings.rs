@@ -539,6 +539,61 @@ impl SettingsWindow {
         spacing_frame.set_child(Some(&spacing_box));
         container.append(&spacing_frame);
 
+        // Секция Notification Monitor
+        let notif_frame = Frame::new(Some("Notifications"));
+        notif_frame.set_margin_top(16);
+
+        let notif_box = GtkBox::new(Orientation::Horizontal, 12);
+        notif_box.set_margin_start(16);
+        notif_box.set_margin_end(16);
+        notif_box.set_margin_top(16);
+        notif_box.set_margin_bottom(16);
+
+        let notif_label = Label::new(Some("Show notifications on:"));
+        notif_label.set_halign(gtk4::Align::Start);
+        notif_label.set_hexpand(true);
+
+        // Получаем список мониторов
+        let monitor_combo = gtk4::ComboBoxText::new();
+        monitor_combo.append(Some(""), "Auto (first available)");
+
+        // Добавляем мониторы из GDK
+        if let Some(display) = gtk4::gdk::Display::default() {
+            let monitors = display.monitors();
+            for i in 0..monitors.n_items() {
+                if let Some(monitor) = monitors.item(i).and_downcast::<gtk4::gdk::Monitor>() {
+                    if let Some(connector) = monitor.connector() {
+                        monitor_combo.append(Some(&connector), &connector);
+                    }
+                }
+            }
+        }
+
+        // Устанавливаем текущее значение
+        let current_monitor = {
+            let config = get_config().read().unwrap();
+            config.notification_monitor.clone()
+        };
+        if current_monitor.is_empty() {
+            monitor_combo.set_active_id(Some(""));
+        } else {
+            monitor_combo.set_active_id(Some(&current_monitor));
+        }
+
+        monitor_combo.connect_changed(move |combo| {
+            if let Some(id) = combo.active_id() {
+                let mut config = get_config().write().unwrap();
+                config.notification_monitor = id.to_string();
+                drop(config);
+                let _ = save_config();
+            }
+        });
+
+        notif_box.append(&notif_label);
+        notif_box.append(&monitor_combo);
+        notif_frame.set_child(Some(&notif_box));
+        container.append(&notif_frame);
+
         container
     }
 

@@ -167,6 +167,10 @@ fn default_widget_spacing() -> i32 {
     8
 }
 
+fn default_notification_monitor() -> String {
+    "".to_string() // Пустая строка = первый доступный монитор
+}
+
 /// Главная конфигурация панели
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HyprlineConfig {
@@ -182,6 +186,9 @@ pub struct HyprlineConfig {
     /// Отступ между виджетами (в пикселях)
     #[serde(default = "default_widget_spacing")]
     pub widget_spacing: i32,
+    /// Монитор для показа уведомлений (пустая строка = первый доступный)
+    #[serde(default = "default_notification_monitor")]
+    pub notification_monitor: String,
 
     /// Обратная совместимость - старое поле widgets
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -215,6 +222,7 @@ impl Default for HyprlineConfig {
             monitors: HashMap::new(),
             padding: BarPadding::default(),
             widget_spacing: default_widget_spacing(),
+            notification_monitor: default_notification_monitor(),
             widgets: Vec::new(),
         }
     }

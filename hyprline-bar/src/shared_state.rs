@@ -34,6 +34,7 @@ pub struct SharedState {
     pub keyboard_layout: RwLock<Option<KeyboardLayout>>,
     pub notification_count: RwLock<usize>,
     pub notification_service_available: RwLock<bool>,
+    pub notification_alert: RwLock<bool>, // true когда пришло новое уведомление
     pub brightness: RwLock<u32>,
     pub system_resources: RwLock<Option<SystemResources>>,
     pub network_connection: RwLock<Option<NetworkConnection>>,
@@ -45,6 +46,7 @@ pub struct SharedState {
     tray_callbacks: Mutex<Callbacks>,
     keyboard_layout_callbacks: Mutex<Callbacks>,
     notification_callbacks: Mutex<Callbacks>,
+    notification_alert_callbacks: Mutex<Callbacks>, // для моргания
     brightness_callbacks: Mutex<Callbacks>,
     system_resources_callbacks: Mutex<Callbacks>,
     network_callbacks: Mutex<Callbacks>,
@@ -61,6 +63,7 @@ impl SharedState {
             keyboard_layout: RwLock::new(None),
             notification_count: RwLock::new(0),
             notification_service_available: RwLock::new(false),
+            notification_alert: RwLock::new(false),
             brightness: RwLock::new(100),
             system_resources: RwLock::new(None),
             network_connection: RwLock::new(None),
@@ -70,6 +73,7 @@ impl SharedState {
             tray_callbacks: Mutex::new(Callbacks::new()),
             keyboard_layout_callbacks: Mutex::new(Callbacks::new()),
             notification_callbacks: Mutex::new(Callbacks::new()),
+            notification_alert_callbacks: Mutex::new(Callbacks::new()),
             brightness_callbacks: Mutex::new(Callbacks::new()),
             system_resources_callbacks: Mutex::new(Callbacks::new()),
             network_callbacks: Mutex::new(Callbacks::new()),
@@ -171,6 +175,27 @@ impl SharedState {
         F: Fn() + Send + Sync + 'static,
     {
         self.notification_callbacks.lock().unwrap().add(Box::new(callback));
+    }
+
+    // === Notification Alert (для моргания) ===
+    pub fn trigger_notification_alert(&self) {
+        *self.notification_alert.write().unwrap() = true;
+        self.notification_alert_callbacks.lock().unwrap().notify_all();
+    }
+
+    pub fn clear_notification_alert(&self) {
+        *self.notification_alert.write().unwrap() = false;
+    }
+
+    pub fn is_notification_alert(&self) -> bool {
+        *self.notification_alert.read().unwrap()
+    }
+
+    pub fn subscribe_notification_alert<F>(&self, callback: F)
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.notification_alert_callbacks.lock().unwrap().add(Box::new(callback));
     }
 
     // === Brightness ===

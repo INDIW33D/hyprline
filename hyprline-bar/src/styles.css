@@ -436,6 +436,16 @@ box.zone-right {
     padding: 0 10px;
 }
 
+/* Анимация моргания при новом уведомлении */
+.notification-button.notification-alert {
+    background: #4CAF50;
+    box-shadow: 0 0 8px #4CAF50;
+}
+
+.notification-button.notification-alert .notification-icon {
+    color: #ffffff;
+}
+
 .notification-icon {
     color: #ffffff;
     font-size: 16px;
