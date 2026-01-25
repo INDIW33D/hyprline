@@ -99,6 +99,36 @@ impl NotificationRepository {
         notifications.collect()
     }
 
+    pub fn get_page(&self, offset: u32, limit: u32) -> Result<Vec<Notification>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, app_name, summary, body, icon, urgency, timestamp, actions
+             FROM notifications
+             ORDER BY timestamp DESC
+             LIMIT ?1 OFFSET ?2"
+        )?;
+
+        let notifications = stmt.query_map(params![limit, offset], |row| {
+            let actions_json: String = row.get(7)?;
+            let actions: Vec<(String, String)> = serde_json::from_str(&actions_json).unwrap_or_default();
+            let timestamp_secs: i64 = row.get(6)?;
+            let urgency_val: u8 = row.get(5)?;
+
+            Ok(Notification {
+                id: row.get(0)?,
+                app_name: row.get(1)?,
+                summary: row.get(2)?,
+                body: row.get(3)?,
+                icon: row.get(4)?,
+                urgency: NotificationUrgency::from(urgency_val),
+                timestamp: Utc.timestamp_opt(timestamp_secs, 0).unwrap(),
+                actions,
+                expire_timeout: -1,
+            })
+        })?;
+
+        notifications.collect()
+    }
+
     pub fn get_count(&self) -> Result<usize, rusqlite::Error> {
         let count: i64 = self.conn.query_row(
             "SELECT COUNT(*) FROM notifications",

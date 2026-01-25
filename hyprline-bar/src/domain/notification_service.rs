@@ -8,8 +8,11 @@ pub trait NotificationService: Send + Sync {
     /// Получает количество уведомлений
     fn get_count(&self) -> usize;
 
-    /// Получает историю уведомлений
+    /// Получает историю уведомлений (первые 50)
     fn get_history(&self) -> Vec<Notification>;
+
+    /// Получает страницу уведомлений с пагинацией
+    fn get_history_page(&self, offset: usize, limit: usize) -> Vec<Notification>;
 
     /// Очищает историю уведомлений
     fn clear_history(&self);

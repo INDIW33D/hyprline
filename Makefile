@@ -5,9 +5,13 @@ BINDIR = $(PREFIX)/bin
 SYSTEMD_USER_DIR = $(HOME)/.config/systemd/user
 
 build:
+	@touch hyprline-bar/src/main.rs hyprline-notifications/src/main.rs
 	cargo build --release
 
 install: build
+	@echo "Stopping services for update..."
+	-@systemctl --user stop hyprline-bar.service 2>/dev/null || true
+	-@systemctl --user stop hyprline-notifications.service 2>/dev/null || true
 	@echo "Installing binaries to $(BINDIR)..."
 	@mkdir -p $(BINDIR)
 	@cp target/release/hyprline-bar $(BINDIR)/

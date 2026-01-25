@@ -125,6 +125,23 @@ impl NotificationService for RemoteNotificationService {
         }
     }
 
+    fn get_history_page(&self, offset: usize, limit: usize) -> Vec<Notification> {
+        if !self.ensure_connected() {
+            return Vec::new();
+        }
+
+        let client = self.client.lock().unwrap();
+        if let Some(ref c) = *client {
+            c.get_history_page(offset as u32, limit as u32)
+                .unwrap_or_default()
+                .into_iter()
+                .map(Self::convert_notification)
+                .collect()
+        } else {
+            Vec::new()
+        }
+    }
+
     fn clear_history(&self) {
         if !self.ensure_connected() {
             return;

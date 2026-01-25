@@ -2,7 +2,8 @@
 Description=Hyprline Status Bar
 Documentation=https://github.com/indiw33d/hyprline
 PartOf=graphical-session.target
-After=graphical-session.target
+After=graphical-session.target hyprline-notifications.service
+Wants=hyprline-notifications.service
 
 [Service]
 Type=simple

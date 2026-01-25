@@ -204,6 +204,14 @@ impl NotificationDbusService {
         serde_json::to_string(&data).unwrap_or_else(|_| "[]".to_string())
     }
 
+    /// Получить страницу истории уведомлений (JSON) с пагинацией
+    async fn get_history_page(&self, offset: u32, limit: u32) -> String {
+        let repo = self.repository.lock().await;
+        let notifications = repo.get_page(offset, limit).unwrap_or_default();
+        let data: Vec<NotificationData> = notifications.iter().map(|n| n.into()).collect();
+        serde_json::to_string(&data).unwrap_or_else(|_| "[]".to_string())
+    }
+
     /// Удалить уведомление по ID
     async fn delete_notification(
         &self,

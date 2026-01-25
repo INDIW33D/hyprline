@@ -187,51 +187,102 @@ impl NotificationWidget {
 
         let button_weak = button.downgrade();
 
-        // Функция обновления списка
-        let update_list = {
+        // Состояние пагинации
+        let page_size: usize = 20;
+        let loaded_count = Rc::new(Cell::new(0usize));
+        let is_loading = Rc::new(Cell::new(false));
+        let has_more = Rc::new(Cell::new(true));
+
+        // Функция загрузки следующей страницы
+        let load_more = {
             let service = Arc::clone(&service);
             let notifications_box = notifications_box.clone();
-            let button_weak_update = button_weak.clone();
-            move || {
-                eprintln!("[UI] update_list() called");
-                // Очищаем список
-                while let Some(child) = notifications_box.first_child() {
-                    notifications_box.remove(&child);
+            let button_weak_load = button_weak.clone();
+            let loaded_count = Rc::clone(&loaded_count);
+            let is_loading = Rc::clone(&is_loading);
+            let has_more = Rc::clone(&has_more);
+
+            Rc::new(move || {
+                if is_loading.get() || !has_more.get() {
+                    return;
                 }
 
-                let history = service.get_history();
-                eprintln!("[UI] Loaded {} notifications from history", history.len());
+                is_loading.set(true);
+                let offset = loaded_count.get();
 
-                if history.is_empty() {
-                    let empty_label = gtk4::Label::new(Some("No notifications"));
-                    empty_label.add_css_class("notification-empty");
-                    notifications_box.append(&empty_label);
+                let page = service.get_history_page(offset, page_size);
+                eprintln!("[UI] Loaded page: offset={}, got {} notifications", offset, page.len());
+
+                if page.is_empty() {
+                    has_more.set(false);
                 } else {
-                    for (idx, notification) in history.iter().enumerate() {
-                        eprintln!("[UI] Creating item {} for notification id={}", idx, notification.id);
-                        let item = Self::create_notification_item(
-                            &notification,
+                    // Удаляем "No notifications" если есть
+                    if offset == 0 {
+                        while let Some(child) = notifications_box.first_child() {
+                            notifications_box.remove(&child);
+                        }
+                    }
+
+                    for notification in page.iter() {
+                        let item = NotificationWidget::create_notification_item(
+                            notification,
                             service.clone(),
                             notifications_box.clone(),
-                            button_weak_update.clone()
+                            button_weak_load.clone()
                         );
                         notifications_box.append(&item);
                     }
+
+                    loaded_count.set(offset + page.len());
+
+                    if page.len() < page_size {
+                        has_more.set(false);
+                    }
                 }
-                eprintln!("[UI] update_list() completed");
-            }
+
+                is_loading.set(false);
+            })
         };
 
-        // Первоначальное заполнение
-        update_list();
+        // Первоначальная загрузка
+        {
+            let load_more = Rc::clone(&load_more);
+            load_more();
+
+            // Если ничего не загрузилось, показываем "No notifications"
+            if loaded_count.get() == 0 {
+                let empty_label = gtk4::Label::new(Some("No notifications"));
+                empty_label.add_css_class("notification-empty");
+                notifications_box.append(&empty_label);
+            }
+        }
+
+        // Lazy loading при скролле
+        let vadjustment = scrolled.vadjustment();
+        let load_more_scroll = Rc::clone(&load_more);
+        vadjustment.connect_value_changed(move |adj| {
+            let value = adj.value();
+            let upper = adj.upper();
+            let page_size_adj = adj.page_size();
+
+            // Загружаем ещё когда прокрутили на 80% вниз
+            if value + page_size_adj >= upper * 0.8 {
+                load_more_scroll();
+            }
+        });
 
         // Clear All кнопка
         let service_clear = Arc::clone(&service);
         let notifications_box_clear = notifications_box.clone();
         let button_weak_clear = button_weak.clone();
+        let loaded_count_clear = Rc::clone(&loaded_count);
+        let has_more_clear = Rc::clone(&has_more);
         clear_button.connect_clicked(move |_| {
             eprintln!("[UI] Clear All button clicked");
             service_clear.clear_history();
+            // Сбрасываем состояние пагинации
+            loaded_count_clear.set(0);
+            has_more_clear.set(true);
             // Обновляем список
             while let Some(child) = notifications_box_clear.first_child() {
                 notifications_box_clear.remove(&child);
@@ -252,9 +303,14 @@ impl NotificationWidget {
         let service_gesture_clear = Arc::clone(&service);
         let notifications_box_gesture_clear = notifications_box.clone();
         let button_weak_gesture_clear = button_weak.clone();
+        let loaded_count_gesture = Rc::clone(&loaded_count);
+        let has_more_gesture = Rc::clone(&has_more);
         gesture_clear.connect_released(move |_, _, _, _| {
             eprintln!("[UI] Gesture click on Clear All");
             service_gesture_clear.clear_history();
+            // Сбрасываем состояние пагинации
+            loaded_count_gesture.set(0);
+            has_more_gesture.set(true);
             while let Some(child) = notifications_box_gesture_clear.first_child() {
                 notifications_box_gesture_clear.remove(&child);
             }

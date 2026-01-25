@@ -23,8 +23,11 @@ trait NotificationService {
     /// Получить количество уведомлений
     fn get_notification_count(&self) -> zbus::Result<u32>;
 
-    /// Получить историю уведомлений (JSON)
+    /// Получить историю уведомлений (JSON) - первые 50
     fn get_history(&self) -> zbus::Result<String>;
+
+    /// Получить страницу уведомлений с пагинацией (JSON)
+    fn get_history_page(&self, offset: u32, limit: u32) -> zbus::Result<String>;
 
     /// Удалить уведомление по ID
     fn delete_notification(&self, id: u32) -> zbus::Result<bool>;
@@ -69,6 +72,15 @@ impl NotificationClient {
     pub fn get_history(&self) -> Result<Vec<NotificationData>, String> {
         let json = self.proxy.get_history()
             .map_err(|e| format!("Failed to get history: {}", e))?;
+
+        serde_json::from_str(&json)
+            .map_err(|e| format!("Failed to parse history: {}", e))
+    }
+
+    /// Получить страницу уведомлений с пагинацией
+    pub fn get_history_page(&self, offset: u32, limit: u32) -> Result<Vec<NotificationData>, String> {
+        let json = self.proxy.get_history_page(offset, limit)
+            .map_err(|e| format!("Failed to get history page: {}", e))?;
 
         serde_json::from_str(&json)
             .map_err(|e| format!("Failed to parse history: {}", e))
