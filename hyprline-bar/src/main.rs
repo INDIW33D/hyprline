@@ -152,18 +152,11 @@ fn build_ui(app: &gtk4::Application) {
         Arc::new(NetworkManagerService::new());
 
     // Создаём Brightness сервис
-    let brightness_service: Arc<dyn BrightnessService + Send + Sync> = match LumenBrightnessService::new() {
+    eprintln!("[Main] Creating brightness service...");
+    let brightness_service_impl = match LumenBrightnessService::new() {
         Ok(service) => {
-            let service_arc = Arc::new(service);
-
-            // Пробуем получить текущую яркость для проверки
-            if let Ok(brightness) = service_arc.get_brightness() {
-                eprintln!("[Brightness] ✓ Connected ({}%)", brightness);
-            }
-
-            // Запускаем мониторинг сигналов яркости
-            service_arc.clone().start_signal_monitoring();
-            service_arc
+            eprintln!("[Main] Brightness service created");
+            Arc::new(service)
         }
         Err(e) => {
             eprintln!("[Brightness] ✗ Failed to connect: {}", e);
@@ -171,12 +164,16 @@ fn build_ui(app: &gtk4::Application) {
             panic!("Cannot create brightness service");
         }
     };
+    let brightness_service: Arc<dyn BrightnessService + Send + Sync> = brightness_service_impl.clone();
 
-    // Подписываемся на изменения яркости и будем обновлять SharedState
+    // Сначала подписываемся на изменения яркости
     let shared_state_brightness = get_shared_state();
     brightness_service.subscribe_brightness_changed(Arc::new(move |value| {
         shared_state_brightness.update_brightness(value);
     }));
+
+    // Затем запускаем мониторинг (который также получит начальное значение)
+    brightness_service_impl.clone().start_signal_monitoring();
 
     // Создаём Submap сервис
     let submap_service_impl = Arc::new(HyprlandSubmapService::new());
@@ -363,9 +360,7 @@ fn build_ui(app: &gtk4::Application) {
     if notification_service.is_connected() {
         shared_state.update_notifications(notification_service.get_count());
     }
-    if let Ok(brightness) = brightness_service.get_brightness() {
-        shared_state.update_brightness(brightness);
-    }
+    // Яркость уже инициализирована в отдельном потоке ранее
     // Инициализация системных ресурсов
     shared_state.update_system_resources(system_resources_service.get_resources());
     // Инициализация сети
@@ -419,10 +414,12 @@ fn build_ui(app: &gtk4::Application) {
 
     let workspace_keys = parse_workspace_bindings();
     let monitors = service.get_monitors();
+    eprintln!("[Main] Found {} monitors: {:?}", monitors.len(), monitors.iter().map(|m| &m.name).collect::<Vec<_>>());
 
     // Создаём bars и храним их для hot reload и динамического управления
     let bars: Arc<std::sync::Mutex<Vec<Bar>>> = Arc::new(std::sync::Mutex::new(
         if monitors.is_empty() {
+            eprintln!("[Main] No monitors found, creating default bar");
             vec![Bar::new(
                 app,
                 "default",
@@ -592,9 +589,12 @@ fn build_ui(app: &gtk4::Application) {
     // Setup и present для всех баров
     {
         let bars = bars.lock().unwrap();
+        eprintln!("[Main] Setting up {} bars", bars.len());
         for bar in bars.iter() {
             bar.setup_event_listener();
+            eprintln!("[Main] Presenting bar for monitor: {}", bar.monitor_name());
             bar.present();
         }
+        eprintln!("[Main] All bars presented");
     }
 }

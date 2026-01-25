@@ -147,9 +147,9 @@ impl BrightnessWidget {
         slider.set_css_classes(&["brightness-slider"]);
         slider.set_draw_value(false);
 
-        if let Ok(brightness) = brightness_service.get_brightness() {
-            slider.set_value(brightness as f64);
-        }
+        // Начальное значение из SharedState (не блокирующий вызов)
+        let brightness = get_shared_state().get_brightness();
+        slider.set_value(brightness as f64);
 
         let max_icon = Label::new(Some("󰃠")); // Максимум (brightness_7)
         max_icon.set_css_classes(&["brightness-slider-icon"]);
@@ -180,9 +180,8 @@ impl BrightnessWidget {
         let auto_switch = gtk4::Switch::new();
         auto_switch.set_css_classes(&["brightness-auto-switch"]);
 
-        if let Ok(enabled) = brightness_service.is_auto_adjustment_enabled() {
-            auto_switch.set_active(enabled);
-        }
+        // Не вызываем blocking метод при инициализации
+        // Значение обновится при открытии popover
 
         {
             let brightness_service = brightness_service.clone();

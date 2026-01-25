@@ -116,9 +116,14 @@ impl Bar {
     ) -> Self {
         let window = gtk4::ApplicationWindow::new(app);
 
+        eprintln!("[Bar] Creating bar for monitor: {}", monitor_name);
+        eprintln!("[Bar] Layer shell supported: {}", gtk4_layer_shell::is_supported());
+        
         window.init_layer_shell();
+        eprintln!("[Bar] Layer shell initialized for window");
         window.set_title(Some(&format!("Bar - {}", monitor_name)));
         window.set_layer(Layer::Top);
+        eprintln!("[Bar] Layer set to Top");
 
         // Привязка к монитору
         let monitor_found = Self::try_bind_to_monitor(&window, monitor_name);
@@ -260,6 +265,7 @@ impl Bar {
 
     /// Перестраивает виджеты на основе конфигурации
     pub fn rebuild_widgets(&mut self) {
+        eprintln!("[Bar] Starting rebuild_widgets...");
         // Обновляем padding и spacing
         self.update_padding();
         self.update_widget_spacing();
@@ -269,6 +275,7 @@ impl Bar {
 
         // Сбрасываем ссылки на виджеты
         *self.widgets.borrow_mut() = CreatedWidgets::new();
+        eprintln!("[Bar] Zones cleared, loading config...");
 
         // Загружаем конфигурацию и получаем профиль для этого монитора
         let (left_widgets, center_widgets, right_widgets) = {
@@ -294,20 +301,27 @@ impl Bar {
 
             (left, center, right)
         };
+        eprintln!("[Bar] Config loaded: {} left, {} center, {} right widgets", 
+                  left_widgets.len(), center_widgets.len(), right_widgets.len());
 
         // Создаём виджеты для каждой зоны
         for (widget_type, _) in left_widgets {
+            eprintln!("[Bar] Creating left widget: {:?}", widget_type);
             self.create_widget(widget_type, &self.left_box.clone());
         }
         for (widget_type, _) in center_widgets {
+            eprintln!("[Bar] Creating center widget: {:?}", widget_type);
             self.create_widget(widget_type, &self.center_box.clone());
         }
         for (widget_type, _) in right_widgets {
+            eprintln!("[Bar] Creating right widget: {:?}", widget_type);
             self.create_widget(widget_type, &self.right_box.clone());
         }
+        eprintln!("[Bar] All widgets created, running initial_update...");
 
         // Обновляем все виджеты с текущими данными
         self.initial_update();
+        eprintln!("[Bar] Initial update done, updating tray...");
 
         // Обновляем трей с текущими данными
         let items = self.shared_state.get_tray();

@@ -94,15 +94,29 @@ impl LumenBrightnessService {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async move {
                 if let Ok(proxy) = LumenProxy::new(&connection).await {
+                    // Сначала получаем текущее значение яркости
+                    match proxy.get_brightness().await {
+                        Ok(value) => {
+                            let brightness = (value * 100.0).round() as u32;
+                            eprintln!("[Brightness] ✓ Initial brightness: {}%", brightness);
+                            if let Some(cb) = callback.lock().as_ref() {
+                                cb(brightness);
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("[Brightness] ✗ Failed to get initial brightness: {}", e);
+                        }
+                    }
+                    
+                    // Затем подписываемся на изменения
                     if let Ok(mut stream) = proxy.receive_brightness_changed().await {
-                        eprintln!("[Brightness] ✓ Successfully subscribed to BrightnessChanged signal");
+                        eprintln!("[Brightness] ✓ Subscribed to BrightnessChanged signal");
                         loop {
                             use futures_util::StreamExt;
                             if let Some(signal) = stream.next().await {
                                 if let Ok(args) = signal.args() {
-                                    // Конвертируем f64 (0.0-1.0) в u32 (0-100)
                                     let brightness = (args.value * 100.0).round() as u32;
-                                    eprintln!("[Brightness] 📡 Received BrightnessChanged signal: {}%", brightness);
+                                    eprintln!("[Brightness] 📡 BrightnessChanged: {}%", brightness);
                                     if let Some(cb) = callback.lock().as_ref() {
                                         cb(brightness);
                                     }

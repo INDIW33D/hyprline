@@ -31,7 +31,19 @@ impl BatteryWidget {
 
         // Получаем информацию о батарее
         if let Some(battery_info) = self.service.get_battery_info() {
-            println!("[BatteryWidget] Updated: {}% {:?}", battery_info.percentage, battery_info.status);
+            // Показываем виджет только если:
+            // 1. Работаем от батареи (Discharging)
+            // 2. Или заряд меньше 50%
+            let should_show = matches!(battery_info.status, BatteryStatus::Discharging)
+                || battery_info.percentage < 50;
+
+            if !should_show {
+                self.container.set_visible(false);
+                return;
+            }
+
+            self.container.set_visible(true);
+            eprintln!("[BatteryWidget] Updated: {}% {:?}", battery_info.percentage, battery_info.status);
 
             // Создаём иконку
             let icon = self.create_battery_icon(&battery_info);
@@ -51,10 +63,8 @@ impl BatteryWidget {
             // Устанавливаем CSS класс в зависимости от уровня заряда
             self.apply_battery_level_class(&battery_info);
         } else {
-            // Батарея не обнаружена
-            let label = gtk4::Label::new(Some("No Battery"));
-            label.add_css_class("battery-not-found");
-            self.container.append(&label);
+            // Батарея не обнаружена — скрываем виджет
+            self.container.set_visible(false);
         }
     }
 
