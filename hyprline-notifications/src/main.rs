@@ -50,10 +50,19 @@ fn main() {
 fn setup_service(app: &gtk4::Application) {
     let app = app.clone();
 
+    // Загружаем конфиг
+    let config = config::HyprlineConfig::load();
+
     // Создаём репозиторий
-    let repository = Arc::new(Mutex::new(
-        NotificationRepository::new().expect("Failed to create notification repository")
-    ));
+    let mut repository = NotificationRepository::new().expect("Failed to create notification repository");
+    
+    // Очищаем старые уведомления при запуске
+    let retention_days = config.get_notification_retention_days();
+    if let Err(e) = repository.cleanup_old(retention_days) {
+        eprintln!("[NotificationService] Failed to cleanup old notifications: {}", e);
+    }
+    
+    let repository = Arc::new(Mutex::new(repository));
 
     // Создаём канал для уведомлений
     let (notification_tx, notification_rx) = async_channel::unbounded();

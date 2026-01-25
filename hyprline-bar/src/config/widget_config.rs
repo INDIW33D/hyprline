@@ -173,6 +173,10 @@ fn default_notification_monitor() -> String {
     "".to_string() // Пустая строка = первый доступный монитор
 }
 
+fn default_notification_retention_days() -> u32 {
+    3 // По умолчанию удаляем уведомления старше 3 дней
+}
+
 /// Настройки центра уведомлений (Popover)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationCenterConfig {
@@ -209,6 +213,9 @@ pub struct HyprlineConfig {
     /// Монитор для показа уведомлений (пустая строка = первый доступный)
     #[serde(default = "default_notification_monitor")]
     pub notification_monitor: String,
+    /// Сколько дней хранить уведомления (0 = бессрочно)
+    #[serde(default = "default_notification_retention_days")]
+    pub notification_retention_days: u32,
     /// Настройки центра уведомлений
     #[serde(default)]
     pub notification_center: NotificationCenterConfig,
@@ -246,6 +253,7 @@ impl Default for HyprlineConfig {
             padding: BarPadding::default(),
             widget_spacing: default_widget_spacing(),
             notification_monitor: default_notification_monitor(),
+            notification_retention_days: default_notification_retention_days(),
             notification_center: NotificationCenterConfig::default(),
             widgets: Vec::new(),
         }

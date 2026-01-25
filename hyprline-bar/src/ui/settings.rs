@@ -653,6 +653,37 @@ impl SettingsWindow {
             let _ = save_config();
         });
 
+        // Retention days
+        let retention_row = GtkBox::new(Orientation::Horizontal, 12);
+        retention_row.set_margin_top(8);
+        let retention_label = Label::new(Some("Keep notifications:"));
+        retention_label.set_halign(gtk4::Align::Start);
+        retention_label.set_hexpand(true);
+        
+        let current_retention = {
+            let config = get_config().read().unwrap();
+            config.notification_retention_days
+        };
+        
+        let retention_spin = gtk4::SpinButton::with_range(0.0, 30.0, 1.0);
+        retention_spin.set_value(current_retention as f64);
+        retention_spin.set_width_chars(4);
+        
+        let retention_suffix = Label::new(Some("days (0 = forever)"));
+        retention_suffix.add_css_class("settings-hint");
+        
+        retention_spin.connect_value_changed(move |spin| {
+            let mut config = get_config().write().unwrap();
+            config.notification_retention_days = spin.value() as u32;
+            drop(config);
+            let _ = save_config();
+        });
+        
+        retention_row.append(&retention_label);
+        retention_row.append(&retention_spin);
+        retention_row.append(&retention_suffix);
+        nc_box.append(&retention_row);
+
         nc_frame.set_child(Some(&nc_box));
         container.append(&nc_frame);
 

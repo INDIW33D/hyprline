@@ -41,6 +41,7 @@ use std::sync::Arc;
 fn main() -> glib::ExitCode {
     let app = gtk4::Application::builder()
         .application_id("ru.hyprline.bar")
+        .flags(gtk4::gio::ApplicationFlags::NON_UNIQUE)
         .build();
 
     // CSS загружаем в startup (один раз)

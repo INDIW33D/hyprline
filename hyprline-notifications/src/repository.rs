@@ -150,5 +150,24 @@ impl NotificationRepository {
         let affected = self.conn.execute("DELETE FROM notifications", [])?;
         Ok(affected)
     }
+
+    /// Удаляет уведомления старше указанного количества дней
+    pub fn cleanup_old(&mut self, days: u32) -> Result<usize, rusqlite::Error> {
+        if days == 0 {
+            return Ok(0); // 0 = бессрочное хранение
+        }
+        
+        let cutoff = Utc::now().timestamp() - (days as i64 * 24 * 60 * 60);
+        let affected = self.conn.execute(
+            "DELETE FROM notifications WHERE timestamp < ?1",
+            params![cutoff],
+        )?;
+        
+        if affected > 0 {
+            eprintln!("[NotificationRepository] Cleaned up {} old notifications (older than {} days)", affected, days);
+        }
+        
+        Ok(affected)
+    }
 }
 

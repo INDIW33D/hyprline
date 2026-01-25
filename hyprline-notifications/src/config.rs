@@ -7,6 +7,13 @@ pub struct HyprlineConfig {
     /// Монитор для показа уведомлений (пустая строка = первый доступный)
     #[serde(default)]
     pub notification_monitor: String,
+    /// Сколько дней хранить уведомления (0 = бессрочно)
+    #[serde(default = "default_retention_days")]
+    pub notification_retention_days: u32,
+}
+
+fn default_retention_days() -> u32 {
+    3
 }
 
 impl HyprlineConfig {
@@ -45,5 +52,10 @@ impl HyprlineConfig {
         } else {
             Some(self.notification_monitor.clone())
         }
+    }
+
+    /// Получить количество дней хранения уведомлений
+    pub fn get_notification_retention_days(&self) -> u32 {
+        self.notification_retention_days
     }
 }
