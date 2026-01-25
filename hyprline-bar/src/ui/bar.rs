@@ -159,6 +159,9 @@ impl Bar {
         let center_box = gtk4::Box::new(gtk4::Orientation::Horizontal, widget_spacing);
         center_box.add_css_class("zone-center");
         center_box.set_halign(gtk4::Align::Center);
+        // Отступы между зонами
+        center_box.set_margin_start(widget_spacing);
+        center_box.set_margin_end(widget_spacing);
 
         let right_box = gtk4::Box::new(gtk4::Orientation::Horizontal, widget_spacing);
         right_box.add_css_class("zone-right");
@@ -250,6 +253,9 @@ impl Bar {
         self.left_box.set_spacing(spacing);
         self.center_box.set_spacing(spacing);
         self.right_box.set_spacing(spacing);
+        // Отступы между зонами
+        self.center_box.set_margin_start(spacing);
+        self.center_box.set_margin_end(spacing);
     }
 
     /// Перестраивает виджеты на основе конфигурации
