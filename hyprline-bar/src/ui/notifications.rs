@@ -1,8 +1,9 @@
 use gtk4::prelude::*;
 use gtk4::glib;
 use std::sync::Arc;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use std::collections::HashMap;
 use crate::domain::notification_service::NotificationService;
 use crate::domain::models::{Notification, NotificationUrgency};
 use crate::shared_state::get_shared_state;
@@ -197,102 +198,53 @@ impl NotificationWidget {
 
         let button_weak = button.downgrade();
 
-        // Состояние пагинации
-        let page_size: usize = 20;
-        let loaded_count = Rc::new(Cell::new(0usize));
-        let is_loading = Rc::new(Cell::new(false));
-        let has_more = Rc::new(Cell::new(true));
-
-        // Функция загрузки следующей страницы
-        let load_more = {
-            let service = Arc::clone(&service);
-            let notifications_box = notifications_box.clone();
-            let button_weak_load = button_weak.clone();
-            let loaded_count = Rc::clone(&loaded_count);
-            let is_loading = Rc::clone(&is_loading);
-            let has_more = Rc::clone(&has_more);
-
-            Rc::new(move || {
-                if is_loading.get() || !has_more.get() {
-                    return;
-                }
-
-                is_loading.set(true);
-                let offset = loaded_count.get();
-
-                let page = service.get_history_page(offset, page_size);
-                eprintln!("[UI] Loaded page: offset={}, got {} notifications", offset, page.len());
-
-                if page.is_empty() {
-                    has_more.set(false);
+        // Загружаем все уведомления и группируем по приложениям
+        let all_notifications = service.get_history();
+        
+        if all_notifications.is_empty() {
+            let empty_label = gtk4::Label::new(Some("No notifications"));
+            empty_label.add_css_class("notification-empty");
+            notifications_box.append(&empty_label);
+        } else {
+            // Группируем уведомления по app_name
+            let mut groups: HashMap<String, Vec<Notification>> = HashMap::new();
+            let mut group_order: Vec<String> = Vec::new();
+            
+            for notification in all_notifications {
+                let app_name = if notification.app_name.is_empty() {
+                    "Unknown".to_string()
                 } else {
-                    // Удаляем "No notifications" если есть
-                    if offset == 0 {
-                        while let Some(child) = notifications_box.first_child() {
-                            notifications_box.remove(&child);
-                        }
-                    }
-
-                    for notification in page.iter() {
-                        let item = NotificationWidget::create_notification_item(
-                            notification,
-                            service.clone(),
-                            notifications_box.clone(),
-                            button_weak_load.clone()
-                        );
-                        notifications_box.append(&item);
-                    }
-
-                    loaded_count.set(offset + page.len());
-
-                    if page.len() < page_size {
-                        has_more.set(false);
-                    }
+                    notification.app_name.clone()
+                };
+                
+                if !groups.contains_key(&app_name) {
+                    group_order.push(app_name.clone());
                 }
-
-                is_loading.set(false);
-            })
-        };
-
-        // Первоначальная загрузка
-        {
-            let load_more = Rc::clone(&load_more);
-            load_more();
-
-            // Если ничего не загрузилось, показываем "No notifications"
-            if loaded_count.get() == 0 {
-                let empty_label = gtk4::Label::new(Some("No notifications"));
-                empty_label.add_css_class("notification-empty");
-                notifications_box.append(&empty_label);
+                groups.entry(app_name).or_insert_with(Vec::new).push(notification);
+            }
+            
+            // Создаём UI для каждой группы
+            for app_name in group_order {
+                if let Some(notifications) = groups.get(&app_name) {
+                    let group_widget = Self::create_app_group(
+                        &app_name,
+                        notifications,
+                        service.clone(),
+                        notifications_box.clone(),
+                        button_weak.clone(),
+                    );
+                    notifications_box.append(&group_widget);
+                }
             }
         }
-
-        // Lazy loading при скролле
-        let vadjustment = scrolled.vadjustment();
-        let load_more_scroll = Rc::clone(&load_more);
-        vadjustment.connect_value_changed(move |adj| {
-            let value = adj.value();
-            let upper = adj.upper();
-            let page_size_adj = adj.page_size();
-
-            // Загружаем ещё когда прокрутили на 80% вниз
-            if value + page_size_adj >= upper * 0.8 {
-                load_more_scroll();
-            }
-        });
 
         // Clear All кнопка
         let service_clear = Arc::clone(&service);
         let notifications_box_clear = notifications_box.clone();
         let button_weak_clear = button_weak.clone();
-        let loaded_count_clear = Rc::clone(&loaded_count);
-        let has_more_clear = Rc::clone(&has_more);
         clear_button.connect_clicked(move |_| {
             eprintln!("[UI] Clear All button clicked");
             service_clear.clear_history();
-            // Сбрасываем состояние пагинации
-            loaded_count_clear.set(0);
-            has_more_clear.set(true);
             // Обновляем список
             while let Some(child) = notifications_box_clear.first_child() {
                 notifications_box_clear.remove(&child);
@@ -308,39 +260,101 @@ impl NotificationWidget {
             }
         });
 
-        // Также добавляем GestureClick для Clear All
-        let gesture_clear = gtk4::GestureClick::new();
-        let service_gesture_clear = Arc::clone(&service);
-        let notifications_box_gesture_clear = notifications_box.clone();
-        let button_weak_gesture_clear = button_weak.clone();
-        let loaded_count_gesture = Rc::clone(&loaded_count);
-        let has_more_gesture = Rc::clone(&has_more);
-        gesture_clear.connect_released(move |_, _, _, _| {
-            eprintln!("[UI] Gesture click on Clear All");
-            service_gesture_clear.clear_history();
-            // Сбрасываем состояние пагинации
-            loaded_count_gesture.set(0);
-            has_more_gesture.set(true);
-            while let Some(child) = notifications_box_gesture_clear.first_child() {
-                notifications_box_gesture_clear.remove(&child);
-            }
-            let empty_label = gtk4::Label::new(Some("No notifications"));
-            empty_label.add_css_class("notification-empty");
-            notifications_box_gesture_clear.append(&empty_label);
-
-            // Обновляем счётчик
-            if let Some(btn) = button_weak_gesture_clear.upgrade() {
-                Self::update_button_badge(&btn, &service_gesture_clear);
-            }
-        });
-        clear_button.add_controller(gesture_clear);
-
         header.append(&clear_button);
         main_box.append(&header);
         main_box.append(&scrolled);
 
         popover.set_child(Some(&main_box));
         popover.popup();
+    }
+
+    /// Создаёт группу уведомлений для одного приложения
+    fn create_app_group(
+        app_name: &str,
+        notifications: &[Notification],
+        service: Arc<dyn NotificationService + Send + Sync>,
+        parent_box: gtk4::Box,
+        button_weak: glib::WeakRef<gtk4::Button>,
+    ) -> gtk4::Box {
+        let group_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        group_box.add_css_class("notification-group");
+        
+        // Заголовок группы (кликабельный для сворачивания/разворачивания)
+        let header_button = gtk4::Button::new();
+        header_button.add_css_class("notification-group-header");
+        header_button.set_has_frame(false);
+        
+        let header_content = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
+        
+        // Иконка приложения (если есть)
+        if let Some(first_notif) = notifications.first() {
+            if !first_notif.app_icon.is_empty() {
+                let theme = gtk4::IconTheme::for_display(&gtk4::gdk::Display::default().unwrap());
+                if theme.has_icon(&first_notif.app_icon) {
+                    let icon = gtk4::Image::from_icon_name(&first_notif.app_icon);
+                    icon.set_pixel_size(20);
+                    icon.add_css_class("notification-group-icon");
+                    header_content.append(&icon);
+                }
+            }
+        }
+        
+        // Название приложения
+        let name_label = gtk4::Label::new(Some(app_name));
+        name_label.add_css_class("notification-group-name");
+        name_label.set_halign(gtk4::Align::Start);
+        name_label.set_hexpand(true);
+        header_content.append(&name_label);
+        
+        // Счётчик уведомлений
+        let count_label = gtk4::Label::new(Some(&format!("{}", notifications.len())));
+        count_label.add_css_class("notification-group-count");
+        header_content.append(&count_label);
+        
+        // Стрелка (chevron)
+        let chevron = gtk4::Label::new(Some("󰅀")); // Nerd Font: chevron-down
+        chevron.add_css_class("notification-group-chevron");
+        header_content.append(&chevron);
+        
+        header_button.set_child(Some(&header_content));
+        group_box.append(&header_button);
+        
+        // Контейнер для уведомлений (изначально развёрнут)
+        let items_box = gtk4::Box::new(gtk4::Orientation::Vertical, 2);
+        items_box.add_css_class("notification-group-items");
+        items_box.set_margin_start(12);
+        
+        // Добавляем все уведомления группы
+        for notification in notifications {
+            let item = Self::create_notification_item(
+                notification,
+                service.clone(),
+                parent_box.clone(),
+                button_weak.clone(),
+            );
+            items_box.append(&item);
+        }
+        
+        group_box.append(&items_box);
+        
+        // Обработчик сворачивания/разворачивания
+        let items_box_clone = items_box.clone();
+        let chevron_clone = chevron.clone();
+        let is_expanded = Rc::new(Cell::new(true));
+        
+        header_button.connect_clicked(move |_| {
+            let expanded = is_expanded.get();
+            if expanded {
+                items_box_clone.set_visible(false);
+                chevron_clone.set_label("󰅂"); // chevron-right
+            } else {
+                items_box_clone.set_visible(true);
+                chevron_clone.set_label("󰅀"); // chevron-down
+            }
+            is_expanded.set(!expanded);
+        });
+        
+        group_box
     }
 
     fn create_notification_item(

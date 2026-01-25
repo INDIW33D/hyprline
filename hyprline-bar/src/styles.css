@@ -524,6 +524,49 @@ box.zone-right {
     padding: 20px;
 }
 
+/* Notification Groups */
+.notification-group {
+    margin-bottom: 8px;
+}
+
+.notification-group-header {
+    background: #252525;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+.notification-group-header:hover {
+    background: #303030;
+}
+
+.notification-group-icon {
+    opacity: 0.9;
+}
+
+.notification-group-name {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.notification-group-count {
+    background: #3a3a3a;
+    color: #cccccc;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    min-width: 20px;
+}
+
+.notification-group-chevron {
+    color: #888888;
+    font-size: 14px;
+}
+
+.notification-group-items {
+    margin-top: 4px;
+}
+
 .notification-item {
     background: #1a1a1a;
     border-radius: 4px;
