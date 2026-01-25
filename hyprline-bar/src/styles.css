@@ -213,8 +213,7 @@ box.zone-right {
     background: #000000AA;
     border-radius: 4px;
     /* spacing управляется через конфиг */
-    padding: 0;
-    /*padding: 2px;*/
+    padding: 0 10px;
 }
 
 .tray-item {
