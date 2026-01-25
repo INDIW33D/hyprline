@@ -54,6 +54,8 @@ impl VolumeWidget {
             // Создаём лейбл с процентами
             let label = gtk4::Label::new(Some(&format!("{}%", volume_info.volume)));
             label.add_css_class("volume-percentage");
+            label.set_width_chars(4); // "100%" - фиксированная ширина
+            label.set_xalign(1.0); // Выравнивание по правому краю
             self.container.append(&label);
 
             // Создаём слайдер для регулировки громкости

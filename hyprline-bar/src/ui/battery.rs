@@ -40,6 +40,8 @@ impl BatteryWidget {
             // Создаём лейбл с процентами
             let label = gtk4::Label::new(Some(&format!("{}%", battery_info.percentage)));
             label.add_css_class("battery-percentage");
+            label.set_width_chars(4); // "100%" - фиксированная ширина
+            label.set_xalign(1.0); // Выравнивание по правому краю
             self.container.append(&label);
 
             // Устанавливаем tooltip с дополнительной информацией

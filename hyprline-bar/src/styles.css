@@ -6,6 +6,15 @@ window.window {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Табличные цифры - все цифры одинаковой ширины */
+.battery-percentage,
+.volume-percentage,
+.brightness-percentage,
+.system-resources-value,
+.datetime-label {
+    font-variant-numeric: tabular-nums;
+}
+
 box.line {
     background: transparent;
 }

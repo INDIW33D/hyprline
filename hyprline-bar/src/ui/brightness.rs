@@ -24,6 +24,8 @@ impl BrightnessWidget {
         // Процент яркости
         let percentage_label = Label::new(Some(""));
         percentage_label.set_css_classes(&["brightness-percentage"]);
+        percentage_label.set_width_chars(4); // "100%" - фиксированная ширина
+        percentage_label.set_xalign(1.0); // Выравнивание по правому краю
 
         container.append(&icon_label);
         container.append(&percentage_label);

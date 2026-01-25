@@ -42,6 +42,8 @@ impl SystemResourcesWidget {
             let cpu_label = gtk4::Label::new(Some(&format!("{:.0}%", resources.cpu_usage)));
             cpu_label.add_css_class("system-resources-value");
             cpu_label.add_css_class("cpu-value");
+            cpu_label.set_width_chars(4); // "100%" - фиксированная ширина
+            cpu_label.set_xalign(1.0); // Выравнивание по правому краю
             self.container.append(&cpu_label);
 
             // Разделитель
@@ -58,6 +60,8 @@ impl SystemResourcesWidget {
             let ram_label = gtk4::Label::new(Some(&format!("{:.1}G", resources.memory_used_gb)));
             ram_label.add_css_class("system-resources-value");
             ram_label.add_css_class("ram-value");
+            ram_label.set_width_chars(5); // "32.0G" - фиксированная ширина
+            ram_label.set_xalign(1.0); // Выравнивание по правому краю
             self.container.append(&ram_label);
 
             // Tooltip с подробной информацией
