@@ -1,0 +1,22 @@
+[package]
+name = "hyprline-bar"
+version = "0.1.0"
+edition = "2021"
+description = "Status bar for Hyprland"
+
+[dependencies]
+gtk4 = "0.9.7"
+gtk4-layer-shell = "0.5"
+gdk-pixbuf = "0.20"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = "0.4"
+zbus = "4.0"
+async-channel = "2.1"
+futures = "0.3"
+futures-util = "0.3"
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "macros", "time"] }
+pipewire = "0.8"
+rusqlite = { version = "0.32", features = ["bundled"] }
+parking_lot = "0.12"
+notify = "6.1"

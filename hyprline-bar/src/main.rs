@@ -40,10 +40,11 @@ use std::sync::Arc;
 
 fn main() -> glib::ExitCode {
     let app = gtk4::Application::builder()
-        .application_id("ru.hyprline")
+        .application_id("ru.hyprline.bar")
         .build();
 
-    app.connect_startup(|app| {
+    // CSS загружаем в startup (один раз)
+    app.connect_startup(|_app| {
         let provider = gtk4::CssProvider::new();
         provider.load_from_data(include_str!("styles.css"));
 
@@ -52,6 +53,17 @@ fn main() -> glib::ExitCode {
             &provider,
             gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
+    });
+
+    // UI создаём в activate (вызывается при каждом запуске/активации)
+    app.connect_activate(|app| {
+        // Проверяем, есть ли уже окна — если да, просто активируем
+        if !app.windows().is_empty() {
+            for window in app.windows() {
+                window.present();
+            }
+            return;
+        }
 
         build_ui(app);
     });

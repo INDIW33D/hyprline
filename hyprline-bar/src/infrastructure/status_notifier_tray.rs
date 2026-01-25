@@ -234,8 +234,23 @@ impl StatusNotifierTrayService {
             .build()
             .await?;
 
-        // Получаем базовые данные
-        let title = item_proxy.title().await.unwrap_or_else(|_| service_name.to_string());
+        // Получаем базовые данные - title обязателен
+        // Если не удалось получить title, значит сервис недоступен
+        let title = match item_proxy.title().await {
+            Ok(t) if !t.is_empty() => t,
+            Ok(_) => {
+                // Пустой title - это невалидный элемент
+                return Err(zbus::Error::Failure(format!(
+                    "Tray item {} has empty title", service
+                )));
+            }
+            Err(e) => {
+                // Не удалось получить title - сервис недоступен
+                return Err(zbus::Error::Failure(format!(
+                    "Cannot get title from tray item {}: {}", service, e
+                )));
+            }
+        };
         let status_str = item_proxy.status().await.unwrap_or_else(|_| "Active".to_string());
 
         let status = match status_str.as_str() {

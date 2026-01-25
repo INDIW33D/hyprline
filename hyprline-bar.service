@@ -1,0 +1,14 @@
+[Unit]
+Description=Hyprline Status Bar
+Documentation=https://github.com/indiw33d/hyprline
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/hyprline-bar
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target

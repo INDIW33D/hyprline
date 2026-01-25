@@ -19,7 +19,7 @@ impl WorkspacesWidget {
     ) -> Self {
         let container = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         container.add_css_class("workspaces");
-        container.set_margin_start(10);
+        // spacing между виджетами управляется через конфиг
 
         Self {
             container,

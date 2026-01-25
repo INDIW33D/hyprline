@@ -3,7 +3,7 @@ pub mod widget_config;
 
 pub use widget_config::{
     HyprlineConfig, WidgetConfig, WidgetType, WidgetPosition, 
-    WidgetProfile, MonitorConfig,
+    WidgetProfile, MonitorConfig, BarPadding,
     get_config, save_config, subscribe_config_changes, notify_config_changed
 };
 

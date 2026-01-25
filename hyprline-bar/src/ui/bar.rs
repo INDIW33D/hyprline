@@ -86,6 +86,7 @@ impl CreatedWidgets {
 
 pub struct Bar {
     window: gtk4::ApplicationWindow,
+    main_box: gtk4::CenterBox,
     left_box: gtk4::Box,
     center_box: gtk4::Box,
     right_box: gtk4::Box,
@@ -144,26 +145,40 @@ impl Bar {
         window.auto_exclusive_zone_enable();
         window.add_css_class("window");
 
+        // Получаем spacing из конфига
+        let widget_spacing = {
+            let config = get_config().read().unwrap();
+            config.widget_spacing
+        };
+
         // Создаём три зоны
-        let left_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let left_box = gtk4::Box::new(gtk4::Orientation::Horizontal, widget_spacing);
         left_box.add_css_class("zone-left");
         left_box.set_halign(gtk4::Align::Start);
 
-        let center_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let center_box = gtk4::Box::new(gtk4::Orientation::Horizontal, widget_spacing);
         center_box.add_css_class("zone-center");
         center_box.set_halign(gtk4::Align::Center);
-        center_box.set_hexpand(true);
 
-        let right_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let right_box = gtk4::Box::new(gtk4::Orientation::Horizontal, widget_spacing);
         right_box.add_css_class("zone-right");
         right_box.set_halign(gtk4::Align::End);
 
-        // Контейнер для всех зон
-        let main_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        // CenterBox гарантирует, что центральная часть всегда по центру
+        let main_box = gtk4::CenterBox::new();
         main_box.add_css_class("line");
-        main_box.append(&left_box);
-        main_box.append(&center_box);
-        main_box.append(&right_box);
+        main_box.set_start_widget(Some(&left_box));
+        main_box.set_center_widget(Some(&center_box));
+        main_box.set_end_widget(Some(&right_box));
+
+        // Применяем padding из конфига к main_box
+        {
+            let config = get_config().read().unwrap();
+            main_box.set_margin_top(config.padding.top);
+            main_box.set_margin_bottom(config.padding.bottom);
+            main_box.set_margin_start(config.padding.left);
+            main_box.set_margin_end(config.padding.right);
+        }
 
         window.set_child(Some(&main_box));
 
@@ -191,6 +206,7 @@ impl Bar {
 
         let mut bar = Self {
             window,
+            main_box,
             left_box,
             center_box,
             right_box,
@@ -218,8 +234,30 @@ impl Bar {
         }
     }
 
+    /// Обновляет внутренние отступы панели из конфига
+    fn update_padding(&self) {
+        let config = get_config().read().unwrap();
+        self.main_box.set_margin_top(config.padding.top);
+        self.main_box.set_margin_bottom(config.padding.bottom);
+        self.main_box.set_margin_start(config.padding.left);
+        self.main_box.set_margin_end(config.padding.right);
+    }
+
+    /// Обновляет отступы между виджетами
+    fn update_widget_spacing(&self) {
+        let config = get_config().read().unwrap();
+        let spacing = config.widget_spacing;
+        self.left_box.set_spacing(spacing);
+        self.center_box.set_spacing(spacing);
+        self.right_box.set_spacing(spacing);
+    }
+
     /// Перестраивает виджеты на основе конфигурации
     pub fn rebuild_widgets(&mut self) {
+        // Обновляем padding и spacing
+        self.update_padding();
+        self.update_widget_spacing();
+
         // Очищаем зоны
         self.clear_zones();
 

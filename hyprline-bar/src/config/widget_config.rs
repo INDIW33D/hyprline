@@ -143,6 +143,30 @@ impl Default for MonitorConfig {
     }
 }
 
+/// Настройки внутренних отступов панели (padding)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BarPadding {
+    pub top: i32,
+    pub bottom: i32,
+    pub left: i32,
+    pub right: i32,
+}
+
+impl Default for BarPadding {
+    fn default() -> Self {
+        Self {
+            top: 4,
+            bottom: 4,
+            left: 20,
+            right: 20,
+        }
+    }
+}
+
+fn default_widget_spacing() -> i32 {
+    8
+}
+
 /// Главная конфигурация панели
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HyprlineConfig {
@@ -152,6 +176,12 @@ pub struct HyprlineConfig {
     pub active_profile: String,
     /// Настройки для конкретных мониторов (ключ - имя монитора)
     pub monitors: HashMap<String, MonitorConfig>,
+    /// Внутренние отступы панели (padding)
+    #[serde(default)]
+    pub padding: BarPadding,
+    /// Отступ между виджетами (в пикселях)
+    #[serde(default = "default_widget_spacing")]
+    pub widget_spacing: i32,
 
     /// Обратная совместимость - старое поле widgets
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -183,6 +213,8 @@ impl Default for HyprlineConfig {
             ],
             active_profile: "Default".to_string(),
             monitors: HashMap::new(),
+            padding: BarPadding::default(),
+            widget_spacing: default_widget_spacing(),
             widgets: Vec::new(),
         }
     }

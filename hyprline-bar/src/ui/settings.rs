@@ -346,6 +346,202 @@ impl SettingsWindow {
         container
     }
 
+    /// Создаёт UI для настройки внешнего вида
+    pub fn create_appearance_settings() -> GtkBox {
+        let container = GtkBox::new(Orientation::Vertical, 16);
+        container.add_css_class("settings-appearance");
+        container.set_margin_start(24);
+        container.set_margin_end(24);
+        container.set_margin_top(24);
+        container.set_margin_bottom(24);
+
+        // Заголовок
+        let header = Label::new(Some("Appearance"));
+        header.add_css_class("settings-section-header");
+        header.set_halign(gtk4::Align::Start);
+        container.append(&header);
+
+        let description = Label::new(Some("Configure the bar's visual appearance and padding."));
+        description.add_css_class("settings-description");
+        description.set_halign(gtk4::Align::Start);
+        description.set_wrap(true);
+        container.append(&description);
+
+        // Секция Padding
+        let padding_frame = Frame::new(Some("Bar Padding"));
+        padding_frame.set_margin_top(16);
+
+        let padding_box = GtkBox::new(Orientation::Vertical, 12);
+        padding_box.set_margin_start(16);
+        padding_box.set_margin_end(16);
+        padding_box.set_margin_top(16);
+        padding_box.set_margin_bottom(16);
+
+        // Загружаем текущие значения
+        let current_padding = {
+            let config = get_config().read().unwrap();
+            config.padding.clone()
+        };
+
+        // Top padding
+        let top_row = GtkBox::new(Orientation::Horizontal, 12);
+        let top_label = Label::new(Some("Top:"));
+        top_label.set_width_chars(8);
+        top_label.set_halign(gtk4::Align::Start);
+        let top_spin = gtk4::SpinButton::with_range(0.0, 100.0, 1.0);
+        top_spin.set_value(current_padding.top as f64);
+        top_spin.set_width_chars(6);
+        top_row.append(&top_label);
+        top_row.append(&top_spin);
+        padding_box.append(&top_row);
+
+        // Bottom padding
+        let bottom_row = GtkBox::new(Orientation::Horizontal, 12);
+        let bottom_label = Label::new(Some("Bottom:"));
+        bottom_label.set_width_chars(8);
+        bottom_label.set_halign(gtk4::Align::Start);
+        let bottom_spin = gtk4::SpinButton::with_range(0.0, 100.0, 1.0);
+        bottom_spin.set_value(current_padding.bottom as f64);
+        bottom_spin.set_width_chars(6);
+        bottom_row.append(&bottom_label);
+        bottom_row.append(&bottom_spin);
+        padding_box.append(&bottom_row);
+
+        // Left padding
+        let left_row = GtkBox::new(Orientation::Horizontal, 12);
+        let left_label = Label::new(Some("Left:"));
+        left_label.set_width_chars(8);
+        left_label.set_halign(gtk4::Align::Start);
+        let left_spin = gtk4::SpinButton::with_range(0.0, 200.0, 1.0);
+        left_spin.set_value(current_padding.left as f64);
+        left_spin.set_width_chars(6);
+        left_row.append(&left_label);
+        left_row.append(&left_spin);
+        padding_box.append(&left_row);
+
+        // Right padding
+        let right_row = GtkBox::new(Orientation::Horizontal, 12);
+        let right_label = Label::new(Some("Right:"));
+        right_label.set_width_chars(8);
+        right_label.set_halign(gtk4::Align::Start);
+        let right_spin = gtk4::SpinButton::with_range(0.0, 200.0, 1.0);
+        right_spin.set_value(current_padding.right as f64);
+        right_spin.set_width_chars(6);
+        right_row.append(&right_label);
+        right_row.append(&right_spin);
+        padding_box.append(&right_row);
+
+        // Обработчики изменений
+        let save_padding = move |top: i32, bottom: i32, left: i32, right: i32| {
+            let mut config = get_config().write().unwrap();
+            config.padding.top = top;
+            config.padding.bottom = bottom;
+            config.padding.left = left;
+            config.padding.right = right;
+            drop(config);
+            save_config();
+        };
+
+        // Клонируем spin buttons для использования в замыканиях
+        let top_spin_clone = top_spin.clone();
+        let bottom_spin_clone = bottom_spin.clone();
+        let left_spin_clone = left_spin.clone();
+        let right_spin_clone = right_spin.clone();
+
+        let save_padding_clone = save_padding.clone();
+        top_spin.connect_value_changed(move |spin| {
+            save_padding_clone(
+                spin.value() as i32,
+                bottom_spin_clone.value() as i32,
+                left_spin_clone.value() as i32,
+                right_spin_clone.value() as i32,
+            );
+        });
+
+        let top_spin_clone = top_spin.clone();
+        let bottom_spin_clone = bottom_spin.clone();
+        let left_spin_clone = left_spin.clone();
+        let right_spin_clone = right_spin.clone();
+
+        let save_padding_clone = save_padding.clone();
+        bottom_spin.connect_value_changed(move |spin| {
+            save_padding_clone(
+                top_spin_clone.value() as i32,
+                spin.value() as i32,
+                left_spin_clone.value() as i32,
+                right_spin_clone.value() as i32,
+            );
+        });
+
+        let top_spin_clone = top_spin.clone();
+        let bottom_spin_clone = bottom_spin.clone();
+        let left_spin_clone = left_spin.clone();
+        let right_spin_clone = right_spin.clone();
+
+        let save_padding_clone = save_padding.clone();
+        left_spin.connect_value_changed(move |spin| {
+            save_padding_clone(
+                top_spin_clone.value() as i32,
+                bottom_spin_clone.value() as i32,
+                spin.value() as i32,
+                right_spin_clone.value() as i32,
+            );
+        });
+
+        let top_spin_clone = top_spin.clone();
+        let bottom_spin_clone = bottom_spin.clone();
+        let left_spin_clone = left_spin.clone();
+
+        right_spin.connect_value_changed(move |spin| {
+            save_padding(
+                top_spin_clone.value() as i32,
+                bottom_spin_clone.value() as i32,
+                left_spin_clone.value() as i32,
+                spin.value() as i32,
+            );
+        });
+
+        padding_frame.set_child(Some(&padding_box));
+        container.append(&padding_frame);
+
+        // Секция Widget Spacing
+        let spacing_frame = Frame::new(Some("Widget Spacing"));
+        spacing_frame.set_margin_top(16);
+
+        let spacing_box = GtkBox::new(Orientation::Horizontal, 12);
+        spacing_box.set_margin_start(16);
+        spacing_box.set_margin_end(16);
+        spacing_box.set_margin_top(16);
+        spacing_box.set_margin_bottom(16);
+
+        let spacing_label = Label::new(Some("Space between widgets:"));
+        spacing_label.set_halign(gtk4::Align::Start);
+        spacing_label.set_hexpand(true);
+
+        let current_spacing = {
+            let config = get_config().read().unwrap();
+            config.widget_spacing
+        };
+
+        let spacing_spin = gtk4::SpinButton::with_range(0.0, 50.0, 1.0);
+        spacing_spin.set_value(current_spacing as f64);
+        spacing_spin.set_width_chars(6);
+
+        spacing_spin.connect_value_changed(move |spin| {
+            let mut config = get_config().write().unwrap();
+            config.widget_spacing = spin.value() as i32;
+            drop(config);
+            let _ = save_config();
+        });
+
+        spacing_box.append(&spacing_label);
+        spacing_box.append(&spacing_spin);
+        spacing_frame.set_child(Some(&spacing_box));
+        container.append(&spacing_frame);
+
+        container
+    }
+
     pub fn create_widgets_settings() -> GtkBox {
         let container = GtkBox::new(Orientation::Vertical, 8);
         container.add_css_class("settings-widgets");
@@ -860,6 +1056,10 @@ pub fn show_settings(app: &gtk4::Application) {
     unsafe { widgets_item.set_data("page", "widgets"); }
     menu_list.append(&widgets_item);
 
+    let appearance_item = SettingsWindow::create_menu_item("󰏘", "Appearance");
+    unsafe { appearance_item.set_data("page", "appearance"); }
+    menu_list.append(&appearance_item);
+
     menu_box.append(&menu_list);
     main_box.append(&menu_box);
 
@@ -915,6 +1115,9 @@ pub fn show_settings(app: &gtk4::Application) {
                 }
                 Some("widgets") => {
                     content.append(&SettingsWindow::create_widgets_settings());
+                }
+                Some("appearance") => {
+                    content.append(&SettingsWindow::create_appearance_settings());
                 }
                 _ => {}
             }
