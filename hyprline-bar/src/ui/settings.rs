@@ -605,15 +605,15 @@ impl SettingsWindow {
         nc_box.set_margin_bottom(16);
 
         // Загружаем текущие значения
-        let (current_width, current_height) = {
+        let (current_width, current_bottom_margin) = {
             let config = get_config().read().unwrap();
-            (config.notification_center.width, config.notification_center.height)
+            (config.notification_center.width, config.notification_center.bottom_margin)
         };
 
         // Width
         let width_row = GtkBox::new(Orientation::Horizontal, 12);
         let width_label = Label::new(Some("Width:"));
-        width_label.set_width_chars(8);
+        width_label.set_width_chars(12);
         width_label.set_halign(gtk4::Align::Start);
         let width_spin = gtk4::SpinButton::with_range(200.0, 800.0, 10.0);
         width_spin.set_value(current_width as f64);
@@ -622,33 +622,33 @@ impl SettingsWindow {
         width_row.append(&width_spin);
         nc_box.append(&width_row);
 
-        // Height
-        let height_row = GtkBox::new(Orientation::Horizontal, 12);
-        let height_label = Label::new(Some("Height:"));
-        height_label.set_width_chars(8);
-        height_label.set_halign(gtk4::Align::Start);
-        let height_spin = gtk4::SpinButton::with_range(200.0, 1200.0, 10.0);
-        height_spin.set_value(current_height as f64);
-        height_spin.set_width_chars(6);
-        height_row.append(&height_label);
-        height_row.append(&height_spin);
-        nc_box.append(&height_row);
+        // Bottom Margin
+        let margin_row = GtkBox::new(Orientation::Horizontal, 12);
+        let margin_label = Label::new(Some("Bottom margin:"));
+        margin_label.set_width_chars(12);
+        margin_label.set_halign(gtk4::Align::Start);
+        let margin_spin = gtk4::SpinButton::with_range(0.0, 200.0, 5.0);
+        margin_spin.set_value(current_bottom_margin as f64);
+        margin_spin.set_width_chars(6);
+        margin_row.append(&margin_label);
+        margin_row.append(&margin_spin);
+        nc_box.append(&margin_row);
 
         // Обработчики изменений
-        let height_spin_clone = height_spin.clone();
+        let margin_spin_clone = margin_spin.clone();
         width_spin.connect_value_changed(move |spin| {
             let mut config = get_config().write().unwrap();
             config.notification_center.width = spin.value() as i32;
-            config.notification_center.height = height_spin_clone.value() as i32;
+            config.notification_center.bottom_margin = margin_spin_clone.value() as i32;
             drop(config);
             let _ = save_config();
         });
 
         let width_spin_clone = width_spin.clone();
-        height_spin.connect_value_changed(move |spin| {
+        margin_spin.connect_value_changed(move |spin| {
             let mut config = get_config().write().unwrap();
             config.notification_center.width = width_spin_clone.value() as i32;
-            config.notification_center.height = spin.value() as i32;
+            config.notification_center.bottom_margin = spin.value() as i32;
             drop(config);
             let _ = save_config();
         });

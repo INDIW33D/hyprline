@@ -154,7 +154,23 @@ impl NotificationWidget {
         // Загружаем конфигурацию центра уведомлений
         let config = get_config().read().unwrap();
         let nc_config = config.notification_center.clone();
+        let bar_height = config.padding.top + config.padding.bottom + 37; // Примерная высота панели
         drop(config); // Освобождаем lock сразу
+
+        // Получаем высоту монитора, на котором находится кнопка
+        let monitor_height = button
+            .root()
+            .and_then(|root| root.downcast::<gtk4::Window>().ok())
+            .and_then(|window| {
+                let surface = window.surface()?;
+                let display = gtk4::prelude::WidgetExt::display(&window);
+                display.monitor_at_surface(&surface)
+            })
+            .map(|monitor| monitor.geometry().height())
+            .unwrap_or(1080); // fallback
+
+        // Рассчитываем высоту popover: высота монитора - высота панели - отступ снизу
+        let popover_height = monitor_height - bar_height - nc_config.bottom_margin;
 
         // Создаём Popover
         let popover = gtk4::Popover::new();
@@ -165,9 +181,9 @@ impl NotificationWidget {
         let main_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         main_box.add_css_class("notification-history");
         
-        // Устанавливаем размеры из конфигурации
+        // Устанавливаем размеры
         main_box.set_width_request(nc_config.width);
-        main_box.set_height_request(nc_config.height);
+        main_box.set_height_request(popover_height);
 
         // Заголовок с кнопкой очистки
         let header = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);

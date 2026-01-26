@@ -182,15 +182,20 @@ fn default_notification_retention_days() -> u32 {
 pub struct NotificationCenterConfig {
     /// Ширина панели в пикселях
     pub width: i32,
-    /// Высота панели в пикселях
-    pub height: i32,
+    /// Отступ снизу экрана в пикселях (высота рассчитывается автоматически)
+    #[serde(default = "default_bottom_margin")]
+    pub bottom_margin: i32,
+}
+
+fn default_bottom_margin() -> i32 {
+    10
 }
 
 impl Default for NotificationCenterConfig {
     fn default() -> Self {
         Self {
             width: 400,
-            height: 910,
+            bottom_margin: 10,
         }
     }
 }
