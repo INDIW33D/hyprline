@@ -1,7 +1,7 @@
 use crate::domain::brightness_service::BrightnessService;
-use std::sync::Arc;
-use zbus::{Connection, proxy};
 use parking_lot::Mutex;
+use std::sync::Arc;
+use zbus::{proxy, Connection};
 
 #[proxy(
     interface = "org.lumen.Brightness",
@@ -48,11 +48,11 @@ trait Lumen {
     /// Проверить состояние обучения
     #[zbus(name = "IsLearningEnabled")]
     async fn is_learning_enabled(&self) -> zbus::Result<bool>;
-    
+
     /// Сигнал изменения яркости
     #[zbus(signal, name = "BrightnessChanged")]
     fn brightness_changed(&self, value: f64) -> zbus::Result<()>;
-    
+
     /// Сигнал изменения состояния автоматической регулировки
     #[zbus(signal, name = "AutoEnabledChanged")]
     fn auto_enabled_changed(&self, enabled: bool) -> zbus::Result<()>;
@@ -69,7 +69,8 @@ impl LumenBrightnessService {
             .map_err(|e| format!("Failed to create runtime: {}", e))?;
 
         let connection = rt.block_on(async {
-            Connection::session().await
+            Connection::session()
+                .await
                 .map_err(|e| format!("Failed to connect to session bus: {}", e))
         })?;
 
@@ -82,18 +83,39 @@ impl LumenBrightnessService {
     }
 
     async fn get_proxy(&self) -> Result<LumenProxy<'_>, String> {
-        LumenProxy::new(&self.connection).await
+        LumenProxy::new(&self.connection)
+            .await
             .map_err(|e| format!("Failed to create Lumen proxy: {}", e))
     }
 
     pub fn start_signal_monitoring(self: Arc<Self>) {
         let callback = self.callback.clone();
-        let connection = self.connection.clone();
-        
+
         std::thread::spawn(move || {
-            let rt = tokio::runtime::Runtime::new().unwrap();
+            eprintln!("[Brightness] Signal monitoring thread started");
+            let rt = match tokio::runtime::Runtime::new() {
+                Ok(rt) => rt,
+                Err(e) => {
+                    eprintln!("[Brightness] ✗ Failed to create tokio runtime: {}", e);
+                    return;
+                }
+            };
             rt.block_on(async move {
+                // Создаём свежее подключение к D-Bus в этом потоке/рантайме,
+                // чтобы внутренний event loop zbus был привязан к текущему tokio runtime
+                let connection = match Connection::session().await {
+                    Ok(c) => c,
+                    Err(e) => {
+                        eprintln!(
+                            "[Brightness] ✗ Failed to connect to session bus for monitoring: {}",
+                            e
+                        );
+                        return;
+                    }
+                };
+                eprintln!("[Brightness] Creating proxy for signal monitoring...");
                 if let Ok(proxy) = LumenProxy::new(&connection).await {
+                    eprintln!("[Brightness] Proxy created successfully");
                     // Сначала получаем текущее значение яркости
                     match proxy.get_brightness().await {
                         Ok(value) => {
@@ -107,7 +129,7 @@ impl LumenBrightnessService {
                             eprintln!("[Brightness] ✗ Failed to get initial brightness: {}", e);
                         }
                     }
-                    
+
                     // Затем подписываемся на изменения
                     if let Ok(mut stream) = proxy.receive_brightness_changed().await {
                         eprintln!("[Brightness] ✓ Subscribed to BrightnessChanged signal");
@@ -129,6 +151,7 @@ impl LumenBrightnessService {
                 } else {
                     eprintln!("[Brightness] ✗ Failed to create proxy for signal monitoring");
                 }
+                eprintln!("[Brightness] Signal monitoring async block exited");
             });
         });
     }
@@ -141,7 +164,9 @@ impl BrightnessService for LumenBrightnessService {
 
         rt.block_on(async {
             let proxy = self.get_proxy().await?;
-            let brightness = proxy.get_brightness().await
+            let brightness = proxy
+                .get_brightness()
+                .await
                 .map_err(|e| format!("Failed to get brightness: {}", e))?;
             // Конвертируем f64 (0.0-1.0) в u32 (0-100)
             Ok((brightness * 100.0).round() as u32)
@@ -156,7 +181,9 @@ impl BrightnessService for LumenBrightnessService {
             let proxy = self.get_proxy().await?;
             // Конвертируем u32 (0-100) в f64 (0.0-1.0)
             let brightness = (value as f64) / 100.0;
-            proxy.set_brightness(brightness).await
+            proxy
+                .set_brightness(brightness)
+                .await
                 .map_err(|e| format!("Failed to set brightness: {}", e))
         })
     }
@@ -169,7 +196,9 @@ impl BrightnessService for LumenBrightnessService {
             let proxy = self.get_proxy().await?;
             // Конвертируем u32 (0-100) в f64 (0.0-1.0)
             let percentage = (percent as f64) / 100.0;
-            proxy.increase(percentage).await
+            proxy
+                .increase(percentage)
+                .await
                 .map_err(|e| format!("Failed to increase brightness: {}", e))
         })
     }
@@ -182,7 +211,9 @@ impl BrightnessService for LumenBrightnessService {
             let proxy = self.get_proxy().await?;
             // Конвертируем u32 (0-100) в f64 (0.0-1.0)
             let percentage = (percent as f64) / 100.0;
-            proxy.decrease(percentage).await
+            proxy
+                .decrease(percentage)
+                .await
                 .map_err(|e| format!("Failed to decrease brightness: {}", e))
         })
     }
@@ -193,7 +224,9 @@ impl BrightnessService for LumenBrightnessService {
 
         rt.block_on(async {
             let proxy = self.get_proxy().await?;
-            proxy.enable_auto().await
+            proxy
+                .enable_auto()
+                .await
                 .map_err(|e| format!("Failed to enable auto adjustment: {}", e))
         })
     }
@@ -204,7 +237,9 @@ impl BrightnessService for LumenBrightnessService {
 
         rt.block_on(async {
             let proxy = self.get_proxy().await?;
-            proxy.disable_auto().await
+            proxy
+                .disable_auto()
+                .await
                 .map_err(|e| format!("Failed to disable auto adjustment: {}", e))
         })
     }
@@ -215,7 +250,9 @@ impl BrightnessService for LumenBrightnessService {
 
         rt.block_on(async {
             let proxy = self.get_proxy().await?;
-            proxy.is_auto_enabled().await
+            proxy
+                .is_auto_enabled()
+                .await
                 .map_err(|e| format!("Failed to check auto adjustment: {}", e))
         })
     }
@@ -224,4 +261,3 @@ impl BrightnessService for LumenBrightnessService {
         *self.callback.lock() = Some(callback);
     }
 }
-
