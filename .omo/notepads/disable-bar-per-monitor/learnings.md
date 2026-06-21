@@ -1,0 +1,26 @@
+
+- Baseline capture completed before product edits.
+- `git status --short` recorded pre-existing `.omo` changes only: `.omo/boulder.json`, `.omo/drafts/disable-bar-per-monitor.md`, `.omo/notepads/disable-bar-per-monitor/`, and `.omo/plans/disable-bar-per-monitor.md`.
+- Scoped product diff for `hyprline-bar/src/config/widget_config.rs`, `hyprline-bar/src/main.rs`, `hyprline-bar/src/ui/settings.rs`, and `hyprline-bar/src/ui/bar.rs` was empty.
+- QA command exited 0 and wrote evidence to `.omo/evidence/`.
+- `MonitorConfig` now persists `bar_enabled` with a serde default of `true`, so older monitor JSON without the field still loads with the bar enabled.
+- `HyprlineConfig::is_bar_enabled_for_monitor` defaults unknown monitors to `true`, matching the requested fallback behavior.
+- `HyprlineConfig::set_monitor_bar_enabled` updates only `bar_enabled` on the monitor entry and preserves an existing `profile_name` during disable/re-enable cycles.
+- Task 2 verification passed via the provided `run_named` flow for `monitor_bar_defaults_missing_visibility_to_enabled`, `monitor_bar_unknown_monitor_defaults_enabled`, `monitor_bar_set_visibility_preserves_profile`, and `monitor_bar_disabled_serializes_false`; evidence is in `.omo/evidence/task-2-disable-bar-per-monitor.log`.
+- Task 3 added a pure `main.rs` reconciliation planner around `ExistingBarState`, `BarReconciliationPlan`, `desired_bar_monitor_names`, and `plan_bar_reconciliation`, so monitor-bar lifecycle decisions are testable without constructing GTK objects.
+- Planner ordering is deterministic: `create`/`show`/`rebuild` follow Hyprland monitor order from `desired_bar_monitor_names`, while `close_removed` follows existing bar order for monitors missing from the fresh monitor list.
+- The `default` fallback is handled as a synthetic monitor name only when the fresh monitor list is empty; if `default` is enabled it is desired, and if disabled it is excluded from desired bars.
+- Task 3 verification passed via the provided `run_named` flow for `bar_reconciliation_defaults_all_monitors_enabled`, `bar_reconciliation_excludes_disabled_monitor`, `bar_reconciliation_hides_existing_disabled_bar`, `bar_reconciliation_creates_newly_enabled_missing_bar`, `bar_reconciliation_default_fallback_respects_config`, and `bar_reconciliation_monitor_added_preserves_existing_visible_bar`; evidence is in `.omo/evidence/task-3-disable-bar-per-monitor.log`.
+- Full crate regression also passed with `cargo test -p hyprline-bar` (22 passed).
+- Task 4 replaced the runtime `Vec<Bar>` with managed per-monitor bar state carrying `visible` and `listeners_setup`, so config reloads and monitor events can hide/reuse bars without reinstalling listeners.
+- `Bar::hide()` now uses GTK visibility only, which keeps the window and subscriptions alive for re-enable flows while preventing activation from re-presenting disabled bars.
+- The shared reconciliation apply path now drives startup, config changes, and monitor-added snapshots; monitor removal still closes and removes bars directly.
+- The GTK-free fake lifecycle seam records `create`, `setup`, `present`, `hide`, `rebuild`, and `close`, and the new Task 4 tests proved the requested action order plus the no-duplicate-setup rule.
+- Task 4 verification passed with `bar_reconciliation_apply_records_hide_rebuild_create_actions`, `bar_reconciliation_disable_enable_disable_no_duplicate_setup`, and `cargo build -p hyprline-bar`; evidence is in `.omo/evidence/task-4-disable-bar-per-monitor.log`.
+- `cargo build -p hyprline-bar` still reports pre-existing warnings in unrelated modules (for example `config/mod.rs`, `ui/settings.rs`, and several infrastructure/domain files), but it exits 0 and none were introduced as blockers for this task.
+- Task 5 adds a per-monitor `Show bar` switch directly in `SettingsWindow::create_monitors_settings`, using `config.is_bar_enabled_for_monitor(&monitor.name)` for initial state before wiring `connect_active_notify`.
+- Task 5 persistence is isolated in `SettingsWindow::save_monitor_bar_enabled`, which follows the required order: config write lock, `set_monitor_bar_enabled`, `drop(config)`, then `save_config()` so hot-reload notification happens after the lock is released.
+- Task 5 verification passed with the provided `cargo build -p hyprline-bar` + structural Python check command; evidence is in `.omo/evidence/task-5-disable-bar-per-monitor.log`.
+- `hyprline-bar/src/ui/settings.rs` remains a pre-existing oversized file (1057 pure LOC by the post-write measurement), so this task stayed scoped and avoided broader refactoring outside the requested file/behavior.
+- Task 6 QA passed: all 12 named `run_named` checks reported `running 1 test` and an `ok` result, `cargo test -p hyprline-bar` passed with 24 tests, `cargo build -p hyprline-bar` passed, the final diff artifact was written, and the forbidden-runtime grep reported `no forbidden runtime path added`.
+- Evidence artifacts present: `.omo/evidence/task-6-disable-bar-per-monitor.log` and `.omo/evidence/final-target-diff-disable-bar-per-monitor.diff`.

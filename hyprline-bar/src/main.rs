@@ -37,7 +37,268 @@ use ui::volume_osd::VolumeOsd;
 
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
+use std::collections::HashMap;
 use std::sync::Arc;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ExistingBarState {
+    monitor_name: String,
+    is_visible: bool,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+struct BarReconciliationPlan {
+    create: Vec<String>,
+    hide: Vec<String>,
+    show: Vec<String>,
+    rebuild: Vec<String>,
+    close_removed: Vec<String>,
+}
+
+struct ManagedBar<T> {
+    bar: T,
+    visible: bool,
+    listeners_setup: bool,
+}
+
+impl<T> ManagedBar<T> {
+    const fn new(bar: T, visible: bool, listeners_setup: bool) -> Self {
+        Self {
+            bar,
+            visible,
+            listeners_setup,
+        }
+    }
+}
+
+struct ManagedBars<T> {
+    order: Vec<String>,
+    by_monitor: HashMap<String, ManagedBar<T>>,
+}
+
+impl<T> Default for ManagedBars<T> {
+    fn default() -> Self {
+        Self {
+            order: Vec::new(),
+            by_monitor: HashMap::new(),
+        }
+    }
+}
+
+impl<T> ManagedBars<T> {
+    fn insert(&mut self, monitor_name: String, managed_bar: ManagedBar<T>) {
+        if !self.by_monitor.contains_key(&monitor_name) {
+            self.order.push(monitor_name.clone());
+        }
+
+        self.by_monitor.insert(monitor_name, managed_bar);
+    }
+
+    fn get_mut(&mut self, monitor_name: &str) -> Option<&mut ManagedBar<T>> {
+        self.by_monitor.get_mut(monitor_name)
+    }
+
+    fn remove(&mut self, monitor_name: &str) -> Option<ManagedBar<T>> {
+        self.order.retain(|name| name != monitor_name);
+        self.by_monitor.remove(monitor_name)
+    }
+
+    fn existing_states(&self) -> Vec<ExistingBarState> {
+        self.order
+            .iter()
+            .filter_map(|monitor_name| {
+                self.by_monitor.get(monitor_name).map(|managed_bar| ExistingBarState {
+                    monitor_name: monitor_name.clone(),
+                    is_visible: managed_bar.visible,
+                })
+            })
+            .collect()
+    }
+}
+
+trait BarLifecycle {
+    fn setup_event_listener(&mut self);
+    fn present(&mut self);
+    fn hide(&mut self);
+    fn rebuild_widgets(&mut self);
+    fn close(self);
+}
+
+impl BarLifecycle for Bar {
+    fn setup_event_listener(&mut self) {
+        Bar::setup_event_listener(self);
+    }
+
+    fn present(&mut self) {
+        Bar::present(self);
+    }
+
+    fn hide(&mut self) {
+        Bar::hide(self);
+    }
+
+    fn rebuild_widgets(&mut self) {
+        Bar::rebuild_widgets(self);
+    }
+
+    fn close(self) {
+        Bar::close(&self);
+    }
+}
+
+fn apply_bar_reconciliation_plan<T, F>(
+    managed_bars: &mut ManagedBars<T>,
+    plan: &BarReconciliationPlan,
+    mut create_bar: F,
+) where
+    T: BarLifecycle,
+    F: FnMut(&str) -> T,
+{
+    for monitor_name in &plan.close_removed {
+        if let Some(managed_bar) = managed_bars.remove(monitor_name) {
+            managed_bar.bar.close();
+        }
+    }
+
+    for monitor_name in &plan.hide {
+        if let Some(managed_bar) = managed_bars.get_mut(monitor_name) {
+            managed_bar.bar.hide();
+            managed_bar.visible = false;
+        }
+    }
+
+    for monitor_name in &plan.show {
+        if let Some(managed_bar) = managed_bars.get_mut(monitor_name) {
+            if !managed_bar.listeners_setup {
+                managed_bar.bar.setup_event_listener();
+                managed_bar.listeners_setup = true;
+            }
+
+            managed_bar.bar.present();
+            managed_bar.visible = true;
+        }
+    }
+
+    for monitor_name in &plan.rebuild {
+        if let Some(managed_bar) = managed_bars.get_mut(monitor_name) {
+            managed_bar.bar.rebuild_widgets();
+        }
+    }
+
+    for monitor_name in &plan.create {
+        let mut bar = create_bar(monitor_name);
+        bar.setup_event_listener();
+        bar.present();
+        managed_bars.insert(monitor_name.clone(), ManagedBar::new(bar, true, true));
+    }
+}
+
+fn reconcile_managed_bars<T, F>(
+    managed_bars: &mut ManagedBars<T>,
+    monitors: &[domain::models::Monitor],
+    config: &config::HyprlineConfig,
+    create_bar: F,
+) where
+    T: BarLifecycle,
+    F: FnMut(&str) -> T,
+{
+    let existing_bar_states = managed_bars.existing_states();
+    let plan = plan_bar_reconciliation(&existing_bar_states, monitors, config);
+    apply_bar_reconciliation_plan(managed_bars, &plan, create_bar);
+}
+
+fn clone_runtime_config() -> config::HyprlineConfig {
+    config::get_config().read().unwrap().clone()
+}
+
+fn log_startup_disabled_monitors(
+    monitors: &[domain::models::Monitor],
+    config: &config::HyprlineConfig,
+) {
+    if monitors.is_empty() {
+        if !config.is_bar_enabled_for_monitor("default") {
+            eprintln!("[Main] Skipping disabled fallback bar for monitor: default");
+        }
+        return;
+    }
+
+    for monitor in monitors {
+        if !config.is_bar_enabled_for_monitor(&monitor.name) {
+            eprintln!("[Main] Skipping disabled bar for monitor: {}", monitor.name);
+        }
+    }
+}
+
+fn desired_bar_monitor_names(
+    monitors: &[domain::models::Monitor],
+    config: &config::HyprlineConfig,
+) -> Vec<String> {
+    if monitors.is_empty() {
+        return if config.is_bar_enabled_for_monitor("default") {
+            vec!["default".to_string()]
+        } else {
+            Vec::new()
+        };
+    }
+
+    monitors
+        .iter()
+        .filter(|monitor| config.is_bar_enabled_for_monitor(&monitor.name))
+        .map(|monitor| monitor.name.clone())
+        .collect()
+}
+
+fn plan_bar_reconciliation(
+    existing_bar_states: &[ExistingBarState],
+    monitors: &[domain::models::Monitor],
+    config: &config::HyprlineConfig,
+) -> BarReconciliationPlan {
+    let mut plan = BarReconciliationPlan::default();
+    let desired_monitor_names = desired_bar_monitor_names(monitors, config);
+
+    for desired_monitor_name in &desired_monitor_names {
+        match existing_bar_states
+            .iter()
+            .find(|bar| bar.monitor_name == *desired_monitor_name)
+        {
+            Some(existing_bar) if existing_bar.is_visible => {
+                plan.rebuild.push(desired_monitor_name.clone());
+            }
+            Some(existing_bar) if !existing_bar.is_visible => {
+                plan.show.push(desired_monitor_name.clone());
+            }
+            None => {
+                plan.create.push(desired_monitor_name.clone());
+            }
+            Some(_) => unreachable!("visible state handled exhaustively"),
+        }
+    }
+
+    for monitor in monitors {
+        if config.is_bar_enabled_for_monitor(&monitor.name) {
+            continue;
+        }
+
+        if let Some(existing_bar) = existing_bar_states
+            .iter()
+            .find(|bar| bar.monitor_name == monitor.name && bar.is_visible)
+        {
+            plan.hide.push(existing_bar.monitor_name.clone());
+        }
+    }
+
+    for existing_bar in existing_bar_states {
+        let monitor_still_exists = monitors
+            .iter()
+            .any(|monitor| monitor.name == existing_bar.monitor_name);
+
+        if !monitor_still_exists {
+            plan.close_removed.push(existing_bar.monitor_name.clone());
+        }
+    }
+
+    plan
+}
 
 fn main() -> glib::ExitCode {
     let app = gtk4::Application::builder()
@@ -62,7 +323,9 @@ fn main() -> glib::ExitCode {
         // Проверяем, есть ли уже окна — если да, просто активируем
         if !app.windows().is_empty() {
             for window in app.windows() {
-                window.present();
+                if window.is_visible() {
+                    window.present();
+                }
             }
             return;
         }
@@ -452,19 +715,37 @@ fn build_ui(app: &gtk4::Application) {
 
     let workspace_keys = hyprland_ipc_impl.get_workspace_key_labels();
     let monitors = service.get_monitors();
+    let config = clone_runtime_config();
     eprintln!(
         "[Main] Found {} monitors: {:?}",
         monitors.len(),
         monitors.iter().map(|m| &m.name).collect::<Vec<_>>()
     );
+    log_startup_disabled_monitors(&monitors, &config);
 
-    // Создаём bars и храним их для hot reload и динамического управления
-    let bars: Arc<std::sync::Mutex<Vec<Bar>>> =
-        Arc::new(std::sync::Mutex::new(if monitors.is_empty() {
-            eprintln!("[Main] No monitors found, creating default bar");
-            vec![Bar::new(
-                app,
-                "default",
+    let create_bar = {
+        let app = app.clone();
+        let workspace_keys = workspace_keys.clone();
+        let service = service.clone();
+        let tray_service = tray_service.clone();
+        let datetime_service = datetime_service.clone();
+        let datetime_config = datetime_config.clone();
+        let battery_service = battery_service.clone();
+        let volume_service = volume_service.clone();
+        let notification_service = notification_service.clone();
+        let keyboard_layout_service = keyboard_layout_service.clone();
+        let system_resources_service = system_resources_service.clone();
+        let network_service = network_service.clone();
+        let bluetooth_service = bluetooth_service.clone();
+        let brightness_service = brightness_service.clone();
+        let submap_service = submap_service.clone();
+        let shared_state = shared_state.clone();
+
+        std::rc::Rc::new(move |monitor_name: &str| {
+            eprintln!("[Main] Creating bar for monitor: {}", monitor_name);
+            Bar::new(
+                &app,
+                monitor_name,
                 workspace_keys.clone(),
                 service.clone(),
                 tray_service.clone(),
@@ -480,37 +761,25 @@ fn build_ui(app: &gtk4::Application) {
                 brightness_service.clone(),
                 submap_service.clone(),
                 shared_state.clone(),
-            )]
-        } else {
-            monitors
-                .iter()
-                .map(|monitor| {
-                    Bar::new(
-                        app,
-                        &monitor.name,
-                        workspace_keys.clone(),
-                        service.clone(),
-                        tray_service.clone(),
-                        datetime_service.clone(),
-                        datetime_config.clone(),
-                        battery_service.clone(),
-                        volume_service.clone(),
-                        notification_service.clone(),
-                        keyboard_layout_service.clone(),
-                        system_resources_service.clone(),
-                        network_service.clone(),
-                        bluetooth_service.clone(),
-                        brightness_service.clone(),
-                        submap_service.clone(),
-                        shared_state.clone(),
-                    )
-                })
-                .collect()
-        }));
+            )
+        })
+    };
+
+    let bars: Arc<std::sync::Mutex<ManagedBars<Bar>>> =
+        Arc::new(std::sync::Mutex::new(ManagedBars::default()));
+
+    {
+        let mut bars = bars.lock().unwrap();
+        reconcile_managed_bars(&mut bars, &monitors, &config, |monitor_name| {
+            create_bar(monitor_name)
+        });
+    }
 
     // Подписка на изменения конфигурации для hot reload
     {
         let bars_for_config = bars.clone();
+        let service_for_config = service.clone();
+        let create_bar_for_config = create_bar.clone();
         let (config_tx, config_rx) = async_channel::unbounded::<()>();
 
         config::subscribe_config_changes(move || {
@@ -519,11 +788,13 @@ fn build_ui(app: &gtk4::Application) {
 
         glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
             while config_rx.try_recv().is_ok() {
-                eprintln!("[Main] Config changed, rebuilding widgets...");
+                eprintln!("[Main] Config changed, reconciling bars...");
+                let monitors = service_for_config.get_monitors();
+                let config = clone_runtime_config();
                 let mut bars = bars_for_config.lock().unwrap();
-                for bar in bars.iter_mut() {
-                    bar.rebuild_widgets();
-                }
+                reconcile_managed_bars(&mut bars, &monitors, &config, |monitor_name| {
+                    create_bar_for_config(monitor_name)
+                });
             }
             glib::ControlFlow::Continue
         });
@@ -538,22 +809,8 @@ fn build_ui(app: &gtk4::Application) {
         });
 
         let bars_for_monitors = bars.clone();
-        let app_clone = app.clone();
-        let workspace_keys_clone = workspace_keys.clone();
         let service_clone = service.clone();
-        let tray_service_clone = tray_service.clone();
-        let datetime_service_clone = datetime_service.clone();
-        let datetime_config_clone = datetime_config.clone();
-        let battery_service_clone = battery_service.clone();
-        let volume_service_clone = volume_service.clone();
-        let notification_service_clone = notification_service.clone();
-        let keyboard_layout_service_clone = keyboard_layout_service.clone();
-        let system_resources_service_clone = system_resources_service.clone();
-        let network_service_clone = network_service.clone();
-        let bluetooth_service_clone = bluetooth_service.clone();
-        let brightness_service_clone = brightness_service.clone();
-        let submap_service_clone = submap_service.clone();
-        let shared_state_clone = shared_state.clone();
+        let create_bar_for_monitors = create_bar.clone();
 
         glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
             while let Ok(event) = monitor_rx.try_recv() {
@@ -561,64 +818,22 @@ fn build_ui(app: &gtk4::Application) {
                     MonitorEvent::Added(monitor_name) => {
                         // Задержка, чтобы GDK успел зарегистрировать новый монитор
                         let bars_clone = bars_for_monitors.clone();
-                        let app = app_clone.clone();
-                        let workspace_keys = workspace_keys_clone.clone();
                         let service = service_clone.clone();
-                        let tray_service = tray_service_clone.clone();
-                        let datetime_service = datetime_service_clone.clone();
-                        let datetime_config = datetime_config_clone.clone();
-                        let battery_service = battery_service_clone.clone();
-                        let volume_service = volume_service_clone.clone();
-                        let notification_service = notification_service_clone.clone();
-                        let keyboard_layout_service = keyboard_layout_service_clone.clone();
-                        let system_resources_service = system_resources_service_clone.clone();
-                        let network_service = network_service_clone.clone();
-                        let bluetooth_service = bluetooth_service_clone.clone();
-                        let brightness_service = brightness_service_clone.clone();
-                        let submap_service = submap_service_clone.clone();
-                        let shared_state = shared_state_clone.clone();
+                        let create_bar = create_bar_for_monitors.clone();
 
                         glib::timeout_add_local_once(
                             std::time::Duration::from_millis(300),
                             move || {
-                                let mut bars = bars_clone.lock().unwrap();
-
-                                // Проверяем, нет ли уже бара для этого монитора
-                                if bars.iter().any(|b| b.monitor_name() == monitor_name) {
-                                    eprintln!(
-                                        "[Main] Bar for monitor {} already exists",
-                                        monitor_name
-                                    );
-                                    return;
-                                }
-
-                                eprintln!("[Main] Creating bar for new monitor: {}", monitor_name);
-
-                                let bar = Bar::new(
-                                    &app,
-                                    &monitor_name,
-                                    workspace_keys,
-                                    service,
-                                    tray_service,
-                                    datetime_service,
-                                    datetime_config,
-                                    battery_service,
-                                    volume_service,
-                                    notification_service,
-                                    keyboard_layout_service,
-                                    system_resources_service,
-                                    network_service,
-                                    bluetooth_service,
-                                    brightness_service,
-                                    submap_service,
-                                    shared_state,
+                                eprintln!(
+                                    "[Main] Monitor added event settled, reconciling snapshot after: {}",
+                                    monitor_name
                                 );
-
-                                bar.setup_event_listener();
-                                bar.present();
-                                bars.push(bar);
-
-                                eprintln!("[Main] ✓ Bar created for monitor: {}", monitor_name);
+                                let monitors = service.get_monitors();
+                                let config = clone_runtime_config();
+                                let mut bars = bars_clone.lock().unwrap();
+                                reconcile_managed_bars(&mut bars, &monitors, &config, |name| {
+                                    create_bar(name)
+                                });
                             },
                         );
                     }
@@ -626,12 +841,9 @@ fn build_ui(app: &gtk4::Application) {
                         let mut bars = bars_for_monitors.lock().unwrap();
 
                         // Находим и удаляем бар для этого монитора
-                        if let Some(pos) =
-                            bars.iter().position(|b| b.monitor_name() == monitor_name)
-                        {
+                        if let Some(managed_bar) = bars.remove(&monitor_name) {
                             eprintln!("[Main] Removing bar for monitor: {}", monitor_name);
-                            let bar = bars.remove(pos);
-                            bar.close();
+                            managed_bar.bar.close();
                             eprintln!("[Main] ✓ Bar removed for monitor: {}", monitor_name);
                         } else {
                             eprintln!("[Main] No bar found for monitor: {}", monitor_name);
@@ -646,12 +858,347 @@ fn build_ui(app: &gtk4::Application) {
     // Setup и present для всех баров
     {
         let bars = bars.lock().unwrap();
-        eprintln!("[Main] Setting up {} bars", bars.len());
-        for bar in bars.iter() {
-            bar.setup_event_listener();
-            eprintln!("[Main] Presenting bar for monitor: {}", bar.monitor_name());
-            bar.present();
+        let visible_count = bars
+            .existing_states()
+            .into_iter()
+            .filter(|bar| bar.is_visible)
+            .count();
+        eprintln!("[Main] Startup reconciliation presented {} bars", visible_count);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        apply_bar_reconciliation_plan, desired_bar_monitor_names, plan_bar_reconciliation,
+        BarLifecycle, BarReconciliationPlan, ExistingBarState, ManagedBar, ManagedBars,
+    };
+    use crate::config::HyprlineConfig;
+    use crate::domain::models::Monitor;
+    use std::sync::{Arc, Mutex};
+
+    fn monitor(name: &str, id: i32) -> Monitor {
+        Monitor {
+            name: name.to_string(),
+            id,
         }
-        eprintln!("[Main] All bars presented");
+    }
+
+    fn visible_bar(monitor_name: &str) -> ExistingBarState {
+        ExistingBarState {
+            monitor_name: monitor_name.to_string(),
+            is_visible: true,
+        }
+    }
+
+    fn hidden_bar(monitor_name: &str) -> ExistingBarState {
+        ExistingBarState {
+            monitor_name: monitor_name.to_string(),
+            is_visible: false,
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    enum RecordedAction {
+        Create(String),
+        Setup(String),
+        Present(String),
+        Hide(String),
+        Rebuild(String),
+        Close(String),
+    }
+
+    #[derive(Clone)]
+    struct FakeBar {
+        monitor_name: String,
+        actions: Arc<Mutex<Vec<RecordedAction>>>,
+    }
+
+    impl FakeBar {
+        fn new(monitor_name: &str, actions: Arc<Mutex<Vec<RecordedAction>>>) -> Self {
+            actions
+                .lock()
+                .unwrap()
+                .push(RecordedAction::Create(monitor_name.to_string()));
+
+            Self {
+                monitor_name: monitor_name.to_string(),
+                actions,
+            }
+        }
+
+        fn record(&self, action: RecordedAction) {
+            self.actions.lock().unwrap().push(action);
+        }
+    }
+
+    impl BarLifecycle for FakeBar {
+        fn setup_event_listener(&mut self) {
+            self.record(RecordedAction::Setup(self.monitor_name.clone()));
+        }
+
+        fn present(&mut self) {
+            self.record(RecordedAction::Present(self.monitor_name.clone()));
+        }
+
+        fn hide(&mut self) {
+            self.record(RecordedAction::Hide(self.monitor_name.clone()));
+        }
+
+        fn rebuild_widgets(&mut self) {
+            self.record(RecordedAction::Rebuild(self.monitor_name.clone()));
+        }
+
+        fn close(self) {
+            self.actions
+                .lock()
+                .unwrap()
+                .push(RecordedAction::Close(self.monitor_name));
+        }
+    }
+
+    fn recorder() -> Arc<Mutex<Vec<RecordedAction>>> {
+        Arc::new(Mutex::new(Vec::new()))
+    }
+
+    fn managed_fake_bar(
+        monitor_name: &str,
+        visible: bool,
+        listeners_setup: bool,
+        actions: Arc<Mutex<Vec<RecordedAction>>>,
+    ) -> ManagedBar<FakeBar> {
+        ManagedBar::new(
+            FakeBar {
+                monitor_name: monitor_name.to_string(),
+                actions,
+            },
+            visible,
+            listeners_setup,
+        )
+    }
+
+    #[test]
+    fn bar_reconciliation_defaults_all_monitors_enabled() {
+        // Given
+        let config = HyprlineConfig::default();
+        let monitors = vec![monitor("DP-1", 1), monitor("HDMI-A-1", 2)];
+
+        // When
+        let desired = desired_bar_monitor_names(&monitors, &config);
+        let plan = plan_bar_reconciliation(&[], &monitors, &config);
+
+        // Then
+        assert_eq!(desired, vec!["DP-1", "HDMI-A-1"]);
+        assert_eq!(
+            plan,
+            BarReconciliationPlan {
+                create: vec!["DP-1".to_string(), "HDMI-A-1".to_string()],
+                ..BarReconciliationPlan::default()
+            }
+        );
+    }
+
+    #[test]
+    fn bar_reconciliation_excludes_disabled_monitor() {
+        // Given
+        let mut config = HyprlineConfig::default();
+        config.set_monitor_bar_enabled("HDMI-A-1", false);
+        let monitors = vec![monitor("DP-1", 1), monitor("HDMI-A-1", 2)];
+
+        // When
+        let desired = desired_bar_monitor_names(&monitors, &config);
+        let plan = plan_bar_reconciliation(&[], &monitors, &config);
+
+        // Then
+        assert_eq!(desired, vec!["DP-1"]);
+        assert_eq!(plan.create, vec!["DP-1"]);
+        assert!(plan.hide.is_empty());
+        assert!(plan.show.is_empty());
+        assert!(plan.rebuild.is_empty());
+        assert!(plan.close_removed.is_empty());
+    }
+
+    #[test]
+    fn bar_reconciliation_hides_existing_disabled_bar() {
+        // Given
+        let mut config = HyprlineConfig::default();
+        config.set_monitor_bar_enabled("HDMI-A-1", false);
+        let monitors = vec![monitor("DP-1", 1), monitor("HDMI-A-1", 2)];
+        let existing = vec![visible_bar("DP-1"), visible_bar("HDMI-A-1")];
+
+        // When
+        let plan = plan_bar_reconciliation(&existing, &monitors, &config);
+
+        // Then
+        assert_eq!(plan.hide, vec!["HDMI-A-1"]);
+        assert_eq!(plan.rebuild, vec!["DP-1"]);
+        assert!(plan.create.is_empty());
+        assert!(plan.show.is_empty());
+        assert!(plan.close_removed.is_empty());
+    }
+
+    #[test]
+    fn bar_reconciliation_creates_newly_enabled_missing_bar() {
+        // Given
+        let config = HyprlineConfig::default();
+        let monitors = vec![monitor("DP-1", 1), monitor("HDMI-A-1", 2)];
+        let existing = vec![visible_bar("DP-1")];
+
+        // When
+        let plan = plan_bar_reconciliation(&existing, &monitors, &config);
+
+        // Then
+        assert_eq!(plan.create, vec!["HDMI-A-1"]);
+        assert_eq!(plan.rebuild, vec!["DP-1"]);
+        assert!(plan.hide.is_empty());
+        assert!(plan.show.is_empty());
+        assert!(plan.close_removed.is_empty());
+    }
+
+    #[test]
+    fn bar_reconciliation_default_fallback_respects_config() {
+        // Given
+        let mut disabled_default_config = HyprlineConfig::default();
+        disabled_default_config.set_monitor_bar_enabled("default", false);
+        let enabled_default_config = HyprlineConfig::default();
+        let no_monitors = Vec::<Monitor>::new();
+
+        // When
+        let enabled_desired = desired_bar_monitor_names(&no_monitors, &enabled_default_config);
+        let enabled_plan = plan_bar_reconciliation(
+            &[hidden_bar("default")],
+            &no_monitors,
+            &enabled_default_config,
+        );
+        let disabled_desired = desired_bar_monitor_names(&no_monitors, &disabled_default_config);
+        let disabled_plan = plan_bar_reconciliation(
+            &[visible_bar("default")],
+            &no_monitors,
+            &disabled_default_config,
+        );
+
+        // Then
+        assert_eq!(enabled_desired, vec!["default"]);
+        assert_eq!(enabled_plan.show, vec!["default"]);
+        assert!(enabled_plan.create.is_empty());
+        assert_eq!(disabled_desired, Vec::<String>::new());
+        assert_eq!(disabled_plan.close_removed, vec!["default"]);
+        assert!(disabled_plan.hide.is_empty());
+    }
+
+    #[test]
+    fn bar_reconciliation_monitor_added_preserves_existing_visible_bar() {
+        // Given
+        let config = HyprlineConfig::default();
+        let monitors = vec![monitor("DP-1", 1), monitor("HDMI-A-1", 2)];
+        let existing = vec![visible_bar("DP-1")];
+
+        // When
+        let plan = plan_bar_reconciliation(&existing, &monitors, &config);
+
+        // Then
+        assert_eq!(plan.rebuild, vec!["DP-1"]);
+        assert_eq!(plan.create, vec!["HDMI-A-1"]);
+        assert!(plan.hide.is_empty());
+        assert!(plan.show.is_empty());
+        assert!(plan.close_removed.is_empty());
+    }
+
+    #[test]
+    fn bar_reconciliation_apply_records_hide_rebuild_create_actions() {
+        // Given
+        let actions = recorder();
+        let mut managed_bars = ManagedBars::default();
+        managed_bars.insert(
+            "DP-1".to_string(),
+            managed_fake_bar("DP-1", true, true, actions.clone()),
+        );
+        managed_bars.insert(
+            "HDMI-A-1".to_string(),
+            managed_fake_bar("HDMI-A-1", true, true, actions.clone()),
+        );
+
+        let mut config = HyprlineConfig::default();
+        config.set_monitor_bar_enabled("HDMI-A-1", false);
+        let monitors = vec![
+            monitor("DP-1", 1),
+            monitor("HDMI-A-1", 2),
+            monitor("eDP-1", 3),
+        ];
+        let plan = plan_bar_reconciliation(&managed_bars.existing_states(), &monitors, &config);
+
+        // When
+        apply_bar_reconciliation_plan(&mut managed_bars, &plan, |monitor_name| {
+            FakeBar::new(monitor_name, actions.clone())
+        });
+
+        // Then
+        assert_eq!(
+            *actions.lock().unwrap(),
+            vec![
+                RecordedAction::Hide("HDMI-A-1".to_string()),
+                RecordedAction::Rebuild("DP-1".to_string()),
+                RecordedAction::Create("eDP-1".to_string()),
+                RecordedAction::Setup("eDP-1".to_string()),
+                RecordedAction::Present("eDP-1".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn bar_reconciliation_disable_enable_disable_no_duplicate_setup() {
+        // Given
+        let actions = recorder();
+        let mut managed_bars = ManagedBars::default();
+        let monitors = vec![monitor("HDMI-A-1", 1)];
+        let enabled_config = HyprlineConfig::default();
+
+        // When
+        let create_plan =
+            plan_bar_reconciliation(&managed_bars.existing_states(), &monitors, &enabled_config);
+        apply_bar_reconciliation_plan(&mut managed_bars, &create_plan, |monitor_name| {
+            FakeBar::new(monitor_name, actions.clone())
+        });
+
+        let mut disabled_config = enabled_config.clone();
+        disabled_config.set_monitor_bar_enabled("HDMI-A-1", false);
+        let disable_plan =
+            plan_bar_reconciliation(&managed_bars.existing_states(), &monitors, &disabled_config);
+        apply_bar_reconciliation_plan(&mut managed_bars, &disable_plan, |monitor_name| {
+            FakeBar::new(monitor_name, actions.clone())
+        });
+
+        let enable_plan =
+            plan_bar_reconciliation(&managed_bars.existing_states(), &monitors, &enabled_config);
+        apply_bar_reconciliation_plan(&mut managed_bars, &enable_plan, |monitor_name| {
+            FakeBar::new(monitor_name, actions.clone())
+        });
+
+        let disable_again_plan =
+            plan_bar_reconciliation(&managed_bars.existing_states(), &monitors, &disabled_config);
+        apply_bar_reconciliation_plan(&mut managed_bars, &disable_again_plan, |monitor_name| {
+            FakeBar::new(monitor_name, actions.clone())
+        });
+
+        // Then
+        let recorded_actions = actions.lock().unwrap().clone();
+        assert_eq!(
+            recorded_actions,
+            vec![
+                RecordedAction::Create("HDMI-A-1".to_string()),
+                RecordedAction::Setup("HDMI-A-1".to_string()),
+                RecordedAction::Present("HDMI-A-1".to_string()),
+                RecordedAction::Hide("HDMI-A-1".to_string()),
+                RecordedAction::Present("HDMI-A-1".to_string()),
+                RecordedAction::Hide("HDMI-A-1".to_string()),
+            ]
+        );
+        assert_eq!(
+            recorded_actions
+                .iter()
+                .filter(|action| *action == &RecordedAction::Setup("HDMI-A-1".to_string()))
+                .count(),
+            1
+        );
     }
 }

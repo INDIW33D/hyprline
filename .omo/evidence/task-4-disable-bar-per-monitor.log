@@ -1,0 +1,409 @@
+cargo test: 1 passed, 23 filtered out (1 suite, 0.00s)
+cargo test: 1 passed, 23 filtered out (1 suite, 0.00s)
+warning: unused imports: `BarPadding`, `MonitorConfig`, `NotificationCenterConfig`, and `notify_config_changed`
+ --> hyprline-bar/src/config/mod.rs:5:17
+  |
+5 |     get_config, notify_config_changed, save_config, subscribe_config_changes, BarPadding,
+  |                 ^^^^^^^^^^^^^^^^^^^^^                                         ^^^^^^^^^^
+6 |     HyprlineConfig, MonitorConfig, NotificationCenterConfig, WidgetConfig, WidgetPosition,
+  |                     ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+warning: unused import: `crate::domain::models::MenuItem`
+   --> hyprline-bar/src/infrastructure/status_notifier_tray.rs:408:13
+    |
+408 |         use crate::domain::models::MenuItem;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+warning: unused import: `subscribe_config_changes`
+ --> hyprline-bar/src/ui/bar.rs:1:33
+  |
+1 | use crate::config::{get_config, subscribe_config_changes, WidgetPosition, WidgetType};
+  |                                 ^^^^^^^^^^^^^^^^^^^^^^^^
+warning: unused import: `RefCell`
+ --> hyprline-bar/src/ui/notifications.rs:7:23
+  |
+7 | use std::cell::{Cell, RefCell};
+  |                       ^^^^^^^
+warning: unused variable: `ctx`
+   --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:116:9
+    |
+116 |         ctx: &SignalEmitter<'_>,
+    |         ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+warning: unused variable: `ctx`
+   --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:125:9
+    |
+125 |         ctx: &SignalEmitter<'_>,
+    |         ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+warning: unused variable: `ctx`
+   --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:132:53
+    |
+132 |     async fn status_notifier_host_registered(&self, ctx: &SignalEmitter<'_>) -> zbus::Result<()> {}
+    |                                                     ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+warning: unused variable: `ctx`
+   --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:116:9
+    |
+116 |         ctx: &SignalEmitter<'_>,
+    |         ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+warning: unused variable: `profile_combo_clone`
+   --> hyprline-bar/src/ui/settings.rs:114:13
+    |
+114 |         let profile_combo_clone = profile_combo.clone();
+    |             ^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_profile_combo_clone`
+warning: unused variable: `top_spin_clone`
+   --> hyprline-bar/src/ui/settings.rs:486:13
+    |
+486 |         let top_spin_clone = top_spin.clone();
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_top_spin_clone`
+warning: unused variable: `bottom_spin_clone`
+   --> hyprline-bar/src/ui/settings.rs:502:13
+    |
+502 |         let bottom_spin_clone = bottom_spin.clone();
+    |             ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_bottom_spin_clone`
+warning: unused variable: `left_spin_clone`
+   --> hyprline-bar/src/ui/settings.rs:518:13
+    |
+518 |         let left_spin_clone = left_spin.clone();
+    |             ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_left_spin_clone`
+warning: struct `WidgetConfig` is never constructed
+ --> hyprline-bar/src/config/bar_config.rs:5:12
+  |
+5 | pub struct WidgetConfig {
+  |            ^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+warning: enum `WidgetZone` is never used
+  --> hyprline-bar/src/config/bar_config.rs:12:10
+   |
+12 | pub enum WidgetZone {
+   |          ^^^^^^^^^^
+warning: enum `WidgetType` is never used
+  --> hyprline-bar/src/config/bar_config.rs:20:10
+   |
+20 | pub enum WidgetType {
+   |          ^^^^^^^^^^
+warning: struct `BarConfig` is never constructed
+  --> hyprline-bar/src/config/bar_config.rs:37:12
+   |
+37 | pub struct BarConfig {
+   |            ^^^^^^^^^
+warning: function `load_bar_config` is never used
+   --> hyprline-bar/src/config/bar_config.rs:153:8
+    |
+153 | pub fn load_bar_config() -> BarConfig {
+    |        ^^^^^^^^^^^^^^^
+warning: methods `get_profile_names`, `widgets_for_position`, `get_widget`, and `update_widget` are never used
+   --> hyprline-bar/src/config/widget_config.rs:661:12
+    |
+383 | impl HyprlineConfig {
+    | ------------------- methods in this implementation
+...
+661 |     pub fn get_profile_names(&self) -> Vec<&str> {
+    |            ^^^^^^^^^^^^^^^^^
+...
+666 |     pub fn widgets_for_position(&self, position: WidgetPosition) -> Vec<&WidgetConfig> {
+    |            ^^^^^^^^^^^^^^^^^^^^
+...
+678 |     pub fn get_widget(&self, widget_type: WidgetType) -> Option<&WidgetConfig> {
+    |            ^^^^^^^^^^
+...
+686 |     pub fn update_widget(
+    |            ^^^^^^^^^^^^^
+warning: methods `get_connected_devices` and `remove_device` are never used
+  --> hyprline-bar/src/domain/bluetooth_service.rs:12:8
+   |
+ 4 | pub trait BluetoothService: Send + Sync {
+   |           ---------------- methods in this trait
+...
+12 |     fn get_connected_devices(&self) -> Vec<BluetoothDevice>;
+   |        ^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     fn remove_device(&self, address: &str) -> Result<(), String>;
+   |        ^^^^^^^^^^^^^
+warning: methods `increase_brightness` and `decrease_brightness` are never used
+  --> hyprline-bar/src/domain/brightness_service.rs:12:8
+   |
+ 4 | pub trait BrightnessService: Send + Sync {
+   |           ----------------- methods in this trait
+...
+12 |     fn increase_brightness(&self, percent: u32) -> Result<(), String>;
+   |        ^^^^^^^^^^^^^^^^^^^
+...
+15 |     fn decrease_brightness(&self, percent: u32) -> Result<(), String>;
+   |        ^^^^^^^^^^^^^^^^^^^
+warning: field `actions` is never read
+   --> hyprline-bar/src/domain/models.rs:149:9
+    |
+141 | pub struct Notification {
+    |            ------------ field in this struct
+...
+149 |     pub actions: Vec<String>,
+    |         ^^^^^^^
+    |
+    = note: `Notification` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: field `speed` is never read
+   --> hyprline-bar/src/domain/models.rs:167:9
+    |
+161 | pub struct NetworkConnection {
+    |            ----------------- field in this struct
+...
+167 |     pub speed: Option<u64>,          // Mbps
+    |         ^^^^^
+    |
+    = note: `NetworkConnection` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: field `in_use` is never read
+   --> hyprline-bar/src/domain/models.rs:182:9
+    |
+178 | pub struct WiFiNetwork {
+    |            ----------- field in this struct
+...
+182 |     pub in_use: bool,
+    |         ^^^^^^
+    |
+    = note: `WiFiNetwork` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: variants `WPA3` and `Enterprise` are never constructed
+   --> hyprline-bar/src/domain/models.rs:191:5
+    |
+186 | pub enum WiFiSecurity {
+    |          ------------ variants in this enum
+...
+191 |     WPA3,
+    |     ^^^^
+192 |     Enterprise,
+    |     ^^^^^^^^^^
+    |
+    = note: `WiFiSecurity` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: field `adapter_name` is never read
+   --> hyprline-bar/src/domain/models.rs:218:9
+    |
+215 | pub struct BluetoothInfo {
+    |            ------------- field in this struct
+...
+218 |     pub adapter_name: String,
+    |         ^^^^^^^^^^^^
+    |
+    = note: `BluetoothInfo` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: fields `trusted` and `icon` are never read
+   --> hyprline-bar/src/domain/models.rs:229:9
+    |
+223 | pub struct BluetoothDevice {
+    |            --------------- fields in this struct
+...
+229 |     pub trusted: bool,
+    |         ^^^^^^^
+230 |     pub icon: Option<String>,
+    |         ^^^^
+    |
+    = note: `BluetoothDevice` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: method `disconnect` is never used
+  --> hyprline-bar/src/domain/network_service.rs:15:8
+   |
+ 4 | pub trait NetworkService {
+   |           -------------- method in this trait
+...
+15 |     fn disconnect(&self) -> Result<(), String>;
+   |        ^^^^^^^^^^
+warning: methods `get_history_page` and `show_history_window` are never used
+  --> hyprline-bar/src/domain/notification_service.rs:15:8
+   |
+ 4 | pub trait NotificationService: Send + Sync {
+   |           ------------------- methods in this trait
+...
+15 |     fn get_history_page(&self, offset: usize, limit: usize) -> Vec<Notification>;
+   |        ^^^^^^^^^^^^^^^^
+...
+24 |     fn show_history_window(&self);
+   |        ^^^^^^^^^^^^^^^^^^^
+warning: method `get_registered_items` is never used
+  --> hyprline-bar/src/domain/status_notifier_watcher_service.rs:12:8
+   |
+ 3 | pub trait StatusNotifierWatcherService: Send + Sync {
+   |           ---------------------------- method in this trait
+...
+12 |     fn get_registered_items(&self) -> Vec<String>;
+   |        ^^^^^^^^^^^^^^^^^^^^
+warning: method `get_current_submap` is never used
+ --> hyprline-bar/src/domain/submap_service.rs:6:8
+  |
+4 | pub trait SubmapService: Send + Sync {
+  |           ------------- method in this trait
+5 |     /// Получает информацию о текущем submap
+6 |     fn get_current_submap(&self) -> SubmapInfo;
+  |        ^^^^^^^^^^^^^^^^^^
+warning: method `set_mute` is never used
+  --> hyprline-bar/src/domain/volume_service.rs:15:8
+   |
+ 4 | pub trait VolumeService {
+   |           ------------- method in this trait
+...
+15 |     fn set_mute(&self, muted: bool) -> Result<(), String>;
+   |        ^^^^^^^^
+warning: fields `item_registered_tx` and `item_unregistered_tx` are never read
+  --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:11:5
+   |
+ 9 | struct WatcherState {
+   |        ------------ fields in this struct
+10 |     registered_items: Arc<Mutex<Vec<String>>>,
+11 |     item_registered_tx: Option<Sender<String>>,
+   |     ^^^^^^^^^^^^^^^^^^
+12 |     item_unregistered_tx: Option<Sender<String>>,
+   |     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `WatcherState` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+warning: struct `HyprlandDevice` is never constructed
+ --> hyprline-bar/src/infrastructure/hyprland_keyboard_layout.rs:7:8
+  |
+7 | struct HyprlandDevice {
+  |        ^^^^^^^^^^^^^^
+warning: method `get_current_submap_name` is never used
+   --> hyprline-bar/src/infrastructure/hyprland_submap.rs:304:12
+    |
+ 20 | impl HyprlandSubmapService {
+    | -------------------------- method in this implementation
+...
+304 |     pub fn get_current_submap_name(&self) -> String {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^
+warning: associated items `start_monitoring` and `monitor_network_changes` are never used
+  --> hyprline-bar/src/infrastructure/networkmanager.rs:37:12
+   |
+13 | impl NetworkManagerService {
+   | -------------------------- associated items in this implementation
+...
+37 |     pub fn start_monitoring(&mut self, update_tx: Sender<()>) {
+   |            ^^^^^^^^^^^^^^^^
+...
+56 |     fn monitor_network_changes(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^
+warning: methods `get_history_page` and `show_history_window` are never used
+   --> hyprline-bar/src/infrastructure/notification_client.rs:83:12
+    |
+ 54 | impl NotificationClient {
+    | ----------------------- methods in this implementation
+...
+ 83 |     pub fn get_history_page(
+    |            ^^^^^^^^^^^^^^^^
+...
+111 |     pub fn show_history_window(&self) -> Result<(), String> {
+    |            ^^^^^^^^^^^^^^^^^^^
+warning: method `is_connected` is never used
+  --> hyprline-bar/src/infrastructure/remote_notification_service.rs:32:12
+   |
+12 | impl RemoteNotificationService {
+   | ------------------------------ method in this implementation
+...
+32 |     pub fn is_connected(&self) -> bool {
+   |            ^^^^^^^^^^^^
+warning: field `config_changed_callbacks` is never read
+  --> hyprline-bar/src/shared_state.rs:60:5
+   |
+34 | pub struct SharedState {
+   |            ----------- field in this struct
+...
+60 |     config_changed_callbacks: Mutex<Callbacks>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+warning: methods `get_battery`, `get_volume`, `is_notification_alert`, `notify_config_changed`, and `subscribe_config_changed` are never used
+   --> hyprline-bar/src/shared_state.rs:100:12
+    |
+ 64 | impl SharedState {
+    | ---------------- methods in this implementation
+...
+100 |     pub fn get_battery(&self) -> Option<BatteryInfo> {
+    |            ^^^^^^^^^^^
+...
+120 |     pub fn get_volume(&self) -> Option<VolumeInfo> {
+    |            ^^^^^^^^^^
+...
+214 |     pub fn is_notification_alert(&self) -> bool {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+...
+309 |     pub fn notify_config_changed(&self) {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+...
+313 |     pub fn subscribe_config_changed<F>(&self, callback: F)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+warning: field `shared_state` is never read
+  --> hyprline-bar/src/ui/bar.rs:51:9
+   |
+34 | pub struct WidgetContext {
+   |            ------------- field in this struct
+...
+51 |     pub shared_state: Arc<SharedState>,
+   |         ^^^^^^^^^^^^
+   |
+   = note: `WidgetContext` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+warning: methods `monitor_name` and `get_zone_boxes` are never used
+   --> hyprline-bar/src/ui/bar.rs:700:12
+    |
+102 | impl Bar {
+    | -------- methods in this implementation
+...
+700 |     pub fn monitor_name(&self) -> &str {
+    |            ^^^^^^^^^^^^
+...
+710 |     pub fn get_zone_boxes(&self) -> (gtk4::Box, gtk4::Box, gtk4::Box) {
+    |            ^^^^^^^^^^^^^^
+warning: fields `icon_label` and `percentage_label` are never read
+ --> hyprline-bar/src/ui/brightness.rs:8:5
+  |
+6 | pub struct BrightnessWidget {
+  |            ---------------- fields in this struct
+7 |     pub container: GtkBox,
+8 |     icon_label: Label,
+  |     ^^^^^^^^^^
+9 |     percentage_label: Label,
+  |     ^^^^^^^^^^^^^^^^
+warning: method `update` is never used
+  --> hyprline-bar/src/ui/brightness.rs:74:12
+   |
+12 | impl BrightnessWidget {
+   | --------------------- method in this implementation
+...
+74 |     pub fn update(&self) {
+   |            ^^^^^^
+warning: field `service` is never read
+  --> hyprline-bar/src/ui/notifications.rs:14:5
+   |
+12 | pub struct NotificationWidget {
+   |            ------------------ field in this struct
+13 |     button: gtk4::Button,
+14 |     service: Arc<dyn NotificationService + Send + Sync>,
+   |     ^^^^^^^
+warning: field `is_interactive` is never read
+  --> hyprline-bar/src/ui/volume_slider.rs:11:5
+   |
+ 7 | pub struct VolumeSlider {
+   |            ------------ field in this struct
+...
+11 |     is_interactive: bool,
+   |     ^^^^^^^^^^^^^^
+warning: methods `set_value`, `set_muted`, `get_value`, and `is_muted` are never used
+   --> hyprline-bar/src/ui/volume_slider.rs:258:12
+    |
+ 14 | impl VolumeSlider {
+    | ----------------- methods in this implementation
+...
+258 |     pub fn set_value(&self, volume: u8) {
+    |            ^^^^^^^^^
+...
+271 |     pub fn set_muted(&self, muted: bool) {
+    |            ^^^^^^^^^
+...
+277 |     pub fn get_value(&self) -> u8 {
+    |            ^^^^^^^^^
+...
+282 |     pub fn is_muted(&self) -> bool {
+    |            ^^^^^^^^
+warning: unused `Result` that must be used
+   --> hyprline-bar/src/ui/settings.rs:482:13
+    |
+482 |             save_config();
+    |             ^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` (part of `#[warn(unused)]`) on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+482 |             let _ = save_config();
+    |             +++++++
+cargo build: 0 errors, 47 warnings (1 crates)

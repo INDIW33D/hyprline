@@ -6,15 +6,20 @@ use gtk4::{
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::config::{
-    get_config, save_config, HyprlineConfig, WidgetConfig, WidgetPosition, WidgetType,
-};
+use crate::config::{get_config, save_config, WidgetConfig, WidgetPosition, WidgetType};
 use crate::domain::workspace_service::WorkspaceService;
 
 /// Окно настроек
 pub struct SettingsWindow;
 
 impl SettingsWindow {
+    fn save_monitor_bar_enabled(monitor_name: &str, enabled: bool) {
+        let mut config = get_config().write().unwrap();
+        config.set_monitor_bar_enabled(monitor_name, enabled);
+        drop(config);
+        let _ = save_config();
+    }
+
     pub fn create_menu_item(icon: &str, label: &str) -> ListBoxRow {
         let row = ListBoxRow::new();
         row.add_css_class("settings-menu-item");
@@ -301,6 +306,8 @@ impl SettingsWindow {
             monitor_row.set_margin_top(8);
             monitor_row.set_margin_bottom(8);
 
+            let controls_box = GtkBox::new(Orientation::Horizontal, 12);
+
             // Иконка и имя монитора
             let icon = Label::new(Some("󰍹"));
             icon.add_css_class("monitor-icon");
@@ -312,12 +319,22 @@ impl SettingsWindow {
             name_label.set_halign(gtk4::Align::Start);
             monitor_row.append(&name_label);
 
+            let show_bar_box = GtkBox::new(Orientation::Horizontal, 8);
+            let show_bar_label = Label::new(Some("Show bar"));
+            let show_bar_switch = Switch::new();
+
+            show_bar_box.append(&show_bar_label);
+            show_bar_box.append(&show_bar_switch);
+            controls_box.append(&show_bar_box);
+
             // Выбор профиля для этого монитора
             let profile_combo = ComboBoxText::new();
             profile_combo.append(Some("__default__"), "Use Active Profile");
 
             {
                 let config = get_config().read().unwrap();
+                show_bar_switch.set_active(config.is_bar_enabled_for_monitor(&monitor.name));
+
                 for profile in &config.profiles {
                     profile_combo.append(Some(&profile.name), &profile.name);
                 }
@@ -335,6 +352,11 @@ impl SettingsWindow {
             }
 
             let monitor_name = monitor.name.clone();
+            show_bar_switch.connect_active_notify(move |switch| {
+                SettingsWindow::save_monitor_bar_enabled(&monitor_name, switch.is_active());
+            });
+
+            let monitor_name = monitor.name.clone();
             profile_combo.connect_changed(move |combo| {
                 if let Some(id) = combo.active_id() {
                     let mut config = get_config().write().unwrap();
@@ -349,7 +371,8 @@ impl SettingsWindow {
                 }
             });
 
-            monitor_row.append(&profile_combo);
+            controls_box.append(&profile_combo);
+            monitor_row.append(&controls_box);
             monitors_box.append(&monitor_row);
         }
 

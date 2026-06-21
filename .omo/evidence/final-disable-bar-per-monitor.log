@@ -1,0 +1,52 @@
+## F1 Plan Compliance Audit - 2026-06-21T18:45:30+03:00
+Verdict: APPROVE
+Reasoning:
+- Must have: persisted per-monitor visibility is satisfied by `MonitorConfig.bar_enabled` with serde default in `hyprline-bar/src/config/widget_config.rs:207-213`.
+- Must have: backward compatibility is satisfied by `default_bar_enabled() -> true`, unknown-monitor `map_or(true, ...)`, and tests in `widget_config.rs:248-250`, `widget_config.rs:547-550`, `task-6-disable-bar-per-monitor.log:461`, `task-6-disable-bar-per-monitor.log:925`.
+- Must have: config helpers are satisfied by `is_bar_enabled_for_monitor` and `set_monitor_bar_enabled`, preserving `profile_name` because only `.bar_enabled` is assigned in `widget_config.rs:547-573`; preservation test passes at `task-6-disable-bar-per-monitor.log:1389`.
+- Must have: Settings → Monitors switch is satisfied by per-monitor `Show bar` `Switch` in `hyprline-bar/src/ui/settings.rs:300-357`; structural check passed at `task-5-disable-bar-per-monitor.log:478`.
+- Must have: switch initializes before signal and saves via existing path: `set_active` precedes `connect_active_notify` in `settings.rs:334-357`; helper calls `set_monitor_bar_enabled`, drops lock, then `save_config()` in `settings.rs:16-20`; `save_config()` notifies subscribers in `widget_config.rs:725-731`.
+- Must have: startup skips disabled monitors and keeps enabled default fallback through `desired_bar_monitor_names` and startup reconciliation in `hyprline-bar/src/main.rs:232-249`, `main.rs:716-775`; default fallback test covers enabled/disabled `default` in `main.rs:1058-1086`.
+- Must have: hot reload reconciles live bars immediately through config subscriber in `main.rs:785-797`; hide/show/rebuild/create behavior is implemented in `main.rs:149-193` and planned in `main.rs:251-300`.
+- Must have: hide/reuse rather than destroy/recreate is satisfied by `Bar::hide()` using `set_visible(false)` in `hyprline-bar/src/ui/bar.rs:691-697`, show path re-presenting existing hidden bars in `main.rs:170-179`, and no-duplicate setup test in `main.rs:1148-1202`.
+- Must have: monitor-added uses fresh full snapshot after delay via `service.get_monitors()` after `timeout_add_local_once` in `main.rs:824-836`; monitor-removed still closes/removes in `main.rs:840-847`.
+- Must have: existing per-monitor profile selection remains through `get_profile_for_monitor` in `widget_config.rs:532-545`, `Bar::rebuild_widgets()` using it in `bar.rs:292-296`, and unchanged `set_monitor_profile` callback in `settings.rs:359-371`.
+- Must have: required named tests and gates passed: all named tests appear green in `task-6-disable-bar-per-monitor.log:461`, `925`, `1389`, `1853`, `2317`, `2781`, `3245`, `3709`, `4173`, `4637`, `5101`, `5565`; full `cargo test -p hyprline-bar` passed 24 tests at `task-6-disable-bar-per-monitor.log:6028-6054`; build passed at `task-6-disable-bar-per-monitor.log:6511-6512`.
+- Must NOT have: no widget/profile redesign is evident; final diff only adds `bar_enabled`, reconciliation lifecycle, `Show bar` UI, and `Bar::hide()` in `final-target-diff-disable-bar-per-monitor.diff:1`, `130`, `999`, `1014`.
+- Must NOT have: no Hyprland user config edit is present; final target diff contains only the four product files above.
+- Must NOT have: no forbidden subprocess/D-Bus monitor discovery addition; addition-only grep found no `hyprctl`, `Command::new`, `std::process`, `zbus`, or `dbus` additions, confirmed by `task-6-disable-bar-per-monitor.log:6513`.
+- Must NOT have: no restart-only behavior; settings calls `save_config()` and runtime subscriber reconciles immediately in `settings.rs:16-20`, `widget_config.rs:725-731`, `main.rs:785-797`.
+- Must NOT have: no duplicate `setup_event_listener()` on toggle; setup is guarded by `listeners_setup` for existing hidden bars in `main.rs:170-175`, new bars setup once in `main.rs:188-193`, and disable-enable-disable records exactly one setup in `main.rs:1183-1202`.
+- Must NOT have: no global disable-all setting; implementation is per-monitor `MonitorConfig.bar_enabled` and per-row monitor UI only in `widget_config.rs:207-213`, `settings.rs:303-357`.
+- Must NOT have: no staged/commit/push evidence found in read-only status check; `GIT_MASTER=1 git status --short` showed only unstaged ` M` and untracked `??` entries, with no staged `M ` entries.
+
+## F2 Code Quality Review - 2026-06-21T18:44:34+03:00
+Verdict: APPROVE
+Reasoning:
+- Config access uses existing project patterns: `get_config().read().unwrap()` / `write().unwrap()` remain consistent with surrounding code, with no new panic-prone config lookup beyond existing lock-unwrap style.
+- `ManagedBar.listeners_setup` guards listener setup in `apply_bar_reconciliation_plan`; create sets it true, re-show only calls setup when false, and the regression test proves no duplicate setup across disable/enable cycles.
+- Disabled real monitor bars are hidden and reused through `Bar::hide()` plus managed visibility state; removed monitors are closed only when physically removed.
+- Diff has no added `hyprctl`, `Command::new`, `std::process`, `zbus`, or `dbus` runtime path.
+- Settings switch initializes via `set_active` before `connect_active_notify`; `save_monitor_bar_enabled` drops the config write lock before `save_config()`.
+- `cargo test -p hyprline-bar` passed: 24 tests. `cargo build -p hyprline-bar` passed with 0 errors and 47 warnings.
+- Warnings and oversized modules are present/pre-existing scope concerns, but no reviewed change introduces a blocker for this feature.
+
+## F3 Real-Surface QA - 2026-06-21T18:44:37+03:00
+Verdict: APPROVE
+Reasoning:
+- Config backward compatibility confirmed: old monitor JSON without `bar_enabled` deserializes enabled via `#[serde(default = "default_bar_enabled")]` and the named test `monitor_bar_defaults_missing_visibility_to_enabled` passed.
+- Disabled monitor serialization confirmed: `monitor_bar_disabled_serializes_false` asserts serialized `monitors.DP-1.bar_enabled == false` and passed.
+- All 12 named tests have `running 1 test` plus `... ok` evidence in `.omo/evidence/task-6-disable-bar-per-monitor.log`.
+- Fake lifecycle proof confirmed: recorded actions cover hide/rebuild/create/setup/present, and the show path is exercised by disable→enable via present with only one setup in `bar_reconciliation_disable_enable_disable_no_duplicate_setup`.
+- Settings structural wiring passed: `.omo/evidence/task-5-disable-bar-per-monitor.log` ends with `settings switch scoped structural check passed`; source wiring uses `Show bar`, `is_bar_enabled_for_monitor`, `connect_active_notify`, `set_monitor_bar_enabled`, `drop(config)`, then `save_config()`.
+- Full gates passed: `cargo test -p hyprline-bar` reported 24 passed, `cargo build -p hyprline-bar` passed, and forbidden runtime grep reported `no forbidden runtime path added`.
+- GUI automation was not performed. A Wayland/X session appears present, but no native GTK automation channel was available in this review, and no GUI toggle is claimed.
+
+## F4 Scope Fidelity - 2026-06-21T18:44:23+03:00
+Verdict: APPROVE
+Reasoning:
+- Modified tracked product files are limited to the intended scope: hyprline-bar/src/config/widget_config.rs, hyprline-bar/src/main.rs, hyprline-bar/src/ui/settings.rs, and minimal hyprline-bar/src/ui/bar.rs.
+- The only modified tracked file outside product scope is .omo/boulder.json, and all untracked files are .omo drafts/evidence/notepad/plan artifacts.
+- git diff --stat confirms the bulk of product changes are in the four intended files, with bar.rs limited to a small hide method addition.
+- Target diff shows no Hyprland config edits, no widget ordering changes, no widget profile behavior changes, and no per-monitor profile selection regression beyond UI layout around the existing selector.
+- Forbidden runtime path grep found no added hyprctl, Command::new, std::process, zbus, or dbus monitor-discovery additions.

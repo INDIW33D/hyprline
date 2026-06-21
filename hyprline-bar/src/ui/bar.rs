@@ -692,6 +692,10 @@ impl Bar {
         self.window.present();
     }
 
+    pub fn hide(&self) {
+        self.window.set_visible(false);
+    }
+
     /// Получить имя монитора, к которому привязан бар
     pub fn monitor_name(&self) -> &str {
         &self.context.monitor_name

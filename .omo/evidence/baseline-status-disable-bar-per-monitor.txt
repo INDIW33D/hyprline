@@ -1,0 +1,6 @@
+ M .omo/boulder.json
+?? .omo/drafts/disable-bar-per-monitor.md
+?? .omo/evidence/baseline-status-disable-bar-per-monitor.txt
+?? .omo/evidence/task-1-disable-bar-per-monitor.log
+?? .omo/notepads/disable-bar-per-monitor/
+?? .omo/plans/disable-bar-per-monitor.md

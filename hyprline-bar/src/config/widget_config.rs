@@ -208,11 +208,16 @@ pub struct MonitorConfig {
     /// Имя профиля, используемого для этого монитора
     /// Если None - используется активный профиль
     pub profile_name: Option<String>,
+    #[serde(default = "default_bar_enabled")]
+    pub bar_enabled: bool,
 }
 
 impl Default for MonitorConfig {
     fn default() -> Self {
-        Self { profile_name: None }
+        Self {
+            profile_name: None,
+            bar_enabled: default_bar_enabled(),
+        }
     }
 }
 
@@ -238,6 +243,10 @@ impl Default for BarPadding {
 
 fn default_widget_spacing() -> i32 {
     2
+}
+
+fn default_bar_enabled() -> bool {
+    true
 }
 
 fn default_notification_monitor() -> String {
@@ -535,6 +544,12 @@ impl HyprlineConfig {
         self.get_active_profile()
     }
 
+    pub fn is_bar_enabled_for_monitor(&self, monitor_name: &str) -> bool {
+        self.monitors
+            .get(monitor_name)
+            .map_or(true, |monitor_config| monitor_config.bar_enabled)
+    }
+
     /// Установить профиль для монитора
     pub fn set_monitor_profile(&mut self, monitor_name: &str, profile_name: Option<String>) {
         if let Some(ref name) = profile_name {
@@ -549,6 +564,13 @@ impl HyprlineConfig {
             .entry(monitor_name.to_string())
             .or_insert_with(MonitorConfig::default)
             .profile_name = profile_name;
+    }
+
+    pub fn set_monitor_bar_enabled(&mut self, monitor_name: &str, enabled: bool) {
+        self.monitors
+            .entry(monitor_name.to_string())
+            .or_insert_with(MonitorConfig::default)
+            .bar_enabled = enabled;
     }
 
     /// Создать новый профиль
@@ -724,5 +746,70 @@ pub fn notify_config_changed() {
         for callback in callbacks.lock().unwrap().iter() {
             callback();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{HyprlineConfig, MonitorConfig};
+
+    #[test]
+    fn monitor_bar_defaults_missing_visibility_to_enabled() {
+        let config_json = r#"
+        {
+          "profiles": [
+            {
+              "name": "Default",
+              "widgets": []
+            }
+          ],
+          "active_profile": "Default",
+          "monitors": {
+            "HDMI-A-1": {
+              "profile_name": "Minimal"
+            }
+          }
+        }
+        "#;
+
+        let config = serde_json::from_str::<HyprlineConfig>(config_json).unwrap();
+
+        assert!(config.is_bar_enabled_for_monitor("HDMI-A-1"));
+    }
+
+    #[test]
+    fn monitor_bar_unknown_monitor_defaults_enabled() {
+        let config = HyprlineConfig::default();
+
+        assert!(config.is_bar_enabled_for_monitor("unknown-monitor"));
+    }
+
+    #[test]
+    fn monitor_bar_set_visibility_preserves_profile() {
+        let mut config = HyprlineConfig::default();
+        config.monitors.insert(
+            "HDMI-A-1".to_string(),
+            MonitorConfig {
+                profile_name: Some("Minimal".to_string()),
+                bar_enabled: true,
+            },
+        );
+
+        config.set_monitor_bar_enabled("HDMI-A-1", false);
+        config.set_monitor_bar_enabled("HDMI-A-1", true);
+
+        let monitor = config.monitors.get("HDMI-A-1").unwrap();
+        assert_eq!(monitor.profile_name.as_deref(), Some("Minimal"));
+        assert!(monitor.bar_enabled);
+    }
+
+    #[test]
+    fn monitor_bar_disabled_serializes_false() {
+        let mut config = HyprlineConfig::default();
+        config.set_monitor_bar_enabled("DP-1", false);
+
+        let serialized = serde_json::to_value(&config).unwrap();
+
+        assert_eq!(serialized["monitors"]["DP-1"]["bar_enabled"], false);
     }
 }
