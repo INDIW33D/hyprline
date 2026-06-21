@@ -1,8 +1,8 @@
 use crate::domain::status_notifier_watcher_service::StatusNotifierWatcherService;
-use zbus::{ConnectionBuilder, interface};
-use std::sync::{Arc, Mutex};
 use async_channel::Sender;
 use futures::stream::StreamExt;
+use std::sync::{Arc, Mutex};
+use zbus::{connection, interface, object_server::SignalEmitter};
 
 /// Внутреннее состояние StatusNotifierWatcher
 #[derive(Clone)]
@@ -32,7 +32,11 @@ struct StatusNotifierWatcherInterface {
 #[interface(name = "org.kde.StatusNotifierWatcher")]
 impl StatusNotifierWatcherInterface {
     /// Регистрирует новый элемент системного трея
-    async fn register_status_notifier_item(&mut self, #[zbus(signal_context)] ctx: zbus::SignalContext<'_>, service: String) -> zbus::fdo::Result<()> {
+    async fn register_status_notifier_item(
+        &mut self,
+        #[zbus(signal_context)] ctx: SignalEmitter<'_>,
+        service: String,
+    ) -> zbus::fdo::Result<()> {
         let should_register = {
             let mut items = self.state.registered_items.lock().unwrap();
 
@@ -55,7 +59,11 @@ impl StatusNotifierWatcherInterface {
     }
 
     /// Отменяет регистрацию элемента системного трея
-    async fn unregister_status_notifier_item(&mut self, #[zbus(signal_context)] ctx: zbus::SignalContext<'_>, service: String) -> zbus::fdo::Result<()> {
+    async fn unregister_status_notifier_item(
+        &mut self,
+        #[zbus(signal_context)] ctx: SignalEmitter<'_>,
+        service: String,
+    ) -> zbus::fdo::Result<()> {
         let was_removed = {
             let mut items = self.state.registered_items.lock().unwrap();
             let before = items.len();
@@ -70,7 +78,8 @@ impl StatusNotifierWatcherInterface {
 
         if was_removed {
             // Отправляем D-Bus сигнал
-            self.status_notifier_item_unregistered(&ctx, &service).await?;
+            self.status_notifier_item_unregistered(&ctx, &service)
+                .await?;
         }
 
         Ok(())
@@ -104,24 +113,23 @@ impl StatusNotifierWatcherInterface {
     #[zbus(signal)]
     async fn status_notifier_item_registered(
         &self,
-        ctx: &zbus::SignalContext<'_>,
+        ctx: &SignalEmitter<'_>,
         service: &str,
-    ) -> zbus::Result<()> {}
+    ) -> zbus::Result<()> {
+    }
 
     /// Сигнал: элемент удалён
     #[zbus(signal)]
     async fn status_notifier_item_unregistered(
         &self,
-        ctx: &zbus::SignalContext<'_>,
+        ctx: &SignalEmitter<'_>,
         service: &str,
-    ) -> zbus::Result<()> {}
+    ) -> zbus::Result<()> {
+    }
 
     /// Сигнал: хост зарегистрирован
     #[zbus(signal)]
-    async fn status_notifier_host_registered(
-        &self,
-        ctx: &zbus::SignalContext<'_>,
-    ) -> zbus::Result<()> {}
+    async fn status_notifier_host_registered(&self, ctx: &SignalEmitter<'_>) -> zbus::Result<()> {}
 }
 
 pub struct DbusStatusNotifierWatcher {
@@ -175,7 +183,13 @@ impl StatusNotifierWatcherService for DbusStatusNotifierWatcher {
     }
 
     fn get_registered_items(&self) -> Vec<String> {
-        self.state.lock().unwrap().registered_items.lock().unwrap().clone()
+        self.state
+            .lock()
+            .unwrap()
+            .registered_items
+            .lock()
+            .unwrap()
+            .clone()
     }
 
     fn stop(&self) -> Result<(), String> {
@@ -199,14 +213,17 @@ impl StatusNotifierWatcherService for DbusStatusNotifierWatcher {
     }
 }
 
-async fn start_watcher_async(state: WatcherState, shutdown_rx: async_channel::Receiver<()>) -> Result<(), Box<dyn std::error::Error>> {
+async fn start_watcher_async(
+    state: WatcherState,
+    shutdown_rx: async_channel::Receiver<()>,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Создаём интерфейс
     let interface = StatusNotifierWatcherInterface {
         state: state.clone(),
     };
 
     // Регистрируем интерфейс на D-Bus
-    let conn = ConnectionBuilder::session()?
+    let conn = connection::Builder::session()?
         .name("org.kde.StatusNotifierWatcher")?
         .serve_at("/StatusNotifierWatcher", interface)?
         .build()
@@ -269,10 +286,10 @@ async fn start_watcher_async(state: WatcherState, shutdown_rx: async_channel::Re
 
                             if let Ok(iface) = iface_ref {
                                 // Отправляем D-Bus сигнал через интерфейс
-                                let signal_ctx = iface.signal_context();
+                                let signal_emitter = iface.signal_emitter();
                                 let _ = iface.get()
                                     .await
-                                    .status_notifier_item_unregistered(signal_ctx, &removed_item)
+                                    .status_notifier_item_unregistered(signal_emitter, &removed_item)
                                     .await;
                             }
                         }
