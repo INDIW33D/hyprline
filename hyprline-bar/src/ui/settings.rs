@@ -1,13 +1,14 @@
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, Label, ListBox, ListBoxRow, Orientation,
-    ScrolledWindow, Separator, Window, Switch, Frame, ComboBoxText, Entry,
-    glib,
+    glib, Box as GtkBox, Button, ComboBoxText, Entry, Frame, Label, ListBox, ListBoxRow,
+    Orientation, ScrolledWindow, Separator, Switch, Window,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::config::{WidgetType, WidgetPosition, WidgetConfig, get_config, save_config, HyprlineConfig};
+use crate::config::{
+    get_config, save_config, HyprlineConfig, WidgetConfig, WidgetPosition, WidgetType,
+};
 use crate::domain::workspace_service::WorkspaceService;
 
 /// Окно настроек
@@ -52,7 +53,9 @@ impl SettingsWindow {
         header.set_halign(gtk4::Align::Start);
         container.append(&header);
 
-        let description = Label::new(Some("Manage widget profiles. Each profile can have different widget configuration."));
+        let description = Label::new(Some(
+            "Manage widget profiles. Each profile can have different widget configuration.",
+        ));
         description.add_css_class("settings-description");
         description.set_halign(gtk4::Align::Start);
         description.set_wrap(true);
@@ -117,7 +120,9 @@ impl SettingsWindow {
         let profile_combo_for_new = profile_combo.clone();
         new_btn.connect_clicked(move |btn| {
             let dialog = create_input_dialog(
-                btn.root().and_then(|r| r.downcast::<Window>().ok()).as_ref(),
+                btn.root()
+                    .and_then(|r| r.downcast::<Window>().ok())
+                    .as_ref(),
                 "New Profile",
                 "Profile name:",
                 "",
@@ -126,9 +131,11 @@ impl SettingsWindow {
             let combo = profile_combo_for_new.clone();
             dialog.connect_response(move |dlg, response| {
                 if response == gtk4::ResponseType::Ok {
-                    if let Some(entry) = dlg.content_area().first_child().and_then(|w| {
-                        w.last_child().and_then(|e| e.downcast::<Entry>().ok())
-                    }) {
+                    if let Some(entry) = dlg
+                        .content_area()
+                        .first_child()
+                        .and_then(|w| w.last_child().and_then(|e| e.downcast::<Entry>().ok()))
+                    {
                         let name = entry.text().to_string();
                         if !name.is_empty() {
                             let mut config = get_config().write().unwrap();
@@ -152,7 +159,9 @@ impl SettingsWindow {
         duplicate_btn.connect_clicked(move |btn| {
             if let Some(current) = profile_combo_for_dup.active_id() {
                 let dialog = create_input_dialog(
-                    btn.root().and_then(|r| r.downcast::<Window>().ok()).as_ref(),
+                    btn.root()
+                        .and_then(|r| r.downcast::<Window>().ok())
+                        .as_ref(),
                     "Duplicate Profile",
                     "New profile name:",
                     &format!("{} (Copy)", current),
@@ -162,9 +171,11 @@ impl SettingsWindow {
                 let current_name = current.to_string();
                 dialog.connect_response(move |dlg, response| {
                     if response == gtk4::ResponseType::Ok {
-                        if let Some(entry) = dlg.content_area().first_child().and_then(|w| {
-                            w.last_child().and_then(|e| e.downcast::<Entry>().ok())
-                        }) {
+                        if let Some(entry) = dlg
+                            .content_area()
+                            .first_child()
+                            .and_then(|w| w.last_child().and_then(|e| e.downcast::<Entry>().ok()))
+                        {
                             let name = entry.text().to_string();
                             if !name.is_empty() {
                                 let mut config = get_config().write().unwrap();
@@ -191,7 +202,9 @@ impl SettingsWindow {
                 }
 
                 let dialog = create_input_dialog(
-                    btn.root().and_then(|r| r.downcast::<Window>().ok()).as_ref(),
+                    btn.root()
+                        .and_then(|r| r.downcast::<Window>().ok())
+                        .as_ref(),
                     "Rename Profile",
                     "New name:",
                     &current,
@@ -201,9 +214,11 @@ impl SettingsWindow {
                 let current_name = current.to_string();
                 dialog.connect_response(move |dlg, response| {
                     if response == gtk4::ResponseType::Ok {
-                        if let Some(entry) = dlg.content_area().first_child().and_then(|w| {
-                            w.last_child().and_then(|e| e.downcast::<Entry>().ok())
-                        }) {
+                        if let Some(entry) = dlg
+                            .content_area()
+                            .first_child()
+                            .and_then(|w| w.last_child().and_then(|e| e.downcast::<Entry>().ok()))
+                        {
                             let new_name = entry.text().to_string();
                             if !new_name.is_empty() && new_name != current_name {
                                 let mut config = get_config().write().unwrap();
@@ -251,7 +266,9 @@ impl SettingsWindow {
     }
 
     /// Создаёт UI для настройки мониторов
-    pub fn create_monitors_settings(workspace_service: std::sync::Arc<dyn WorkspaceService + Send + Sync>) -> GtkBox {
+    pub fn create_monitors_settings(
+        workspace_service: std::sync::Arc<dyn WorkspaceService + Send + Sync>,
+    ) -> GtkBox {
         let container = GtkBox::new(Orientation::Vertical, 16);
         container.add_css_class("settings-monitors");
         container.set_margin_start(24);
@@ -607,7 +624,10 @@ impl SettingsWindow {
         // Загружаем текущие значения
         let (current_width, current_bottom_margin) = {
             let config = get_config().read().unwrap();
-            (config.notification_center.width, config.notification_center.bottom_margin)
+            (
+                config.notification_center.width,
+                config.notification_center.bottom_margin,
+            )
         };
 
         // Width
@@ -659,26 +679,26 @@ impl SettingsWindow {
         let retention_label = Label::new(Some("Keep notifications:"));
         retention_label.set_halign(gtk4::Align::Start);
         retention_label.set_hexpand(true);
-        
+
         let current_retention = {
             let config = get_config().read().unwrap();
             config.notification_retention_days
         };
-        
+
         let retention_spin = gtk4::SpinButton::with_range(0.0, 30.0, 1.0);
         retention_spin.set_value(current_retention as f64);
         retention_spin.set_width_chars(4);
-        
+
         let retention_suffix = Label::new(Some("days (0 = forever)"));
         retention_suffix.add_css_class("settings-hint");
-        
+
         retention_spin.connect_value_changed(move |spin| {
             let mut config = get_config().write().unwrap();
             config.notification_retention_days = spin.value() as u32;
             drop(config);
             let _ = save_config();
         });
-        
+
         retention_row.append(&retention_label);
         retention_row.append(&retention_spin);
         retention_row.append(&retention_suffix);
@@ -719,22 +739,29 @@ impl SettingsWindow {
 
         // Загружаем данные из конфигурации
         let left_widgets: Rc<RefCell<Vec<(WidgetType, bool)>>> = Rc::new(RefCell::new(Vec::new()));
-        let center_widgets: Rc<RefCell<Vec<(WidgetType, bool)>>> = Rc::new(RefCell::new(Vec::new()));
+        let center_widgets: Rc<RefCell<Vec<(WidgetType, bool)>>> =
+            Rc::new(RefCell::new(Vec::new()));
         let right_widgets: Rc<RefCell<Vec<(WidgetType, bool)>>> = Rc::new(RefCell::new(Vec::new()));
 
         {
             let config = get_config().read().unwrap();
             let profile = config.get_active_profile();
 
-            let mut left_vec: Vec<_> = profile.widgets.iter()
+            let mut left_vec: Vec<_> = profile
+                .widgets
+                .iter()
                 .filter(|w| w.position == WidgetPosition::Left)
                 .map(|w| (w.widget_type, w.enabled, w.order))
                 .collect();
-            let mut center_vec: Vec<_> = profile.widgets.iter()
+            let mut center_vec: Vec<_> = profile
+                .widgets
+                .iter()
                 .filter(|w| w.position == WidgetPosition::Center)
                 .map(|w| (w.widget_type, w.enabled, w.order))
                 .collect();
-            let mut right_vec: Vec<_> = profile.widgets.iter()
+            let mut right_vec: Vec<_> = profile
+                .widgets
+                .iter()
                 .filter(|w| w.position == WidgetPosition::Right)
                 .map(|w| (w.widget_type, w.enabled, w.order))
                 .collect();
@@ -889,7 +916,11 @@ impl SettingsWindow {
             let mut new_widgets = Vec::new();
 
             // Функция для сбора виджетов из GtkBox
-            fn collect_widgets(list: &GtkBox, position: WidgetPosition, new_widgets: &mut Vec<WidgetConfig>) {
+            fn collect_widgets(
+                list: &GtkBox,
+                position: WidgetPosition,
+                new_widgets: &mut Vec<WidgetConfig>,
+            ) {
                 let mut child = list.first_child();
                 let mut order = 0i32;
                 while let Some(widget) = child {
@@ -934,12 +965,20 @@ impl SettingsWindow {
 }
 
 /// Создаёт диалог ввода текста
-fn create_input_dialog(parent: Option<&Window>, title: &str, label: &str, default: &str) -> gtk4::Dialog {
+fn create_input_dialog(
+    parent: Option<&Window>,
+    title: &str,
+    label: &str,
+    default: &str,
+) -> gtk4::Dialog {
     let dialog = gtk4::Dialog::with_buttons(
         Some(title),
         parent,
         gtk4::DialogFlags::MODAL | gtk4::DialogFlags::DESTROY_WITH_PARENT,
-        &[("Cancel", gtk4::ResponseType::Cancel), ("OK", gtk4::ResponseType::Ok)],
+        &[
+            ("Cancel", gtk4::ResponseType::Cancel),
+            ("OK", gtk4::ResponseType::Ok),
+        ],
     );
 
     let content = dialog.content_area();
@@ -979,8 +1018,8 @@ fn create_widget_row(
 
     // Сохраняем тип виджета в data
     unsafe {
-        row.set_data("widget_type", widget_type as i32);
-        row.set_data("enabled", enabled as i32);
+        row.set_data("widget_type", widget_type);
+        row.set_data("enabled", enabled);
     }
 
     // Верхняя строка: кнопки вверх/вниз, иконка и название
@@ -1112,7 +1151,7 @@ fn create_widget_row(
     switch.connect_state_set(move |_, state| {
         if let Some(r) = row_weak.upgrade() {
             unsafe {
-                r.set_data("enabled", state as i32);
+                r.set_data("enabled", state);
             }
         }
         glib::Propagation::Proceed
@@ -1127,27 +1166,11 @@ fn create_widget_row(
 /// Получает тип виджета и состояние enabled из GtkBox child
 fn get_widget_from_box_child(widget: &gtk4::Widget) -> Option<(WidgetType, bool)> {
     unsafe {
-        let widget_type_raw: Option<i32> = widget.data("widget_type").map(|p| *p.as_ref());
-        let enabled_raw: Option<i32> = widget.data("enabled").map(|p| *p.as_ref());
+        let widget_type: Option<WidgetType> = widget.data("widget_type").map(|p| *p.as_ref());
+        let enabled: Option<bool> = widget.data("enabled").map(|p| *p.as_ref());
 
-        if let (Some(wt), Some(en)) = (widget_type_raw, enabled_raw) {
-            let widget_type = match wt {
-                0 => WidgetType::Menu,
-                1 => WidgetType::Workspaces,
-                2 => WidgetType::ActiveWindow,
-                3 => WidgetType::SystemTray,
-                4 => WidgetType::SystemResources,
-                5 => WidgetType::Network,
-                6 => WidgetType::Volume,
-                7 => WidgetType::Brightness,
-                8 => WidgetType::Battery,
-                9 => WidgetType::KeyboardLayout,
-                10 => WidgetType::Notifications,
-                11 => WidgetType::DateTime,
-                12 => WidgetType::Submap,
-                _ => return None,
-            };
-            return Some((widget_type, en != 0));
+        if let (Some(wt), Some(en)) = (widget_type, enabled) {
+            return Some((wt, en));
         }
     }
     None
@@ -1193,19 +1216,27 @@ pub fn show_settings(app: &gtk4::Application) {
 
     // Пункты меню
     let profiles_item = SettingsWindow::create_menu_item("󰁯", "Profiles");
-    unsafe { profiles_item.set_data("page", "profiles"); }
+    unsafe {
+        profiles_item.set_data("page", "profiles");
+    }
     menu_list.append(&profiles_item);
 
     let monitors_item = SettingsWindow::create_menu_item("󰍹", "Monitors");
-    unsafe { monitors_item.set_data("page", "monitors"); }
+    unsafe {
+        monitors_item.set_data("page", "monitors");
+    }
     menu_list.append(&monitors_item);
 
     let widgets_item = SettingsWindow::create_menu_item("󰘔", "Widgets");
-    unsafe { widgets_item.set_data("page", "widgets"); }
+    unsafe {
+        widgets_item.set_data("page", "widgets");
+    }
     menu_list.append(&widgets_item);
 
     let appearance_item = SettingsWindow::create_menu_item("󰏘", "Appearance");
-    unsafe { appearance_item.set_data("page", "appearance"); }
+    unsafe {
+        appearance_item.set_data("page", "appearance");
+    }
     menu_list.append(&appearance_item);
 
     menu_box.append(&menu_list);
@@ -1226,7 +1257,9 @@ pub fn show_settings(app: &gtk4::Application) {
     content_container.borrow().set_vexpand(true);
 
     // Показываем настройки профилей по умолчанию
-    content_container.borrow().append(&SettingsWindow::create_profiles_settings());
+    content_container
+        .borrow()
+        .append(&SettingsWindow::create_profiles_settings());
 
     content_box.append(&content_container.borrow().clone());
     main_box.append(&content_box);
@@ -1236,8 +1269,9 @@ pub fn show_settings(app: &gtk4::Application) {
 
     // Обработчик выбора пункта меню
     let content_container_clone = content_container.clone();
-    let workspace_service: std::sync::Arc<dyn crate::domain::workspace_service::WorkspaceService + Send + Sync>
-        = std::sync::Arc::new(HyprlandIpc::new());
+    let workspace_service: std::sync::Arc<
+        dyn crate::domain::workspace_service::WorkspaceService + Send + Sync,
+    > = std::sync::Arc::new(HyprlandIpc::new());
 
     menu_list.connect_row_selected(move |_, row| {
         if let Some(row) = row {
@@ -1249,9 +1283,7 @@ pub fn show_settings(app: &gtk4::Application) {
             }
 
             // Получаем имя страницы из data
-            let page_name: Option<&str> = unsafe {
-                row.data::<&str>("page").map(|p| *p.as_ref())
-            };
+            let page_name: Option<&str> = unsafe { row.data::<&str>("page").map(|p| *p.as_ref()) };
 
             // Показываем нужную страницу
             match page_name {
@@ -1259,7 +1291,9 @@ pub fn show_settings(app: &gtk4::Application) {
                     content.append(&SettingsWindow::create_profiles_settings());
                 }
                 Some("monitors") => {
-                    content.append(&SettingsWindow::create_monitors_settings(workspace_service.clone()));
+                    content.append(&SettingsWindow::create_monitors_settings(
+                        workspace_service.clone(),
+                    ));
                 }
                 Some("widgets") => {
                     content.append(&SettingsWindow::create_widgets_settings());
@@ -1279,4 +1313,3 @@ pub fn show_settings(app: &gtk4::Application) {
 
     window.present();
 }
-

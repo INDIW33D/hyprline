@@ -3,7 +3,7 @@ window.window {
     /* padding управляется через конфиг */
     font-size: 1rem;
     line-height: 1rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Табличные цифры - все цифры одинаковой ширины */
@@ -27,7 +27,7 @@ popover.background {
 }
 
 popover > contents {
-    background: #000000AA;
+    background: #000000aa;
     border: none;
     border-radius: 4px;
     padding: 0;
@@ -37,7 +37,7 @@ popover > contents {
 .main-button {
     min-height: 22px;
     /*min-width: 28px;*/
-    background: #000000AA;
+    background: #000000aa;
     border: none;
     border-radius: 4px;
 }
@@ -82,7 +82,7 @@ popover > contents {
 
 /* Workspaces section */
 box.workspaces {
-    background: #000000AA;
+    background: #000000aa;
     border-radius: 4px;
 }
 
@@ -108,7 +108,7 @@ box.workspaces {
 
 /* Active window title */
 .active-window {
-    background: #000000AA;
+    background: #000000aa;
     color: #ffffff;
     padding: 0 10px;
     /* spacing управляется через конфиг */
@@ -129,7 +129,7 @@ box.zone-right {
 
 /* DateTime widget */
 .datetime-button {
-    background: #000000AA;
+    background: #000000aa;
     border: none;
     border-radius: 4px;
     padding: 0 10px;
@@ -210,7 +210,7 @@ box.zone-right {
 
 /* System Tray */
 .system-tray {
-    background: #000000AA;
+    background: #000000aa;
     border-radius: 4px;
     /* spacing управляется через конфиг */
     padding: 0 10px;
@@ -312,7 +312,7 @@ box.zone-right {
 
 /* Battery Widget */
 .battery-widget {
-    background: #000000AA;
+    background: #000000aa;
     border-radius: 4px;
     /* spacing управляется через конфиг */
     padding: 0 10px;
@@ -368,7 +368,7 @@ box.zone-right {
 
 /* Volume Widget */
 .volume-widget {
-    background: #000000AA;
+    background: #000000aa;
     border-radius: 4px;
     /* spacing управляется через конфиг */
     padding: 0 10px;
@@ -407,7 +407,7 @@ box.zone-right {
 }
 
 .volume-popover {
-    background: #000000DD;
+    background: #000000dd;
     padding: 8px;
     border-radius: 4px;
 }
@@ -436,7 +436,7 @@ box.zone-right {
 
 /* Notification Widget */
 .notification-button {
-    background: #000000AA;
+    background: #000000aa;
     border-radius: 4px;
     /* spacing управляется через конфиг */
     padding: 0 10px;
@@ -444,8 +444,8 @@ box.zone-right {
 
 /* Анимация моргания при новом уведомлении */
 .notification-button.notification-alert {
-    background: #4CAF50;
-    box-shadow: 0 0 8px #4CAF50;
+    background: #4caf50;
+    box-shadow: 0 0 8px #4caf50;
 }
 
 .notification-button.notification-alert .notification-icon {
@@ -473,7 +473,7 @@ box.zone-right {
 
 /* Notification Center Window (layer-shell) */
 .notification-center-window {
-    background: #000000EE;
+    background: #000000ee;
 }
 
 /* Notification History Popover */
@@ -690,7 +690,7 @@ box.zone-right {
 
 /* Keyboard Layout Widget */
 .keyboard-layout {
-    background: #000000AA;
+    background: #000000aa;
     border-radius: 4px;
     /* spacing управляется через конфиг */
     padding: 0 12px;
@@ -702,7 +702,7 @@ box.zone-right {
 
 /* Submap Widget */
 .submap-widget {
-    background: #FF5722AA;
+    background: #ff5722aa;
     border-radius: 4px;
     /* spacing управляется через конфиг */
     padding: 4px 12px;
@@ -741,13 +741,13 @@ box.zone-right {
 
 .submap-key-inline {
     font-family: monospace;
-    color: #FFD700;
+    color: #ffd700;
     font-size: 12px;
     font-weight: bold;
 }
 
 .submap-action-inline {
-    color: #ffffffCC;
+    color: #ffffffcc;
     font-size: 11px;
 }
 
@@ -765,7 +765,7 @@ box.zone-right {
 
 /* System Resources Widget */
 .system-resources-widget {
-    background: #000000AA;
+    background: #000000aa;
     border-radius: 4px;
     /* spacing управляется через конфиг */
     padding: 4px 12px;
@@ -776,11 +776,11 @@ box.zone-right {
 }
 
 .cpu-icon {
-    color: #4CAF50;
+    color: #4caf50;
 }
 
 .ram-icon {
-    color: #2196F3;
+    color: #2196f3;
 }
 
 .system-resources-value {
@@ -789,11 +789,11 @@ box.zone-right {
 }
 
 .cpu-value {
-    color: #81C784;
+    color: #81c784;
 }
 
 .ram-value {
-    color: #64B5F6;
+    color: #64b5f6;
 }
 
 .system-resources-separator {
@@ -804,30 +804,30 @@ box.zone-right {
 
 /* CPU usage level colors */
 .cpu-high .cpu-value {
-    color: #EF5350;
+    color: #ef5350;
     font-weight: bold;
 }
 
 .cpu-medium .cpu-value {
-    color: #FFA726;
+    color: #ffa726;
 }
 
 .cpu-low .cpu-value {
-    color: #81C784;
+    color: #81c784;
 }
 
 /* RAM usage level colors */
 .ram-high .ram-value {
-    color: #EF5350;
+    color: #ef5350;
     font-weight: bold;
 }
 
 .ram-medium .ram-value {
-    color: #FFA726;
+    color: #ffa726;
 }
 
 .ram-low .ram-value {
-    color: #64B5F6;
+    color: #64b5f6;
 }
 
 /* Volume OSD (On-Screen Display) */
@@ -836,7 +836,7 @@ box.zone-right {
 }
 
 .volume-osd {
-    background: #000000DD;
+    background: #000000dd;
     border-radius: 8px;
     padding: 16px 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
@@ -868,18 +868,18 @@ box.zone-right {
 }
 
 .volume-osd-progress progress {
-    background: linear-gradient(to top, #4CAF50, #8BC34A);
+    background: linear-gradient(to top, #4caf50, #8bc34a);
     border-radius: 4px;
     min-width: 8px;
 }
 
 .volume-osd-progress.volume-osd-muted progress {
-    background: #EF5350;
+    background: #ef5350;
 }
 
 /* Network Widget */
 .network-widget {
-    background: #000000AA;
+    background: #000000aa;
     border-radius: 4px;
     /* spacing управляется через конфиг */
     padding: 4px 12px;
@@ -892,7 +892,7 @@ box.zone-right {
 
 .network-icon {
     font-size: 16px;
-    color: #4CAF50;
+    color: #4caf50;
 }
 
 .network-info {
@@ -928,7 +928,7 @@ box.zone-right {
 
 .connection-icon {
     font-size: 18px;
-    color: #4CAF50;
+    color: #4caf50;
 }
 
 .connection-name {
@@ -940,14 +940,14 @@ box.zone-right {
 .refresh-button {
     margin-top: 8px;
     padding: 8px 16px;
-    background: #2196F3;
+    background: #2196f3;
     color: #ffffff;
     border: none;
     border-radius: 4px;
 }
 
 .refresh-button:hover {
-    background: #1976D2;
+    background: #1976d2;
 }
 
 .loading-label,
@@ -977,7 +977,7 @@ box.zone-right {
 
 .network-item-icon {
     font-size: 16px;
-    color: #4CAF50;
+    color: #4caf50;
     margin-right: 8px;
 }
 
@@ -988,7 +988,7 @@ box.zone-right {
 
 .security-icon {
     font-size: 12px;
-    color: #FFB74D;
+    color: #ffb74d;
     margin-right: 8px;
 }
 
@@ -999,7 +999,7 @@ box.zone-right {
 
 /* Brightness Widget */
 .brightness-widget {
-    background: #000000AA;
+    background: #000000aa;
     border-radius: 4px;
     /* spacing управляется через конфиг */
     padding: 0 10px;
@@ -1025,22 +1025,22 @@ box.zone-right {
 
 .brightness-low .brightness-icon,
 .brightness-low .brightness-percentage {
-    color: #FFA726;
+    color: #ffa726;
 }
 
 .brightness-medium .brightness-icon,
 .brightness-medium .brightness-percentage {
-    color: #FFD54F;
+    color: #ffd54f;
 }
 
 .brightness-high .brightness-icon,
 .brightness-high .brightness-percentage {
-    color: #FFF59D;
+    color: #fff59d;
 }
 
 .brightness-full .brightness-icon,
 .brightness-full .brightness-percentage {
-    color: #FFEB3B;
+    color: #ffeb3b;
 }
 
 /* Brightness Popover */
@@ -1073,7 +1073,7 @@ box.zone-right {
 }
 
 .brightness-slider highlight {
-    background: linear-gradient(to right, #FFA726, #FFEB3B);
+    background: linear-gradient(to right, #ffa726, #ffeb3b);
     border-radius: 2px;
 }
 
@@ -1092,12 +1092,12 @@ box.zone-right {
 
 /* ===== Settings Window Styles ===== */
 .settings-window {
-    background: #000000DD;
+    background: #000000dd;
 }
 
 /* HeaderBar для окна настроек */
 headerbar {
-    background: #000000DD;
+    background: #000000dd;
     border: none;
     box-shadow: none;
     min-height: 40px;
@@ -1429,3 +1429,144 @@ headerbar windowcontrols button.close:hover image {
     background: #66bbff;
 }
 
+/* Bluetooth Widget */
+.bluetooth-widget {
+    background: #000000aa;
+    border-radius: 4px;
+    padding: 4px 12px;
+    cursor: pointer;
+}
+
+.bluetooth-widget:hover {
+    background: #ffffff20;
+}
+
+.bluetooth-icon {
+    font-size: 16px;
+    color: #2196f3;
+}
+
+.bluetooth-connected {
+    color: #4caf50;
+}
+
+.bluetooth-off {
+    color: #666666;
+}
+
+/* Bluetooth Popover */
+.bluetooth-popover {
+    background: transparent;
+}
+
+.bluetooth-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.bluetooth-connected-list {
+    padding: 4px 0;
+}
+
+.bluetooth-no-devices {
+    padding: 12px;
+    font-size: 13px;
+    color: #888888;
+    font-style: italic;
+}
+
+/* Bluetooth Device Items */
+.bluetooth-device-item {
+    padding: 8px 8px;
+    background: transparent;
+    border-radius: 4px;
+}
+
+.bluetooth-device-item:hover {
+    background: #ffffff10;
+}
+
+.bluetooth-device-connected {
+    background: #ffffff08;
+}
+
+.bluetooth-device-icon {
+    font-size: 18px;
+    color: #2196f3;
+    min-width: 24px;
+}
+
+.bluetooth-device-connected .bluetooth-device-icon {
+    color: #4caf50;
+}
+
+.bluetooth-device-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.bluetooth-device-status {
+    font-size: 11px;
+    color: #aaaaaa;
+}
+
+/* Bluetooth Action Buttons */
+.bluetooth-connect-button,
+.bluetooth-disconnect-button,
+.bluetooth-pair-button {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    min-height: 28px;
+}
+
+.bluetooth-connect-button {
+    background: #2196f3;
+    color: #ffffff;
+}
+
+.bluetooth-connect-button:hover {
+    background: #1976d2;
+}
+
+.bluetooth-disconnect-button {
+    background: #f4433620;
+    color: #f44336;
+}
+
+.bluetooth-disconnect-button:hover {
+    background: #f4433640;
+}
+
+.bluetooth-pair-button {
+    background: #ffffff15;
+    color: #ffffff;
+}
+
+.bluetooth-pair-button:hover {
+    background: #ffffff25;
+}
+
+.bluetooth-scan-button {
+    margin-top: 8px;
+    padding: 8px 16px;
+    background: #2196f3;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+}
+
+.bluetooth-scan-button:hover {
+    background: #1976d2;
+}
+
+.bluetooth-scanning {
+    background: #f44336;
+}
+
+.bluetooth-scanning:hover {
+    background: #d32f2f;
+}

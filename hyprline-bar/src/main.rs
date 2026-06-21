@@ -4,35 +4,36 @@ mod infrastructure;
 mod shared_state;
 mod ui;
 
-use config::parse_workspace_bindings;
-use domain::workspace_service::WorkspaceService;
-use domain::system_tray_service::SystemTrayService;
-use domain::datetime_service::DateTimeService;
 use domain::battery_service::BatteryService;
-use domain::volume_service::VolumeService;
-use domain::notification_service::NotificationService;
-use domain::keyboard_layout_service::KeyboardLayoutService;
-use domain::system_resources_service::SystemResourcesService;
-use domain::network_service::NetworkService;
+use domain::bluetooth_service::BluetoothService;
 use domain::brightness_service::BrightnessService;
-use domain::submap_service::SubmapService;
-use domain::status_notifier_watcher_service::StatusNotifierWatcherService;
+use domain::datetime_service::DateTimeService;
+use domain::keyboard_layout_service::KeyboardLayoutService;
 use domain::models::DateTimeConfig;
-use infrastructure::hyprland_ipc::HyprlandIpc;
-use infrastructure::status_notifier_tray::StatusNotifierTrayService;
-use infrastructure::system_datetime::SystemDateTimeService;
-use infrastructure::system_battery::SystemBatteryService;
-use infrastructure::system_resources::LinuxSystemResources;
-use infrastructure::networkmanager::NetworkManagerService;
+use domain::network_service::NetworkService;
+use domain::notification_service::NotificationService;
+use domain::status_notifier_watcher_service::StatusNotifierWatcherService;
+use domain::submap_service::SubmapService;
+use domain::system_resources_service::SystemResourcesService;
+use domain::system_tray_service::SystemTrayService;
+use domain::volume_service::VolumeService;
+use domain::workspace_service::WorkspaceService;
+use infrastructure::bluez_bluetooth::BluezBluetoothService;
 use infrastructure::dbus_status_notifier_watcher::DbusStatusNotifierWatcher;
-use infrastructure::remote_notification_service::RemoteNotificationService;
+use infrastructure::hyprland_ipc::HyprlandIpc;
 use infrastructure::hyprland_keyboard_layout::HyprlandKeyboardLayoutService;
-use infrastructure::lumen_brightness::LumenBrightnessService;
 use infrastructure::hyprland_submap::HyprlandSubmapService;
+use infrastructure::lumen_brightness::LumenBrightnessService;
 use infrastructure::monitor_listener::{start_monitor_listener, MonitorEvent};
+use infrastructure::networkmanager::NetworkManagerService;
+use infrastructure::remote_notification_service::RemoteNotificationService;
+use infrastructure::status_notifier_tray::StatusNotifierTrayService;
+use infrastructure::system_battery::SystemBatteryService;
+use infrastructure::system_datetime::SystemDateTimeService;
+use infrastructure::system_resources::LinuxSystemResources;
+use shared_state::get_shared_state;
 use ui::bar::Bar;
 use ui::volume_osd::VolumeOsd;
-use shared_state::get_shared_state;
 
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
@@ -87,7 +88,11 @@ fn get_layout_full_name(short_name: &str) -> String {
         "japanese" | "jp" => "JP".to_string(),
         "korean" | "kr" => "KR".to_string(),
         "chinese" | "cn" => "CN".to_string(),
-        _ => short_name.chars().take(2).collect::<String>().to_uppercase(),
+        _ => short_name
+            .chars()
+            .take(2)
+            .collect::<String>()
+            .to_uppercase(),
     }
 }
 
@@ -95,22 +100,27 @@ fn build_ui(app: &gtk4::Application) {
     // Запускаем свой StatusNotifierWatcher D-Bus сервис
     let watcher_service = Arc::new(DbusStatusNotifierWatcher::new());
     if let Err(e) = watcher_service.start() {
-        eprintln!("[Main] Warning: Failed to start StatusNotifierWatcher: {}", e);
+        eprintln!(
+            "[Main] Warning: Failed to start StatusNotifierWatcher: {}",
+            e
+        );
     }
-    
+
     // Даём время сервису зарегистрироваться в D-Bus
     std::thread::sleep(std::time::Duration::from_millis(200));
-    
-    let service: Arc<dyn WorkspaceService + Send + Sync> = Arc::new(HyprlandIpc::new());
-    
+
+    let hyprland_ipc_impl = Arc::new(HyprlandIpc::new());
+    let service: Arc<dyn WorkspaceService + Send + Sync> = hyprland_ipc_impl.clone();
+
     // Создаём системный трей сервис
     let tray_service_impl = Arc::new(StatusNotifierTrayService::new());
     let tray_service: Arc<dyn SystemTrayService + Send + Sync> = tray_service_impl.clone();
-    
+
     // Создаём DateTime сервис
-    let datetime_service: Arc<dyn DateTimeService + Send + Sync> = Arc::new(SystemDateTimeService::new());
+    let datetime_service: Arc<dyn DateTimeService + Send + Sync> =
+        Arc::new(SystemDateTimeService::new());
     let datetime_config = DateTimeConfig::default();
-    
+
     // Создаём Battery сервис с мониторингом событий
     let (battery_tx, battery_rx) = async_channel::unbounded();
     let battery_service_impl = Arc::new(SystemBatteryService::new());
@@ -134,12 +144,13 @@ fn build_ui(app: &gtk4::Application) {
         Arc::new(RemoteNotificationService::new());
 
     // Создаём KeyboardLayout сервис
-    let keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync> = 
+    let keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync> =
         Arc::new(HyprlandKeyboardLayoutService::new());
 
     // Создаём канал для событий смены раскладки
-    let (keyboard_layout_tx, keyboard_layout_rx) = infrastructure::keyboard_layout_listener::create_keyboard_layout_channel();
-    
+    let (keyboard_layout_tx, keyboard_layout_rx) =
+        infrastructure::keyboard_layout_listener::create_keyboard_layout_channel();
+
     // Запускаем мониторинг событий раскладки
     infrastructure::keyboard_layout_listener::start_keyboard_layout_listener(keyboard_layout_tx);
 
@@ -150,6 +161,10 @@ fn build_ui(app: &gtk4::Application) {
     // Создаём Network сервис
     let network_service: Arc<dyn NetworkService + Send + Sync> =
         Arc::new(NetworkManagerService::new());
+
+    // Создаём Bluetooth сервис
+    let bluetooth_service: Arc<dyn BluetoothService + Send + Sync> =
+        Arc::new(BluezBluetoothService::new());
 
     // Создаём Brightness сервис
     eprintln!("[Main] Creating brightness service...");
@@ -164,7 +179,8 @@ fn build_ui(app: &gtk4::Application) {
             panic!("Cannot create brightness service");
         }
     };
-    let brightness_service: Arc<dyn BrightnessService + Send + Sync> = brightness_service_impl.clone();
+    let brightness_service: Arc<dyn BrightnessService + Send + Sync> =
+        brightness_service_impl.clone();
 
     // Сначала подписываемся на изменения яркости
     let shared_state_brightness = get_shared_state();
@@ -187,28 +203,33 @@ fn build_ui(app: &gtk4::Application) {
 
     // Запускаем мониторинг изменений конфига Hyprland для обновления названий биндингов
     let (config_change_tx, config_change_rx) = async_channel::unbounded::<()>();
-    submap_service_impl.clone().start_config_monitoring(config_change_tx);
+    submap_service_impl
+        .clone()
+        .start_config_monitoring(config_change_tx);
 
     // Создаём канал для обновлений трея
     let (tray_tx, tray_rx) = async_channel::unbounded();
-    
+
     // Запускаем мониторинг трея
     tray_service_impl.start_monitoring(tray_tx.clone());
-    
+
     // Подключаем обработчик завершения приложения
     let watcher_service_cleanup = watcher_service.clone();
     let tray_service_cleanup = tray_service_impl.clone();
     app.connect_shutdown(move |_| {
         eprintln!("[Main] Application shutting down...");
-        
+
         // Останавливаем мониторинг трея
         tray_service_cleanup.stop();
-        
+
         // Останавливаем StatusNotifierWatcher
         if let Err(e) = watcher_service_cleanup.stop() {
-            eprintln!("[Main] Warning: Failed to stop StatusNotifierWatcher: {}", e);
+            eprintln!(
+                "[Main] Warning: Failed to stop StatusNotifierWatcher: {}",
+                e
+            );
         }
-        
+
         eprintln!("[Main] Cleanup completed");
     });
 
@@ -275,7 +296,11 @@ fn build_ui(app: &gtk4::Application) {
         let submap_service_clone = submap_service.clone();
         glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
             while let Ok(submap_name) = submap_rx.try_recv() {
-                eprintln!("[Main] Submap changed: '{}' (active: {})", submap_name, !submap_name.is_empty());
+                eprintln!(
+                    "[Main] Submap changed: '{}' (active: {})",
+                    submap_name,
+                    !submap_name.is_empty()
+                );
                 let bindings = submap_service_clone.get_submap_bindings(&submap_name);
                 eprintln!("[Main] Found {} bindings for submap", bindings.len());
                 let submap = domain::models::SubmapInfo {
@@ -346,6 +371,17 @@ fn build_ui(app: &gtk4::Application) {
         });
     }
 
+    // Централизованное обновление Bluetooth каждые 3 секунды
+    {
+        let shared_state = shared_state.clone();
+        let bluetooth_service = bluetooth_service.clone();
+        glib::timeout_add_local(std::time::Duration::from_secs(3), move || {
+            let info = bluetooth_service.get_bluetooth_info();
+            shared_state.update_bluetooth(info);
+            glib::ControlFlow::Continue
+        });
+    }
+
     // Инициализация начального состояния
     if let Some(info) = battery_service.get_battery_info() {
         shared_state.update_battery(Some(info));
@@ -365,6 +401,8 @@ fn build_ui(app: &gtk4::Application) {
     shared_state.update_system_resources(system_resources_service.get_resources());
     // Инициализация сети
     shared_state.update_network(network_service.get_current_connection());
+    // Инициализация Bluetooth
+    shared_state.update_bluetooth(bluetooth_service.get_bluetooth_info());
 
     // Подписка на события сервиса уведомлений в реальном времени
     {
@@ -387,12 +425,12 @@ fn build_ui(app: &gtk4::Application) {
                     NotificationEvent::CountChanged(count) => {
                         let new_count = count as usize;
                         let old_count = *prev_count_clone.borrow();
-                        
+
                         // Если количество увеличилось - пришло новое уведомление
                         if new_count > old_count && old_count > 0 {
                             shared_state_for_listener.trigger_notification_alert();
                         }
-                        
+
                         *prev_count_clone.borrow_mut() = new_count;
                         shared_state_for_listener.update_notifications(new_count);
                     }
@@ -412,13 +450,17 @@ fn build_ui(app: &gtk4::Application) {
         });
     }
 
-    let workspace_keys = parse_workspace_bindings();
+    let workspace_keys = hyprland_ipc_impl.get_workspace_key_labels();
     let monitors = service.get_monitors();
-    eprintln!("[Main] Found {} monitors: {:?}", monitors.len(), monitors.iter().map(|m| &m.name).collect::<Vec<_>>());
+    eprintln!(
+        "[Main] Found {} monitors: {:?}",
+        monitors.len(),
+        monitors.iter().map(|m| &m.name).collect::<Vec<_>>()
+    );
 
     // Создаём bars и храним их для hot reload и динамического управления
-    let bars: Arc<std::sync::Mutex<Vec<Bar>>> = Arc::new(std::sync::Mutex::new(
-        if monitors.is_empty() {
+    let bars: Arc<std::sync::Mutex<Vec<Bar>>> =
+        Arc::new(std::sync::Mutex::new(if monitors.is_empty() {
             eprintln!("[Main] No monitors found, creating default bar");
             vec![Bar::new(
                 app,
@@ -434,33 +476,37 @@ fn build_ui(app: &gtk4::Application) {
                 keyboard_layout_service.clone(),
                 system_resources_service.clone(),
                 network_service.clone(),
+                bluetooth_service.clone(),
                 brightness_service.clone(),
                 submap_service.clone(),
                 shared_state.clone(),
             )]
         } else {
-            monitors.iter().map(|monitor| {
-                Bar::new(
-                    app,
-                    &monitor.name,
-                    workspace_keys.clone(),
-                    service.clone(),
-                    tray_service.clone(),
-                    datetime_service.clone(),
-                    datetime_config.clone(),
-                    battery_service.clone(),
-                    volume_service.clone(),
-                    notification_service.clone(),
-                    keyboard_layout_service.clone(),
-                    system_resources_service.clone(),
-                    network_service.clone(),
-                    brightness_service.clone(),
-                    submap_service.clone(),
-                    shared_state.clone(),
-                )
-            }).collect()
-        }
-    ));
+            monitors
+                .iter()
+                .map(|monitor| {
+                    Bar::new(
+                        app,
+                        &monitor.name,
+                        workspace_keys.clone(),
+                        service.clone(),
+                        tray_service.clone(),
+                        datetime_service.clone(),
+                        datetime_config.clone(),
+                        battery_service.clone(),
+                        volume_service.clone(),
+                        notification_service.clone(),
+                        keyboard_layout_service.clone(),
+                        system_resources_service.clone(),
+                        network_service.clone(),
+                        bluetooth_service.clone(),
+                        brightness_service.clone(),
+                        submap_service.clone(),
+                        shared_state.clone(),
+                    )
+                })
+                .collect()
+        }));
 
     // Подписка на изменения конфигурации для hot reload
     {
@@ -504,6 +550,7 @@ fn build_ui(app: &gtk4::Application) {
         let keyboard_layout_service_clone = keyboard_layout_service.clone();
         let system_resources_service_clone = system_resources_service.clone();
         let network_service_clone = network_service.clone();
+        let bluetooth_service_clone = bluetooth_service.clone();
         let brightness_service_clone = brightness_service.clone();
         let submap_service_clone = submap_service.clone();
         let shared_state_clone = shared_state.clone();
@@ -526,52 +573,62 @@ fn build_ui(app: &gtk4::Application) {
                         let keyboard_layout_service = keyboard_layout_service_clone.clone();
                         let system_resources_service = system_resources_service_clone.clone();
                         let network_service = network_service_clone.clone();
+                        let bluetooth_service = bluetooth_service_clone.clone();
                         let brightness_service = brightness_service_clone.clone();
                         let submap_service = submap_service_clone.clone();
                         let shared_state = shared_state_clone.clone();
 
-                        glib::timeout_add_local_once(std::time::Duration::from_millis(300), move || {
-                            let mut bars = bars_clone.lock().unwrap();
+                        glib::timeout_add_local_once(
+                            std::time::Duration::from_millis(300),
+                            move || {
+                                let mut bars = bars_clone.lock().unwrap();
 
-                            // Проверяем, нет ли уже бара для этого монитора
-                            if bars.iter().any(|b| b.monitor_name() == monitor_name) {
-                                eprintln!("[Main] Bar for monitor {} already exists", monitor_name);
-                                return;
-                            }
+                                // Проверяем, нет ли уже бара для этого монитора
+                                if bars.iter().any(|b| b.monitor_name() == monitor_name) {
+                                    eprintln!(
+                                        "[Main] Bar for monitor {} already exists",
+                                        monitor_name
+                                    );
+                                    return;
+                                }
 
-                            eprintln!("[Main] Creating bar for new monitor: {}", monitor_name);
+                                eprintln!("[Main] Creating bar for new monitor: {}", monitor_name);
 
-                            let bar = Bar::new(
-                                &app,
-                                &monitor_name,
-                                workspace_keys,
-                                service,
-                                tray_service,
-                                datetime_service,
-                                datetime_config,
-                                battery_service,
-                                volume_service,
-                                notification_service,
-                                keyboard_layout_service,
-                                system_resources_service,
-                                network_service,
-                                brightness_service,
-                                submap_service,
-                                shared_state,
-                            );
+                                let bar = Bar::new(
+                                    &app,
+                                    &monitor_name,
+                                    workspace_keys,
+                                    service,
+                                    tray_service,
+                                    datetime_service,
+                                    datetime_config,
+                                    battery_service,
+                                    volume_service,
+                                    notification_service,
+                                    keyboard_layout_service,
+                                    system_resources_service,
+                                    network_service,
+                                    bluetooth_service,
+                                    brightness_service,
+                                    submap_service,
+                                    shared_state,
+                                );
 
-                            bar.setup_event_listener();
-                            bar.present();
-                            bars.push(bar);
+                                bar.setup_event_listener();
+                                bar.present();
+                                bars.push(bar);
 
-                            eprintln!("[Main] ✓ Bar created for monitor: {}", monitor_name);
-                        });
+                                eprintln!("[Main] ✓ Bar created for monitor: {}", monitor_name);
+                            },
+                        );
                     }
                     MonitorEvent::Removed(monitor_name) => {
                         let mut bars = bars_for_monitors.lock().unwrap();
 
                         // Находим и удаляем бар для этого монитора
-                        if let Some(pos) = bars.iter().position(|b| b.monitor_name() == monitor_name) {
+                        if let Some(pos) =
+                            bars.iter().position(|b| b.monitor_name() == monitor_name)
+                        {
                             eprintln!("[Main] Removing bar for monitor: {}", monitor_name);
                             let bar = bars.remove(pos);
                             bar.close();

@@ -1,4 +1,7 @@
-use crate::domain::models::{BatteryInfo, KeyboardLayout, NetworkConnection, SubmapInfo, SystemResources, TrayItem, VolumeInfo};
+use crate::domain::models::{
+    BatteryInfo, BluetoothInfo, KeyboardLayout, NetworkConnection, SubmapInfo, SystemResources,
+    TrayItem, VolumeInfo,
+};
 use std::sync::{Arc, Mutex, RwLock};
 
 /// Тип callback-функции для обновления виджетов
@@ -11,7 +14,9 @@ struct Callbacks {
 
 impl Callbacks {
     fn new() -> Self {
-        Self { callbacks: Vec::new() }
+        Self {
+            callbacks: Vec::new(),
+        }
     }
 
     fn add(&mut self, callback: UpdateCallback) {
@@ -38,6 +43,7 @@ pub struct SharedState {
     pub brightness: RwLock<u32>,
     pub system_resources: RwLock<Option<SystemResources>>,
     pub network_connection: RwLock<Option<NetworkConnection>>,
+    pub bluetooth_info: RwLock<Option<BluetoothInfo>>,
     pub submap: RwLock<SubmapInfo>,
 
     // Callback-и для обновления UI
@@ -50,6 +56,7 @@ pub struct SharedState {
     brightness_callbacks: Mutex<Callbacks>,
     system_resources_callbacks: Mutex<Callbacks>,
     network_callbacks: Mutex<Callbacks>,
+    bluetooth_callbacks: Mutex<Callbacks>,
     config_changed_callbacks: Mutex<Callbacks>,
     submap_callbacks: Mutex<Callbacks>,
 }
@@ -67,6 +74,7 @@ impl SharedState {
             brightness: RwLock::new(100),
             system_resources: RwLock::new(None),
             network_connection: RwLock::new(None),
+            bluetooth_info: RwLock::new(None),
             submap: RwLock::new(SubmapInfo::default()),
             battery_callbacks: Mutex::new(Callbacks::new()),
             volume_callbacks: Mutex::new(Callbacks::new()),
@@ -77,6 +85,7 @@ impl SharedState {
             brightness_callbacks: Mutex::new(Callbacks::new()),
             system_resources_callbacks: Mutex::new(Callbacks::new()),
             network_callbacks: Mutex::new(Callbacks::new()),
+            bluetooth_callbacks: Mutex::new(Callbacks::new()),
             config_changed_callbacks: Mutex::new(Callbacks::new()),
             submap_callbacks: Mutex::new(Callbacks::new()),
         }
@@ -96,7 +105,10 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.battery_callbacks.lock().unwrap().add(Box::new(callback));
+        self.battery_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 
     // === Volume ===
@@ -113,7 +125,10 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.volume_callbacks.lock().unwrap().add(Box::new(callback));
+        self.volume_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 
     // === Tray ===
@@ -147,7 +162,10 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.keyboard_layout_callbacks.lock().unwrap().add(Box::new(callback));
+        self.keyboard_layout_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 
     // === Notifications ===
@@ -174,13 +192,19 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.notification_callbacks.lock().unwrap().add(Box::new(callback));
+        self.notification_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 
     // === Notification Alert (для моргания) ===
     pub fn trigger_notification_alert(&self) {
         *self.notification_alert.write().unwrap() = true;
-        self.notification_alert_callbacks.lock().unwrap().notify_all();
+        self.notification_alert_callbacks
+            .lock()
+            .unwrap()
+            .notify_all();
     }
 
     pub fn clear_notification_alert(&self) {
@@ -195,7 +219,10 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.notification_alert_callbacks.lock().unwrap().add(Box::new(callback));
+        self.notification_alert_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 
     // === Brightness ===
@@ -212,7 +239,10 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.brightness_callbacks.lock().unwrap().add(Box::new(callback));
+        self.brightness_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 
     // === System Resources ===
@@ -229,7 +259,10 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.system_resources_callbacks.lock().unwrap().add(Box::new(callback));
+        self.system_resources_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 
     // === Network ===
@@ -246,7 +279,30 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.network_callbacks.lock().unwrap().add(Box::new(callback));
+        self.network_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
+    }
+
+    // === Bluetooth ===
+    pub fn update_bluetooth(&self, info: Option<BluetoothInfo>) {
+        *self.bluetooth_info.write().unwrap() = info;
+        self.bluetooth_callbacks.lock().unwrap().notify_all();
+    }
+
+    pub fn get_bluetooth(&self) -> Option<BluetoothInfo> {
+        self.bluetooth_info.read().unwrap().clone()
+    }
+
+    pub fn subscribe_bluetooth<F>(&self, callback: F)
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.bluetooth_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 
     // === Config Changed ===
@@ -258,7 +314,10 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.config_changed_callbacks.lock().unwrap().add(Box::new(callback));
+        self.config_changed_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 
     // === Submap ===
@@ -275,7 +334,10 @@ impl SharedState {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.submap_callbacks.lock().unwrap().add(Box::new(callback));
+        self.submap_callbacks
+            .lock()
+            .unwrap()
+            .add(Box::new(callback));
     }
 }
 
@@ -289,6 +351,7 @@ impl Default for SharedState {
 static SHARED_STATE: std::sync::OnceLock<Arc<SharedState>> = std::sync::OnceLock::new();
 
 pub fn get_shared_state() -> Arc<SharedState> {
-    SHARED_STATE.get_or_init(|| Arc::new(SharedState::new())).clone()
+    SHARED_STATE
+        .get_or_init(|| Arc::new(SharedState::new()))
+        .clone()
 }
-

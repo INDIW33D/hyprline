@@ -1,24 +1,25 @@
-use crate::config::{get_config, subscribe_config_changes, WidgetType, WidgetPosition};
-use crate::domain::workspace_service::WorkspaceService;
-use crate::domain::system_tray_service::SystemTrayService;
-use crate::domain::datetime_service::DateTimeService;
+use crate::config::{get_config, subscribe_config_changes, WidgetPosition, WidgetType};
 use crate::domain::battery_service::BatteryService;
-use crate::domain::volume_service::VolumeService;
-use crate::domain::notification_service::NotificationService;
-use crate::domain::keyboard_layout_service::KeyboardLayoutService;
-use crate::domain::system_resources_service::SystemResourcesService;
-use crate::domain::network_service::NetworkService;
+use crate::domain::bluetooth_service::BluetoothService;
 use crate::domain::brightness_service::BrightnessService;
-use crate::domain::submap_service::SubmapService;
+use crate::domain::datetime_service::DateTimeService;
+use crate::domain::keyboard_layout_service::KeyboardLayoutService;
 use crate::domain::models::DateTimeConfig;
+use crate::domain::network_service::NetworkService;
+use crate::domain::notification_service::NotificationService;
+use crate::domain::submap_service::SubmapService;
+use crate::domain::system_resources_service::SystemResourcesService;
+use crate::domain::system_tray_service::SystemTrayService;
+use crate::domain::volume_service::VolumeService;
+use crate::domain::workspace_service::WorkspaceService;
 use crate::infrastructure::event_listener;
 use crate::shared_state::SharedState;
 use crate::ui::{
-    active_window::ActiveWindowWidget, datetime::DateTimeWidget, menu::Menu,
-    system_tray::SystemTrayWidget, workspaces::WorkspacesWidget, battery::BatteryWidget,
-    volume::VolumeWidget, notifications::NotificationWidget,
-    keyboard_layout::KeyboardLayoutWidget, system_resources::SystemResourcesWidget,
-    network::NetworkWidget, brightness::BrightnessWidget, submap::SubmapWidget,
+    active_window::ActiveWindowWidget, battery::BatteryWidget, bluetooth::BluetoothWidget,
+    brightness::BrightnessWidget, datetime::DateTimeWidget, keyboard_layout::KeyboardLayoutWidget,
+    menu::Menu, network::NetworkWidget, notifications::NotificationWidget, submap::SubmapWidget,
+    system_resources::SystemResourcesWidget, system_tray::SystemTrayWidget, volume::VolumeWidget,
+    workspaces::WorkspacesWidget,
 };
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
@@ -44,6 +45,7 @@ pub struct WidgetContext {
     pub keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync>,
     pub system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
     pub network_service: Arc<dyn NetworkService + Send + Sync>,
+    pub bluetooth_service: Arc<dyn BluetoothService + Send + Sync>,
     pub brightness_service: Arc<dyn BrightnessService + Send + Sync>,
     pub submap_service: Arc<dyn SubmapService + Send + Sync>,
     pub shared_state: Arc<SharedState>,
@@ -61,6 +63,7 @@ struct CreatedWidgets {
     keyboard_layout: Option<Arc<Mutex<KeyboardLayoutWidget>>>,
     system_resources: Option<Arc<Mutex<SystemResourcesWidget>>>,
     network: Option<NetworkWidget>,
+    bluetooth: Option<BluetoothWidget>,
     brightness: Option<BrightnessWidget>,
     submap: Option<Arc<Mutex<SubmapWidget>>>,
 }
@@ -78,6 +81,7 @@ impl CreatedWidgets {
             keyboard_layout: None,
             system_resources: None,
             network: None,
+            bluetooth: None,
             brightness: None,
             submap: None,
         }
@@ -110,6 +114,7 @@ impl Bar {
         keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync>,
         system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
         network_service: Arc<dyn NetworkService + Send + Sync>,
+        bluetooth_service: Arc<dyn BluetoothService + Send + Sync>,
         brightness_service: Arc<dyn BrightnessService + Send + Sync>,
         submap_service: Arc<dyn SubmapService + Send + Sync>,
         shared_state: Arc<SharedState>,
@@ -117,8 +122,11 @@ impl Bar {
         let window = gtk4::ApplicationWindow::new(app);
 
         eprintln!("[Bar] Creating bar for monitor: {}", monitor_name);
-        eprintln!("[Bar] Layer shell supported: {}", gtk4_layer_shell::is_supported());
-        
+        eprintln!(
+            "[Bar] Layer shell supported: {}",
+            gtk4_layer_shell::is_supported()
+        );
+
         window.init_layer_shell();
         eprintln!("[Bar] Layer shell initialized for window");
         window.set_title(Some(&format!("Bar - {}", monitor_name)));
@@ -138,7 +146,10 @@ impl Bar {
                     if Self::try_bind_to_monitor(&win, &monitor_name_owned) {
                         eprintln!("[Bar] ✓ Delayed binding to monitor: {}", monitor_name_owned);
                     } else {
-                        eprintln!("[Bar] ✗ Monitor not found after delay: {}", monitor_name_owned);
+                        eprintln!(
+                            "[Bar] ✗ Monitor not found after delay: {}",
+                            monitor_name_owned
+                        );
                     }
                 }
             });
@@ -205,6 +216,7 @@ impl Bar {
             keyboard_layout_service,
             system_resources_service,
             network_service,
+            bluetooth_service,
             brightness_service,
             submap_service,
             shared_state: shared_state.clone(),
@@ -282,15 +294,21 @@ impl Bar {
             let config = get_config().read().unwrap();
             let profile = config.get_profile_for_monitor(&self.context.monitor_name);
 
-            let mut left: Vec<_> = profile.widgets.iter()
+            let mut left: Vec<_> = profile
+                .widgets
+                .iter()
                 .filter(|w| w.enabled && w.position == WidgetPosition::Left)
                 .map(|w| (w.widget_type, w.order))
                 .collect();
-            let mut center: Vec<_> = profile.widgets.iter()
+            let mut center: Vec<_> = profile
+                .widgets
+                .iter()
                 .filter(|w| w.enabled && w.position == WidgetPosition::Center)
                 .map(|w| (w.widget_type, w.order))
                 .collect();
-            let mut right: Vec<_> = profile.widgets.iter()
+            let mut right: Vec<_> = profile
+                .widgets
+                .iter()
                 .filter(|w| w.enabled && w.position == WidgetPosition::Right)
                 .map(|w| (w.widget_type, w.order))
                 .collect();
@@ -301,8 +319,12 @@ impl Bar {
 
             (left, center, right)
         };
-        eprintln!("[Bar] Config loaded: {} left, {} center, {} right widgets", 
-                  left_widgets.len(), center_widgets.len(), right_widgets.len());
+        eprintln!(
+            "[Bar] Config loaded: {} left, {} center, {} right widgets",
+            left_widgets.len(),
+            center_widgets.len(),
+            right_widgets.len()
+        );
 
         // Создаём виджеты для каждой зоны
         for (widget_type, _) in left_widgets {
@@ -354,7 +376,9 @@ impl Bar {
                 widgets.workspaces = Some(widget);
             }
             WidgetType::ActiveWindow => {
-                let widget = Arc::new(Mutex::new(ActiveWindowWidget::new(ctx.workspace_service.clone())));
+                let widget = Arc::new(Mutex::new(ActiveWindowWidget::new(
+                    ctx.workspace_service.clone(),
+                )));
                 container.append(widget.lock().unwrap().widget());
                 widgets.active_window = Some(widget);
             }
@@ -382,17 +406,23 @@ impl Bar {
                 widgets.volume = Some(widget);
             }
             WidgetType::Notifications => {
-                let widget = Arc::new(Mutex::new(NotificationWidget::new(ctx.notification_service.clone())));
+                let widget = Arc::new(Mutex::new(NotificationWidget::new(
+                    ctx.notification_service.clone(),
+                )));
                 container.append(widget.lock().unwrap().widget());
                 widgets.notifications = Some(widget);
             }
             WidgetType::KeyboardLayout => {
-                let widget = Arc::new(Mutex::new(KeyboardLayoutWidget::new(ctx.keyboard_layout_service.clone())));
+                let widget = Arc::new(Mutex::new(KeyboardLayoutWidget::new(
+                    ctx.keyboard_layout_service.clone(),
+                )));
                 container.append(widget.lock().unwrap().widget());
                 widgets.keyboard_layout = Some(widget);
             }
             WidgetType::SystemResources => {
-                let widget = Arc::new(Mutex::new(SystemResourcesWidget::new(ctx.system_resources_service.clone())));
+                let widget = Arc::new(Mutex::new(SystemResourcesWidget::new(
+                    ctx.system_resources_service.clone(),
+                )));
                 container.append(widget.lock().unwrap().widget());
                 widgets.system_resources = Some(widget);
             }
@@ -400,6 +430,11 @@ impl Bar {
                 let widget = NetworkWidget::new(ctx.network_service.clone());
                 container.append(&widget.container);
                 widgets.network = Some(widget);
+            }
+            WidgetType::Bluetooth => {
+                let widget = BluetoothWidget::new(ctx.bluetooth_service.clone());
+                container.append(&widget.container);
+                widgets.bluetooth = Some(widget);
             }
             WidgetType::Brightness => {
                 let widget = BrightnessWidget::new(ctx.brightness_service.clone());
@@ -669,7 +704,11 @@ impl Bar {
 
     /// Получить ссылку на контейнеры для hot reload
     pub fn get_zone_boxes(&self) -> (gtk4::Box, gtk4::Box, gtk4::Box) {
-        (self.left_box.clone(), self.center_box.clone(), self.right_box.clone())
+        (
+            self.left_box.clone(),
+            self.center_box.clone(),
+            self.right_box.clone(),
+        )
     }
 
     /// Пытается привязать окно к монитору по имени
@@ -678,7 +717,10 @@ impl Bar {
         if let Some(display) = gdk::Display::default() {
             let monitors = display.monitors();
             for i in 0..monitors.n_items() {
-                if let Some(monitor) = monitors.item(i).and_then(|m| m.downcast::<gdk::Monitor>().ok()) {
+                if let Some(monitor) = monitors
+                    .item(i)
+                    .and_then(|m| m.downcast::<gdk::Monitor>().ok())
+                {
                     if let Some(connector) = monitor.connector() {
                         if connector.as_str() == monitor_name {
                             window.set_monitor(Some(&monitor));
@@ -692,4 +734,3 @@ impl Bar {
         false
     }
 }
-

@@ -20,6 +20,7 @@ pub enum WidgetType {
     SystemTray,
     SystemResources,
     Network,
+    Bluetooth,
     Volume,
     Brightness,
     Battery,
@@ -38,6 +39,7 @@ impl WidgetType {
             WidgetType::SystemTray => "System Tray",
             WidgetType::SystemResources => "CPU & RAM",
             WidgetType::Network => "Network",
+            WidgetType::Bluetooth => "Bluetooth",
             WidgetType::Volume => "Volume",
             WidgetType::Brightness => "Brightness",
             WidgetType::Battery => "Battery",
@@ -56,6 +58,7 @@ impl WidgetType {
             WidgetType::SystemTray => "󰏖",
             WidgetType::SystemResources => "󰘚",
             WidgetType::Network => "󰖩",
+            WidgetType::Bluetooth => "󰂯",
             WidgetType::Volume => "󰕾",
             WidgetType::Brightness => "󰃟",
             WidgetType::Battery => "󰁹",
@@ -74,6 +77,7 @@ impl WidgetType {
             WidgetType::SystemTray,
             WidgetType::SystemResources,
             WidgetType::Network,
+            WidgetType::Bluetooth,
             WidgetType::Volume,
             WidgetType::Brightness,
             WidgetType::Battery,
@@ -107,23 +111,92 @@ impl Default for WidgetProfile {
             name: "Default".to_string(),
             widgets: vec![
                 // Left zone
-                WidgetConfig { widget_type: WidgetType::Menu, enabled: true, position: WidgetPosition::Left, order: 0 },
-                WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 1 },
-                WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Left, order: 2 },
-                WidgetConfig { widget_type: WidgetType::Submap, enabled: true, position: WidgetPosition::Left, order: 3 },
-
+                WidgetConfig {
+                    widget_type: WidgetType::Menu,
+                    enabled: true,
+                    position: WidgetPosition::Left,
+                    order: 0,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::Workspaces,
+                    enabled: true,
+                    position: WidgetPosition::Left,
+                    order: 1,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::ActiveWindow,
+                    enabled: true,
+                    position: WidgetPosition::Left,
+                    order: 2,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::Submap,
+                    enabled: true,
+                    position: WidgetPosition::Left,
+                    order: 3,
+                },
                 // Center zone
-                WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Center, order: 0 },
-
+                WidgetConfig {
+                    widget_type: WidgetType::DateTime,
+                    enabled: true,
+                    position: WidgetPosition::Center,
+                    order: 0,
+                },
                 // Right zone
-                WidgetConfig { widget_type: WidgetType::SystemTray, enabled: true, position: WidgetPosition::Right, order: 0 },
-                WidgetConfig { widget_type: WidgetType::SystemResources, enabled: true, position: WidgetPosition::Right, order: 1 },
-                WidgetConfig { widget_type: WidgetType::Network, enabled: true, position: WidgetPosition::Right, order: 2 },
-                WidgetConfig { widget_type: WidgetType::Volume, enabled: true, position: WidgetPosition::Right, order: 3 },
-                WidgetConfig { widget_type: WidgetType::KeyboardLayout, enabled: true, position: WidgetPosition::Right, order: 4 },
-                WidgetConfig { widget_type: WidgetType::Brightness, enabled: true, position: WidgetPosition::Right, order: 5 },
-                WidgetConfig { widget_type: WidgetType::Battery, enabled: true, position: WidgetPosition::Right, order: 6 },
-                WidgetConfig { widget_type: WidgetType::Notifications, enabled: true, position: WidgetPosition::Right, order: 7 },
+                WidgetConfig {
+                    widget_type: WidgetType::SystemTray,
+                    enabled: true,
+                    position: WidgetPosition::Right,
+                    order: 0,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::SystemResources,
+                    enabled: true,
+                    position: WidgetPosition::Right,
+                    order: 1,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::Network,
+                    enabled: true,
+                    position: WidgetPosition::Right,
+                    order: 2,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::Bluetooth,
+                    enabled: true,
+                    position: WidgetPosition::Right,
+                    order: 3,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::Volume,
+                    enabled: true,
+                    position: WidgetPosition::Right,
+                    order: 4,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::KeyboardLayout,
+                    enabled: true,
+                    position: WidgetPosition::Right,
+                    order: 5,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::Brightness,
+                    enabled: true,
+                    position: WidgetPosition::Right,
+                    order: 6,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::Battery,
+                    enabled: true,
+                    position: WidgetPosition::Right,
+                    order: 7,
+                },
+                WidgetConfig {
+                    widget_type: WidgetType::Notifications,
+                    enabled: true,
+                    position: WidgetPosition::Right,
+                    order: 8,
+                },
             ],
         }
     }
@@ -139,9 +212,7 @@ pub struct MonitorConfig {
 
 impl Default for MonitorConfig {
     fn default() -> Self {
-        Self {
-            profile_name: None,
-        }
+        Self { profile_name: None }
     }
 }
 
@@ -238,18 +309,53 @@ impl Default for HyprlineConfig {
                 WidgetProfile {
                     name: "Minimal".to_string(),
                     widgets: vec![
-                        WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 0 },
-                        WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Center, order: 0 },
-                        WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Right, order: 0 },
+                        WidgetConfig {
+                            widget_type: WidgetType::Workspaces,
+                            enabled: true,
+                            position: WidgetPosition::Left,
+                            order: 0,
+                        },
+                        WidgetConfig {
+                            widget_type: WidgetType::ActiveWindow,
+                            enabled: true,
+                            position: WidgetPosition::Center,
+                            order: 0,
+                        },
+                        WidgetConfig {
+                            widget_type: WidgetType::DateTime,
+                            enabled: true,
+                            position: WidgetPosition::Right,
+                            order: 0,
+                        },
                     ],
                 },
                 WidgetProfile {
                     name: "Secondary Monitor".to_string(),
                     widgets: vec![
-                        WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 0 },
-                        WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Center, order: 0 },
-                        WidgetConfig { widget_type: WidgetType::SystemResources, enabled: true, position: WidgetPosition::Right, order: 0 },
-                        WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Right, order: 1 },
+                        WidgetConfig {
+                            widget_type: WidgetType::Workspaces,
+                            enabled: true,
+                            position: WidgetPosition::Left,
+                            order: 0,
+                        },
+                        WidgetConfig {
+                            widget_type: WidgetType::ActiveWindow,
+                            enabled: true,
+                            position: WidgetPosition::Center,
+                            order: 0,
+                        },
+                        WidgetConfig {
+                            widget_type: WidgetType::SystemResources,
+                            enabled: true,
+                            position: WidgetPosition::Right,
+                            order: 0,
+                        },
+                        WidgetConfig {
+                            widget_type: WidgetType::DateTime,
+                            enabled: true,
+                            position: WidgetPosition::Right,
+                            order: 1,
+                        },
                     ],
                 },
             ],
@@ -296,7 +402,6 @@ impl HyprlineConfig {
                                 }];
                                 config.active_profile = "Default".to_string();
                                 config.widgets.clear();
-                                // Сохраняем мигрированный конфиг
                                 let _ = config.save();
                             }
 
@@ -306,9 +411,63 @@ impl HyprlineConfig {
                                 config.active_profile = "Default".to_string();
                             }
 
+                            // Миграция: добавляем новые виджеты, которых нет в существующих профилях
+                            let all_types = WidgetType::all();
+                            let default_profile = WidgetProfile::default();
+                            let mut migrated = false;
+
+                            for profile in config.profiles.iter_mut() {
+                                let existing_types: Vec<WidgetType> =
+                                    profile.widgets.iter().map(|w| w.widget_type).collect();
+
+                                for wt in &all_types {
+                                    if !existing_types.contains(wt) {
+                                        // Берём конфигурацию из дефолтного профиля, если есть
+                                        let default_widget = default_profile
+                                            .widgets
+                                            .iter()
+                                            .find(|w| w.widget_type == *wt);
+
+                                        let new_widget = if let Some(dw) = default_widget {
+                                            dw.clone()
+                                        } else {
+                                            // Если нет в дефолте — добавляем выключенным в конец правой зоны
+                                            let max_order = profile
+                                                .widgets
+                                                .iter()
+                                                .filter(|w| w.position == WidgetPosition::Right)
+                                                .map(|w| w.order)
+                                                .max()
+                                                .unwrap_or(-1);
+                                            WidgetConfig {
+                                                widget_type: *wt,
+                                                enabled: false,
+                                                position: WidgetPosition::Right,
+                                                order: max_order + 1,
+                                            }
+                                        };
+
+                                        eprintln!(
+                                            "[Config] Migrating profile '{}': adding widget {:?}",
+                                            profile.name, wt
+                                        );
+                                        profile.widgets.push(new_widget);
+                                        migrated = true;
+                                    }
+                                }
+                            }
+
+                            if migrated {
+                                let _ = config.save();
+                                eprintln!("[Config] ✓ Migration saved");
+                            }
+
                             eprintln!("[Config] ✓ Loaded from {:?}", path);
                             eprintln!("[Config] Active profile: {}", config.active_profile);
-                            eprintln!("[Config] Profiles: {:?}", config.profiles.iter().map(|p| &p.name).collect::<Vec<_>>());
+                            eprintln!(
+                                "[Config] Profiles: {:?}",
+                                config.profiles.iter().map(|p| &p.name).collect::<Vec<_>>()
+                            );
                             return config;
                         }
                         Err(e) => {
@@ -338,8 +497,7 @@ impl HyprlineConfig {
         let content = serde_json::to_string_pretty(self)
             .map_err(|e| format!("Failed to serialize config: {}", e))?;
 
-        fs::write(&path, content)
-            .map_err(|e| format!("Failed to write config: {}", e))?;
+        fs::write(&path, content).map_err(|e| format!("Failed to write config: {}", e))?;
 
         eprintln!("[Config] ✓ Saved to {:?}", path);
         Ok(())
@@ -485,7 +643,8 @@ impl HyprlineConfig {
     /// Получить виджеты для позиции (для обратной совместимости)
     pub fn widgets_for_position(&self, position: WidgetPosition) -> Vec<&WidgetConfig> {
         let profile = self.get_active_profile();
-        let mut widgets: Vec<_> = profile.widgets
+        let mut widgets: Vec<_> = profile
+            .widgets
             .iter()
             .filter(|w| w.enabled && w.position == position)
             .collect();
@@ -495,14 +654,27 @@ impl HyprlineConfig {
 
     /// Получить конфигурацию виджета по типу
     pub fn get_widget(&self, widget_type: WidgetType) -> Option<&WidgetConfig> {
-        self.get_active_profile().widgets.iter().find(|w| w.widget_type == widget_type)
+        self.get_active_profile()
+            .widgets
+            .iter()
+            .find(|w| w.widget_type == widget_type)
     }
 
     /// Обновить конфигурацию виджета
-    pub fn update_widget(&mut self, widget_type: WidgetType, enabled: bool, position: WidgetPosition, order: i32) {
+    pub fn update_widget(
+        &mut self,
+        widget_type: WidgetType,
+        enabled: bool,
+        position: WidgetPosition,
+        order: i32,
+    ) {
         let active_profile = self.active_profile.clone();
         if let Some(profile) = self.get_profile_mut(&active_profile) {
-            if let Some(widget) = profile.widgets.iter_mut().find(|w| w.widget_type == widget_type) {
+            if let Some(widget) = profile
+                .widgets
+                .iter_mut()
+                .find(|w| w.widget_type == widget_type)
+            {
                 widget.enabled = enabled;
                 widget.position = position;
                 widget.order = order;
@@ -519,15 +691,13 @@ impl HyprlineConfig {
 }
 
 /// Глобальный экземпляр конфигурации
-use std::sync::{RwLock, OnceLock, Mutex};
+use std::sync::{Mutex, OnceLock, RwLock};
 
 static CONFIG: OnceLock<RwLock<HyprlineConfig>> = OnceLock::new();
 static CONFIG_CHANGE_CALLBACKS: OnceLock<Mutex<Vec<Box<dyn Fn() + Send + Sync>>>> = OnceLock::new();
 
 pub fn get_config() -> &'static RwLock<HyprlineConfig> {
-    CONFIG.get_or_init(|| {
-        RwLock::new(HyprlineConfig::load())
-    })
+    CONFIG.get_or_init(|| RwLock::new(HyprlineConfig::load()))
 }
 
 pub fn save_config() -> Result<(), String> {
@@ -556,4 +726,3 @@ pub fn notify_config_changed() {
         }
     }
 }
-

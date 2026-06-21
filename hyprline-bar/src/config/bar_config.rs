@@ -29,6 +29,7 @@ pub enum WidgetType {
     KeyboardLayout,
     SystemResources,
     Network,
+    Bluetooth,
     Brightness,
 }
 
@@ -130,10 +131,18 @@ impl Default for BarConfig {
         );
 
         widgets.insert(
-            WidgetType::Brightness,
+            WidgetType::Bluetooth,
             WidgetConfig {
                 zone: WidgetZone::Right,
                 order: 8,
+            },
+        );
+
+        widgets.insert(
+            WidgetType::Brightness,
+            WidgetConfig {
+                zone: WidgetZone::Right,
+                order: 9,
             },
         );
 
@@ -145,4 +154,3 @@ pub fn load_bar_config() -> BarConfig {
     // TODO: В будущем можно загружать из файла конфигурации
     BarConfig::default()
 }
-

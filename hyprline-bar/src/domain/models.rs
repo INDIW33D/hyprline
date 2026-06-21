@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::fmt;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Workspace {
@@ -68,11 +69,11 @@ pub struct MenuItem {
     pub enabled: bool,
     pub visible: bool,
     pub is_separator: bool,
-    pub toggle_type: Option<String>,  // "checkmark" or "radio"
-    pub toggle_state: i32,            // 0 = off, 1 = on, -1 = indeterminate
+    pub toggle_type: Option<String>, // "checkmark" or "radio"
+    pub toggle_state: i32,           // 0 = off, 1 = on, -1 = indeterminate
     pub icon_name: Option<String>,
     pub icon_data: Option<Vec<u8>>,
-    pub children: Vec<MenuItem>,      // Для подменю
+    pub children: Vec<MenuItem>, // Для подменю
 }
 
 // DateTime models
@@ -131,7 +132,7 @@ pub enum BatteryStatus {
 // Volume models
 #[derive(Debug, Clone, PartialEq)]
 pub struct VolumeInfo {
-    pub volume: u8,      // 0-100
+    pub volume: u8, // 0-100
     pub muted: bool,
 }
 
@@ -194,8 +195,8 @@ pub enum WiFiSecurity {
 // System resources models
 #[derive(Debug, Clone)]
 pub struct SystemResources {
-    pub cpu_usage: f32,     // 0.0 - 100.0
-    pub memory_usage: f32,  // 0.0 - 100.0
+    pub cpu_usage: f32,    // 0.0 - 100.0
+    pub memory_usage: f32, // 0.0 - 100.0
     pub memory_used_gb: f32,
     pub memory_total_gb: f32,
 }
@@ -207,6 +208,54 @@ pub struct KeyboardLayout {
     pub short_name: String,
     /// Полное имя раскладки (например: "English (US)", "Russian")
     pub full_name: String,
+}
+
+// Bluetooth models
+#[derive(Debug, Clone)]
+pub struct BluetoothInfo {
+    pub powered: bool,
+    pub discovering: bool,
+    pub adapter_name: String,
+    pub connected_devices: Vec<BluetoothDevice>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BluetoothDevice {
+    pub address: String,
+    pub name: String,
+    pub alias: String,
+    pub paired: bool,
+    pub connected: bool,
+    pub trusted: bool,
+    pub icon: Option<String>,
+    pub rssi: Option<i16>,
+    pub device_type: BluetoothDeviceType,
+    pub battery_percentage: Option<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BluetoothDeviceType {
+    Audio,
+    Phone,
+    Computer,
+    Keyboard,
+    Mouse,
+    Gamepad,
+    Other,
+}
+
+impl fmt::Display for BluetoothDeviceType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BluetoothDeviceType::Audio => write!(f, "Audio"),
+            BluetoothDeviceType::Phone => write!(f, "Phone"),
+            BluetoothDeviceType::Computer => write!(f, "Computer"),
+            BluetoothDeviceType::Keyboard => write!(f, "Keyboard"),
+            BluetoothDeviceType::Mouse => write!(f, "Mouse"),
+            BluetoothDeviceType::Gamepad => write!(f, "Gamepad"),
+            BluetoothDeviceType::Other => write!(f, "Other"),
+        }
+    }
 }
 
 // Submap models
@@ -246,4 +295,3 @@ pub struct SubmapBinding {
     /// Человекочитаемое название из комментария #$name = ...
     pub display_name: Option<String>,
 }
-
