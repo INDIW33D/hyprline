@@ -1,5 +1,8 @@
 use crate::domain::models::{ActiveWorkspace, Monitor, MonitorInfo, MonitorWithWorkspace, Workspace};
 use crate::domain::workspace_service::WorkspaceService;
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
 
@@ -8,6 +11,13 @@ pub struct HyprlandIpc;
 impl HyprlandIpc {
     pub fn new() -> Self {
         Self
+    }
+
+    pub fn get_workspace_key_labels(&self) -> HashMap<i32, String> {
+        self.send_request("j/binds")
+            .ok()
+            .and_then(|response| parse_workspace_bind_labels(&response).ok())
+            .unwrap_or_default()
     }
 
     fn get_control_socket(&self) -> Option<String> {
@@ -83,6 +93,138 @@ impl HyprlandIpc {
     }
 }
 
+fn should_try_lua_workspace_fallback(response: &str) -> bool {
+    [
+        "hl.dispatch",
+        "dispatch in lua",
+        "syntax might need to be updated",
+    ]
+    .into_iter()
+    .any(|marker| response.contains(marker))
+}
+
+fn parse_workspace_bind_labels(response: &str) -> Result<HashMap<i32, String>, serde_json::Error> {
+    let binds: Vec<HyprlandBind> = serde_json::from_str(response)?;
+    let mut labels: HashMap<i32, (String, LabelSource)> = HashMap::new();
+
+    for bind in binds {
+        let Some((workspace_id, label, source)) = bind.workspace_label() else {
+            continue;
+        };
+
+        match labels.entry(workspace_id) {
+            Entry::Vacant(entry) => {
+                entry.insert((label, source));
+            }
+            Entry::Occupied(mut entry) => match (entry.get().1, source) {
+                (LabelSource::Legacy, LabelSource::Description) => {
+                    entry.insert((label, source));
+                }
+                (LabelSource::Description, LabelSource::Description) => {}
+                (LabelSource::Description, LabelSource::Legacy) => {}
+                (LabelSource::Legacy, LabelSource::Legacy)
+                    if is_numeric_label(&entry.get().0) && !is_numeric_label(&label) =>
+                {
+                    entry.insert((label, source));
+                }
+                (LabelSource::Legacy, LabelSource::Legacy) => {}
+            }
+        }
+    }
+
+    Ok(labels
+        .into_iter()
+        .map(|(workspace_id, (label, _source))| (workspace_id, label))
+        .collect())
+}
+
+fn is_numeric_label(label: &str) -> bool {
+    !label.is_empty() && label.chars().all(|ch| ch.is_ascii_digit())
+}
+
+fn normalize_label(label: &str) -> String {
+    if label == "semicolon" {
+        String::from(";")
+    } else {
+        label.to_uppercase()
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum LabelSource {
+    Description,
+    Legacy,
+}
+
+#[derive(Debug, Deserialize)]
+struct HyprlandBind {
+    dispatcher: String,
+    arg: String,
+    key: String,
+    #[serde(default)]
+    description: Option<String>,
+    #[serde(default)]
+    has_description: bool,
+    #[serde(default)]
+    submap: Option<String>,
+    #[serde(default)]
+    mouse: bool,
+}
+
+impl HyprlandBind {
+    fn workspace_label(&self) -> Option<(i32, String, LabelSource)> {
+        if self.mouse || !self.submap.as_deref().unwrap_or("").is_empty() {
+            return None;
+        }
+
+        if let Some((workspace_id, label)) = self.description_workspace_label() {
+            return Some((workspace_id, label, LabelSource::Description));
+        }
+
+        self.legacy_workspace_id()
+            .map(|workspace_id| (workspace_id, normalize_label(&self.key), LabelSource::Legacy))
+    }
+
+    fn description_workspace_label(&self) -> Option<(i32, String)> {
+        const PREFIX: &str = "hyprline:workspace:";
+
+        if !self.has_description {
+            return None;
+        }
+
+        let description = self.description.as_deref()?;
+        let remainder = description.strip_prefix(PREFIX)?;
+        let (workspace_id_raw, label_raw) = remainder.split_once(':')?;
+
+        if workspace_id_raw.is_empty() || label_raw.is_empty() || label_raw.contains(':') {
+            return None;
+        }
+
+        if workspace_id_raw.starts_with('-') || !workspace_id_raw.chars().all(|ch| ch.is_ascii_digit()) {
+            return None;
+        }
+
+        if label_raw.chars().any(char::is_whitespace) {
+            return None;
+        }
+
+        let workspace_id = workspace_id_raw.parse::<i32>().ok().filter(|id| *id > 0)?;
+        Some((workspace_id, normalize_label(label_raw)))
+    }
+
+    fn legacy_workspace_id(&self) -> Option<i32> {
+        if self.dispatcher != "workspace" {
+            return None;
+        }
+
+        if !self.arg.chars().all(|ch| ch.is_ascii_digit()) {
+            return None;
+        }
+
+        self.arg.parse::<i32>().ok().filter(|id| *id > 0)
+    }
+}
+
 impl WorkspaceService for HyprlandIpc {
     fn get_monitors(&self) -> Vec<Monitor> {
         match self.send_request("j/monitors") {
@@ -155,12 +297,493 @@ impl WorkspaceService for HyprlandIpc {
     }
 
     fn switch_workspace(&self, id: i32) {
-        if let Some(socket_path) = self.get_control_socket() {
-            if let Ok(mut stream) = UnixStream::connect(&socket_path) {
-                let cmd = format!("dispatch workspace {}", id);
-                let _ = stream.write_all(cmd.as_bytes());
+        let command = format!("dispatch workspace {}", id);
+        let response = match self.send_request(&command) {
+            Ok(response) => response,
+            Err(error) => {
+                eprintln!("Failed to switch workspace with '{command}': {error}");
+                return;
             }
+        };
+
+        let trimmed_response = response.trim();
+        if trimmed_response == "ok" {
+            return;
+        }
+
+        if !should_try_lua_workspace_fallback(trimmed_response) {
+            return;
+        }
+
+        let fallback_command = format!("dispatch hl.dsp.focus({{ workspace = {} }})", id);
+        let fallback_response = match self.send_request(&fallback_command) {
+            Ok(response) => response,
+            Err(error) => {
+                eprintln!(
+                    "Failed to switch workspace with fallback '{fallback_command}' after '{command}' returned '{trimmed_response}': {error}"
+                );
+                return;
+            }
+        };
+
+        let trimmed_fallback_response = fallback_response.trim();
+        if trimmed_fallback_response != "ok" {
+            eprintln!(
+                "Workspace switch failed: command '{command}' returned '{trimmed_response}', fallback '{fallback_command}' returned '{trimmed_fallback_response}'"
+            );
         }
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::HyprlandIpc;
+    use super::parse_workspace_bind_labels;
+    use crate::domain::workspace_service::WorkspaceService;
+    use std::collections::HashMap;
+    use std::fs;
+    use std::io::{Read, Write};
+    use std::os::unix::net::UnixListener;
+    use std::path::{Path, PathBuf};
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::{Arc, Mutex, MutexGuard};
+    use std::thread;
+    use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+    const LUA_DISPATCH_ERROR: &str = concat!(
+        "Error in dispatch hl.dispatch: dispatch in lua no longer accepts raw command strings; ",
+        "syntax might need to be updated\n",
+    );
+
+    static ENV_MUTEX: Mutex<()> = Mutex::new(());
+    static SOCKET_TEST_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    struct TestEnvironmentGuard {
+        original_signature: Option<String>,
+        original_runtime_dir: Option<String>,
+    }
+
+    impl TestEnvironmentGuard {
+        fn new(signature: Option<&str>, runtime_dir: Option<&Path>) -> Self {
+            let original_signature = std::env::var("HYPRLAND_INSTANCE_SIGNATURE").ok();
+            let original_runtime_dir = std::env::var("XDG_RUNTIME_DIR").ok();
+
+            set_test_env_var("HYPRLAND_INSTANCE_SIGNATURE", signature);
+            set_test_env_var(
+                "XDG_RUNTIME_DIR",
+                runtime_dir.and_then(|value| value.to_str()),
+            );
+
+            Self {
+                original_signature,
+                original_runtime_dir,
+            }
+        }
+    }
+
+    impl Drop for TestEnvironmentGuard {
+        fn drop(&mut self) {
+            set_test_env_var(
+                "HYPRLAND_INSTANCE_SIGNATURE",
+                self.original_signature.as_deref(),
+            );
+            set_test_env_var("XDG_RUNTIME_DIR", self.original_runtime_dir.as_deref());
+        }
+    }
+
+    fn set_test_env_var(name: &str, value: Option<&str>) {
+        match value {
+            Some(value) => std::env::set_var(name, value),
+            None => std::env::remove_var(name),
+        }
+    }
+
+    struct FakeHyprlandSocket {
+        runtime_dir: PathBuf,
+        signature: String,
+        socket_path: PathBuf,
+        commands: Arc<Mutex<Vec<String>>>,
+        server_thread: Option<thread::JoinHandle<()>>,
+    }
+
+    impl FakeHyprlandSocket {
+        fn new(responses: &[&str]) -> Self {
+            let timestamp_suffix = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("current time should be after unix epoch")
+                .as_nanos();
+            let unique_suffix = SOCKET_TEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+            let runtime_dir = std::env::temp_dir().join(format!(
+                "hl-ws-{unique_suffix}-{timestamp_suffix}",
+            ));
+            let signature = format!("sig-{unique_suffix}-{timestamp_suffix}");
+            let socket_dir = runtime_dir.join("hypr").join(&signature);
+            let socket_path = socket_dir.join(".socket.sock");
+
+            fs::create_dir_all(&socket_dir).expect("fake hyprland socket directory should exist");
+
+            let listener = UnixListener::bind(&socket_path).expect("fake hyprland socket should bind");
+            listener
+                .set_nonblocking(true)
+                .expect("fake hyprland socket should be nonblocking");
+
+            let expected_responses = responses
+                .iter()
+                .map(|response| String::from(*response))
+                .collect::<Vec<_>>();
+            let commands = Arc::new(Mutex::new(Vec::with_capacity(expected_responses.len())));
+            let commands_for_thread = Arc::clone(&commands);
+
+            let server_thread = thread::spawn(move || {
+                let deadline = Instant::now() + Duration::from_secs(1);
+                let mut response_index = 0usize;
+
+                while response_index < expected_responses.len() && Instant::now() < deadline {
+                    match listener.accept() {
+                        Ok((mut stream, _address)) => {
+                            stream
+                                .set_read_timeout(Some(Duration::from_millis(50)))
+                                .expect("fake hyprland stream should set read timeout");
+
+                            let command = read_command(&mut stream);
+                            commands_for_thread
+                                .lock()
+                                .unwrap_or_else(|poison| poison.into_inner())
+                                .push(command);
+                            let write_result =
+                                stream.write_all(expected_responses[response_index].as_bytes());
+                            if let Err(error) = write_result {
+                                assert_eq!(
+                                    error.kind(),
+                                    std::io::ErrorKind::BrokenPipe,
+                                    "fake hyprland socket should only ignore broken pipe after client disconnects",
+                                );
+                            }
+                            response_index += 1;
+                        }
+                        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                            thread::sleep(Duration::from_millis(10));
+                        }
+                        Err(error) => panic!("fake hyprland socket accept failed: {error}"),
+                    }
+                }
+            });
+
+            thread::sleep(Duration::from_millis(20));
+
+            Self {
+                runtime_dir,
+                signature,
+                socket_path,
+                commands,
+                server_thread: Some(server_thread),
+            }
+        }
+
+        fn runtime_dir(&self) -> &Path {
+            &self.runtime_dir
+        }
+
+        fn signature(&self) -> &str {
+            &self.signature
+        }
+
+        fn socket_path(&self) -> &Path {
+            &self.socket_path
+        }
+
+        fn finish(mut self) -> Vec<String> {
+            if let Some(server_thread) = self.server_thread.take() {
+                server_thread
+                    .join()
+                    .expect("fake hyprland socket thread should finish cleanly");
+            }
+
+            let commands = self
+                .commands
+                .lock()
+                .unwrap_or_else(|poison| poison.into_inner())
+                .clone();
+
+            let _ = fs::remove_dir_all(&self.runtime_dir);
+            commands
+        }
+    }
+
+    impl Drop for FakeHyprlandSocket {
+        fn drop(&mut self) {
+            if let Some(server_thread) = self.server_thread.take() {
+                let _ = server_thread.join();
+            }
+
+            let _ = fs::remove_dir_all(&self.runtime_dir);
+        }
+    }
+
+    fn read_command(stream: &mut std::os::unix::net::UnixStream) -> String {
+        let mut command = Vec::new();
+        let mut buffer = [0u8; 1024];
+
+        loop {
+            match stream.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(bytes_read) => command.extend_from_slice(&buffer[..bytes_read]),
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                    ) && !command.is_empty() =>
+                {
+                    break;
+                }
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                    ) =>
+                {
+                    continue;
+                }
+                Err(error) => panic!("fake hyprland socket read failed: {error}"),
+            }
+        }
+
+        String::from_utf8(command).expect("fake hyprland command should be valid utf-8")
+    }
+
+    fn lock_test_mutex<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+        mutex.lock().unwrap_or_else(|poison| poison.into_inner())
+    }
+
+    fn parse_labels(input: &str) -> HashMap<i32, String> {
+        parse_workspace_bind_labels(input).expect("workspace bind labels parse")
+    }
+
+    fn described_lua_bind(
+        key: &str,
+        arg: &str,
+        has_description: bool,
+        description: Option<&str>,
+        submap: Option<&str>,
+        mouse: bool,
+    ) -> String {
+        let description_json = description
+            .map(|value| format!("\"{value}\""))
+            .unwrap_or_else(|| String::from("null"));
+        let submap_json = submap
+            .map(|value| format!("\"{value}\""))
+            .unwrap_or_else(|| String::from("null"));
+
+        format!(
+            concat!(
+                "{{",
+                "\"dispatcher\":\"__lua\"",
+                ",\"arg\":\"{arg}\"",
+                ",\"key\":\"{key}\"",
+                ",\"has_description\":{has_description}",
+                ",\"description\":{description_json}",
+                ",\"submap\":{submap_json}",
+                ",\"mouse\":{mouse}",
+                "}}"
+            ),
+            arg = arg,
+            key = key,
+            has_description = has_description,
+            description_json = description_json,
+            submap_json = submap_json,
+            mouse = mouse,
+        )
+    }
+
+    fn legacy_workspace_bind(workspace_id: &str, key: &str) -> String {
+        format!(
+            concat!(
+                "{{",
+                "\"dispatcher\":\"workspace\"",
+                ",\"arg\":\"{workspace_id}\"",
+                ",\"key\":\"{key}\"",
+                ",\"modmask\":64",
+                ",\"submap\":null",
+                ",\"mouse\":false",
+                ",\"release\":false",
+                ",\"repeat\":false",
+                "}}"
+            ),
+            workspace_id = workspace_id,
+            key = key,
+        )
+    }
+
+    fn bind_array(rows: &[String]) -> String {
+        format!("[{}]", rows.join(","))
+    }
+
+    #[test]
+    fn workspace_switch_legacy_success_sends_workspace_dispatch_once() {
+        let _test_lock = lock_test_mutex(&ENV_MUTEX);
+        let fake_socket = FakeHyprlandSocket::new(&["ok\n"]);
+        let _environment =
+            TestEnvironmentGuard::new(Some(fake_socket.signature()), Some(fake_socket.runtime_dir()));
+        let ipc = HyprlandIpc::new();
+
+        assert_eq!(
+            ipc.get_control_socket().as_deref(),
+            fake_socket.socket_path().to_str(),
+        );
+
+        ipc.switch_workspace(7);
+
+        assert_eq!(
+            fake_socket.finish(),
+            vec![String::from("dispatch workspace 7")]
+        );
+    }
+
+    #[test]
+    fn workspace_switch_lua_dispatch_error_tries_lua_fallback_after_workspace_dispatch() {
+        let _test_lock = lock_test_mutex(&ENV_MUTEX);
+        let fake_socket = FakeHyprlandSocket::new(&[LUA_DISPATCH_ERROR, "ok\n"]);
+        let _environment =
+            TestEnvironmentGuard::new(Some(fake_socket.signature()), Some(fake_socket.runtime_dir()));
+        let ipc = HyprlandIpc::new();
+
+        assert_eq!(
+            ipc.get_control_socket().as_deref(),
+            fake_socket.socket_path().to_str(),
+        );
+
+        ipc.switch_workspace(7);
+
+        assert_eq!(
+            fake_socket.finish(),
+            vec![
+                String::from("dispatch workspace 7"),
+                String::from("dispatch hl.dsp.focus({ workspace = 7 })"),
+            ]
+        );
+    }
+
+    #[test]
+    fn workspace_switch_lua_dispatch_error_and_failed_fallback_do_not_panic() {
+        let _test_lock = lock_test_mutex(&ENV_MUTEX);
+        let fake_socket =
+            FakeHyprlandSocket::new(&[LUA_DISPATCH_ERROR, "error: fallback failed\n"]);
+        let _environment =
+            TestEnvironmentGuard::new(Some(fake_socket.signature()), Some(fake_socket.runtime_dir()));
+        let ipc = HyprlandIpc::new();
+
+        assert_eq!(
+            ipc.get_control_socket().as_deref(),
+            fake_socket.socket_path().to_str(),
+        );
+
+        ipc.switch_workspace(7);
+
+        assert_eq!(
+            fake_socket.finish(),
+            vec![
+                String::from("dispatch workspace 7"),
+                String::from("dispatch hl.dsp.focus({ workspace = 7 })"),
+            ]
+        );
+    }
+
+    #[test]
+    fn workspace_switch_missing_socket_does_not_panic() {
+        let _test_lock = lock_test_mutex(&ENV_MUTEX);
+        let _environment = TestEnvironmentGuard::new(Some("missing-socket-sig"), None);
+
+        HyprlandIpc::new().switch_workspace(7);
+    }
+
+    #[test]
+    fn workspace_bind_labels_workspace_1_numeric_key_maps_to_numeric_label() {
+        let labels = parse_labels(r#"[{"dispatcher":"workspace","arg":"1","key":"1","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
+        assert_eq!(labels, HashMap::from([(1, String::from("1"))]));
+    }
+
+    #[test]
+    fn workspace_bind_labels_workspace_2_letter_key_maps_to_uppercase_label() {
+        let labels = parse_labels(r#"[{"dispatcher":"workspace","arg":"2","key":"q","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
+        assert_eq!(labels, HashMap::from([(2, String::from("Q"))]));
+    }
+
+    #[test]
+    fn workspace_bind_labels_ignores_non_workspace_and_non_default_bind_rows() {
+        let labels = parse_labels(r#"[{"dispatcher":"movetoworkspace","arg":"1","key":"q","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"special:magic","key":"w","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"e+1","key":"e","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"-1","key":"r","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"4","key":"t","modmask":64,"submap":"resize","mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"5","key":"y","modmask":64,"submap":null,"mouse":true,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"not-a-workspace","key":"u","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
+        assert!(labels.is_empty());
+    }
+
+    #[test]
+    fn workspace_bind_labels_prefers_non_numeric_key_over_numeric_key_for_same_workspace() {
+        let labels = parse_labels(r#"[{"dispatcher":"workspace","arg":"3","key":"3","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"3","key":"q","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
+        assert_eq!(labels, HashMap::from([(3, String::from("Q"))]));
+    }
+
+    #[test]
+    fn workspace_bind_labels_described_lua_binds_map_and_normalize_labels() {
+        let labels = parse_labels(&bind_array(&[
+            described_lua_bind("q", "29", true, Some("hyprline:workspace:1:q"), None, false),
+            described_lua_bind("p", "48", true, Some("hyprline:workspace:20:semicolon"), None, false),
+            described_lua_bind("Q", "30", true, Some("hyprline:workspace:2:Q"), None, false),
+            described_lua_bind("1", "31", true, Some("hyprline:workspace:3:1"), None, false),
+        ]));
+
+        assert_eq!(
+            labels,
+            HashMap::from([
+                (1, String::from("Q")),
+                (2, String::from("Q")),
+                (3, String::from("1")),
+                (20, String::from(";")),
+            ])
+        );
+    }
+
+    #[test]
+    fn workspace_bind_labels_ignores_described_lua_binds_without_valid_description_metadata() {
+        let labels = parse_labels(&bind_array(&[
+            described_lua_bind("q", "29", false, Some("hyprline:workspace:1:q"), None, false),
+            described_lua_bind("w", "30", true, None, None, false),
+            described_lua_bind("e", "31", true, Some("workspace:1:e"), None, false),
+            described_lua_bind("r", "32", true, Some("hyprline:workspace::r"), None, false),
+            described_lua_bind("t", "33", true, Some("hyprline:workspace:5:"), None, false),
+            described_lua_bind("y", "34", true, Some("hyprline:workspace:not-a-number:y"), None, false),
+            described_lua_bind("u", "35", true, Some("hyprline:workspace:0:u"), None, false),
+            described_lua_bind("i", "36", true, Some("hyprline:workspace:-1:i"), None, false),
+            described_lua_bind("o", "37", true, Some("hyprline:workspace:1:o:extra"), None, false),
+            described_lua_bind("p", "38", true, Some(" hyprline:workspace:1:p"), None, false),
+            described_lua_bind("a", "39", true, Some("hyprline:workspace: 1:a"), None, false),
+            described_lua_bind("s", "40", true, Some("hyprline:workspace:1:s"), Some("resize"), false),
+            described_lua_bind("d", "41", true, Some("hyprline:workspace:1:d"), None, true),
+            described_lua_bind("f", "42", true, Some("hyprline:workspace:2:f"), None, false),
+        ]));
+
+        assert_eq!(labels, HashMap::from([(2, String::from("F"))]));
+    }
+
+    #[test]
+    fn workspace_bind_labels_described_lua_binds_take_precedence_over_legacy_binds_regardless_of_row_order() {
+        let labels = parse_labels(&bind_array(&[
+            legacy_workspace_bind("7", "7"),
+            described_lua_bind("q", "29", true, Some("hyprline:workspace:7:q"), None, false),
+            described_lua_bind("w", "30", true, Some("hyprline:workspace:8:w"), None, false),
+            legacy_workspace_bind("8", "8"),
+        ]));
+
+        assert_eq!(
+            labels,
+            HashMap::from([(7, String::from("Q")), (8, String::from("W"))])
+        );
+    }
+
+    #[test]
+    fn workspace_bind_labels_keeps_first_described_lua_label_for_same_workspace() {
+        let labels = parse_labels(&bind_array(&[
+            described_lua_bind("q", "29", true, Some("hyprline:workspace:9:q"), None, false),
+            described_lua_bind("w", "30", true, Some("hyprline:workspace:9:w"), None, false),
+        ]));
+
+        assert_eq!(labels, HashMap::from([(9, String::from("Q"))]));
+    }
+}

@@ -129,15 +129,25 @@ Built-in StatusNotifierWatcher automatically:
 
 ### Workspace Keybindings
 
-Hyprline automatically reads your Hyprland configuration to display workspace hotkeys.
+Hyprline reads registered workspace binds from Hyprland through its IPC socket to display workspace hotkeys.
 
 **How it works:**
-1. Locates `hyprland.conf` in `$XDG_CONFIG_HOME/hypr/` or `~/.config/hypr/`
-2. Parses lines starting with `bind` that contain `workspace`
-3. Extracts keybindings in format: `bind = MODIFIERS, KEY, workspace, NUMBER`
-4. Displays the key on each workspace button
+1. Reads the registered bind list from Hyprland over the socket
+2. Extracts the key from binds using the `workspace` dispatcher
+3. For binds with a description in the strict format `hyprline:workspace:<id>:<label>`, uses `<label>` as the workspace label
+4. Displays the label on each workspace button (labels are shown uppercase; `semicolon` is shown as `;`)
+5. Uses the workspace number as a fallback when no label is available
 
-**Example config:**
+Malformed descriptions are ignored.
+
+**Example Hyprland Lua callback binds:**
+```lua
+for i, key in ipairs({ "q", "w", "e", "r", "t" }) do
+    hl.bind(mods, key, hl.dsp.focus({ workspace = i }), { description = "hyprline:workspace:" .. i .. ":" .. key })
+end
+```
+
+**Example registered binds:**
 ```conf
 bind = SUPER, 1, workspace, 1
 bind = SUPER, 2, workspace, 2
@@ -148,8 +158,6 @@ Result: Workspace buttons show `1`, `2`, `Q` respectively.
 
 **Features:**
 - Auto-detection of workspace keybindings
-- Case-insensitive key matching
-- Ignores commented lines (`#`)
 - Falls back to numbers if bindings not found
 
 ### Dependencies
@@ -315,15 +323,25 @@ exec-once = /path/to/hyprline
 
 ### Горячие клавиши воркспейсов
 
-Hyprline автоматически читает конфигурацию Hyprland для отображения горячих клавиш воркспейсов.
+Hyprline читает зарегистрированные бинды воркспейсов из Hyprland через его IPC-сокет, чтобы показывать горячие клавиши воркспейсов.
 
 **Как это работает:**
-1. Находит `hyprland.conf` в `$XDG_CONFIG_HOME/hypr/` или `~/.config/hypr/`
-2. Парсит строки, начинающиеся с `bind`, содержащие `workspace`
-3. Извлекает привязки клавиш в формате: `bind = МОДИФИКАТОРЫ, КЛАВИША, workspace, НОМЕР`
-4. Отображает клавишу на каждой кнопке воркспейса
+1. Читает список зарегистрированных биндов из Hyprland по сокету
+2. Извлекает клавишу из биндов с диспетчером `workspace`
+3. Для биндов с описанием в строгом формате `hyprline:workspace:<id>:<label>` использует `<label>` в качестве метки воркспейса
+4. Показывает метку на каждой кнопке воркспейса (метки отображаются заглавными; `semicolon` показывается как `;`)
+5. Откатывается к номеру воркспейса, если метка недоступна
 
-**Пример конфига:**
+Некорректные описания игнорируются.
+
+**Пример Lua callback биндов Hyprland:**
+```lua
+for i, key in ipairs({ "q", "w", "e", "r", "t" }) do
+    hl.bind(mods, key, hl.dsp.focus({ workspace = i }), { description = "hyprline:workspace:" .. i .. ":" .. key })
+end
+```
+
+**Пример зарегистрированных биндов:**
 ```conf
 bind = SUPER, 1, workspace, 1
 bind = SUPER, 2, workspace, 2
@@ -334,8 +352,6 @@ bind = SUPER, Q, workspace, 3
 
 **Возможности:**
 - Автоопределение привязок клавиш воркспейсов
-- Регистронезависимое сопоставление клавиш
-- Игнорирование закомментированных строк (`#`)
 - Откат к номерам, если привязки не найдены
 
 ### Зависимости
@@ -376,5 +392,4 @@ bind = SUPER, Q, workspace, 3
 - **IPC:** сокет Hyprland + D-Bus
 - **Хранилище:** SQLite (rusqlite)
 - **Сборка:** Cargo со встраиванием ресурсов
-
 
