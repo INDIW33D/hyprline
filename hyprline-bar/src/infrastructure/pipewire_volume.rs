@@ -1,8 +1,8 @@
 use crate::domain::models::VolumeInfo;
 use crate::domain::volume_service::VolumeService;
+use async_channel::Sender;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use async_channel::Sender;
 use std::thread;
 
 pub struct PipewireVolume {
@@ -38,16 +38,29 @@ impl PipewireVolume {
     }
 
     /// Мониторинг событий PipeWire через API с подпиской на изменения
-    fn monitor_pipewire_events(current_info: Arc<Mutex<Option<VolumeInfo>>>, update_txs: Arc<Mutex<Vec<Sender<()>>>>) {
+    fn monitor_pipewire_events(
+        current_info: Arc<Mutex<Option<VolumeInfo>>>,
+        update_txs: Arc<Mutex<Vec<Sender<()>>>>,
+    ) {
+        if let Err(error) = Self::run_pipewire_monitor(current_info, update_txs) {
+            eprintln!("Failed to monitor PipeWire events: {error}");
+        }
+    }
+
+    fn run_pipewire_monitor(
+        current_info: Arc<Mutex<Option<VolumeInfo>>>,
+        update_txs: Arc<Mutex<Vec<Sender<()>>>>,
+    ) -> Result<(), pipewire::Error> {
         use pipewire as pw;
+        use pw::{context::ContextBox, main_loop::MainLoopBox};
 
         // Инициализируем PipeWire
         pw::init();
 
-        let mainloop = pw::main_loop::MainLoop::new(None).expect("Failed to create PipeWire mainloop");
-        let context = pw::context::Context::new(&mainloop).expect("Failed to create PipeWire context");
-        let core = context.connect(None).expect("Failed to connect to PipeWire");
-        let registry = core.get_registry().expect("Failed to get registry");
+        let mainloop = MainLoopBox::new(None)?;
+        let context = ContextBox::new(mainloop.loop_(), None)?;
+        let core = context.connect(None)?;
+        let registry = core.get_registry()?;
 
         let current_info_global = Arc::clone(&current_info);
         let update_txs_global = Arc::clone(&update_txs);
@@ -87,6 +100,8 @@ impl PipewireVolume {
             .register();
 
         mainloop.run();
+
+        Ok(())
     }
 
     /// Парсит вывод wpctl get-volume для получения громкости
@@ -220,4 +235,3 @@ impl VolumeService for PipewireVolume {
 pub fn create_volume_channel() -> (Sender<()>, async_channel::Receiver<()>) {
     async_channel::unbounded()
 }
-
