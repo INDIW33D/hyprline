@@ -1,0 +1,25 @@
+ M Cargo.lock
+ M README.md
+ M hyprline-bar/Cargo.toml
+ M hyprline-bar/src/config/bar_config.rs
+ M hyprline-bar/src/config/mod.rs
+ M hyprline-bar/src/config/widget_config.rs
+ M hyprline-bar/src/domain/mod.rs
+ M hyprline-bar/src/domain/models.rs
+ M hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs
+ M hyprline-bar/src/infrastructure/hyprland_ipc.rs
+ M hyprline-bar/src/infrastructure/lumen_brightness.rs
+ M hyprline-bar/src/infrastructure/mod.rs
+ M hyprline-bar/src/infrastructure/pipewire_volume.rs
+ M hyprline-bar/src/main.rs
+ M hyprline-bar/src/shared_state.rs
+ M hyprline-bar/src/styles.css
+ M hyprline-bar/src/ui/bar.rs
+ M hyprline-bar/src/ui/mod.rs
+ M hyprline-bar/src/ui/settings.rs
+ M hyprline-notifications/Cargo.toml
+ M hyprline-notifications/src/dbus_service.rs
+?? .omo/
+?? hyprline-bar/src/domain/bluetooth_service.rs
+?? hyprline-bar/src/infrastructure/bluez_bluetooth.rs
+?? hyprline-bar/src/ui/bluetooth.rs

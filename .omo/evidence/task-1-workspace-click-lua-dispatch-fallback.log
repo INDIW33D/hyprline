@@ -1,0 +1,34 @@
+2026-06-21T16:08:51+03:00
+
+Command: cargo test -p hyprline-bar workspace_switch -- --nocapture
+Result: FAILED (expected red before fallback production change)
+Summary:
+- 4 tests run
+- passed: workspace_switch_legacy_success_sends_workspace_dispatch_once
+- passed: workspace_switch_missing_socket_does_not_panic
+- failed: workspace_switch_lua_dispatch_error_tries_lua_fallback_after_workspace_dispatch
+- failed: workspace_switch_lua_dispatch_error_and_failed_fallback_do_not_panic
+- failure detail: both fallback tests observed only ["dispatch workspace 7"] instead of the expected second command ["dispatch hl.dsp.focus({ workspace = 7 })"]
+Captured log: /home/indiw33d/.local/share/rtk/tee/1782047274_cargo_test.log
+
+Command: cargo test -p hyprline-bar workspace_ -- --nocapture
+Result: FAILED (expected while new fallback tests are red)
+Summary:
+- 12 tests run
+- existing workspace_bind_labels_* tests remained unchanged and passed: 8/8
+- workspace_switch_legacy_success_sends_workspace_dispatch_once passed
+- workspace_switch_missing_socket_does_not_panic passed
+- fallback red tests failed: 2/2
+- overall: 10 passed, 2 failed
+Captured log: /home/indiw33d/.local/share/rtk/tee/1782047291_cargo_test.log
+
+Command: cargo test -p hyprline-bar
+Result: FAILED because the new red fallback tests are included
+Summary:
+- 12 tests run
+- all previously existing hyprland_ipc workspace label tests passed
+- new red failures were limited to:
+  - workspace_switch_lua_dispatch_error_tries_lua_fallback_after_workspace_dispatch
+  - workspace_switch_lua_dispatch_error_and_failed_fallback_do_not_panic
+- overall: 10 passed, 2 failed
+Captured log: /home/indiw33d/.local/share/rtk/tee/1782047308_cargo_test.log

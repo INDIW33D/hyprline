@@ -1,0 +1,145 @@
+{
+  "schema_version": 2,
+  "active_work_id": "workspace-click-lua-dispatch-fallback-dc6be873",
+  "works": {
+    "workspace-click-lua-dispatch-fallback-dc6be873": {
+      "work_id": "workspace-click-lua-dispatch-fallback-dc6be873",
+      "active_plan": "/home/indiw33d/petprojects/hyprline/.omo/plans/workspace-click-lua-dispatch-fallback.md",
+      "plan_name": "workspace-click-lua-dispatch-fallback",
+      "status": "completed",
+      "started_at": "2026-06-21T12:57:16.329Z",
+      "updated_at": "2026-06-21T13:33:22.519Z",
+      "session_ids": [
+        "opencode:ses_11f0b6823ffeNix0F67KCwi0TL"
+      ],
+      "session_origins": {
+        "opencode:ses_11f0b6823ffeNix0F67KCwi0TL": "direct"
+      },
+      "agent": "atlas",
+      "task_sessions": {
+        "todo:1": {
+          "task_key": "todo:1",
+          "task_label": "1",
+          "task_title": "`hyprline-bar/src/infrastructure/hyprland_ipc.rs`: Add fake Unix socket red tests for workspace switching - expect legacy success, Lua fallback, and failures are observable",
+          "session_id": "opencode:ses_115bb3555ffe8wuDX5EDuQvQvI",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-06-21T13:11:07.020Z",
+          "started_at": "2026-06-21T13:09:36.135Z",
+          "status": "completed",
+          "ended_at": "2026-06-21T13:11:07.020Z",
+          "elapsed_ms": 90885
+        },
+        "todo:2": {
+          "task_key": "todo:2",
+          "task_label": "2",
+          "task_title": "`hyprline-bar/src/infrastructure/hyprland_ipc.rs`: Implement response-aware workspace dispatch fallback - expect clicks work in legacy and Lua-dispatch Hyprland modes",
+          "session_id": "opencode:ses_115b0e9efffe4bFwasGBV6DnwR",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-06-21T13:16:13.837Z",
+          "started_at": "2026-06-21T13:15:30.363Z",
+          "status": "completed",
+          "ended_at": "2026-06-21T13:16:13.837Z",
+          "elapsed_ms": 43474
+        },
+        "todo:3": {
+          "task_key": "todo:3",
+          "task_label": "3",
+          "task_title": "Repository gates and live direct-socket QA: Verify fallback behavior against current Hyprland Lua config - expect tests/build pass and live Lua command returns `ok`",
+          "session_id": "opencode:ses_115ac1b85ffeAk25y3zJ8XvLrZ",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-06-21T13:20:14.642Z",
+          "started_at": "2026-06-21T13:19:36.249Z",
+          "status": "completed",
+          "ended_at": "2026-06-21T13:20:14.642Z",
+          "elapsed_ms": 38393
+        },
+        "final-wave:f1": {
+          "task_key": "final-wave:f1",
+          "task_label": "F1",
+          "task_title": "Plan compliance audit",
+          "session_id": "opencode:ses_115a849c3ffeiK1MaQDIE1o8EA",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-low",
+          "started_at": "2026-06-21T13:26:42.868Z",
+          "status": "completed",
+          "updated_at": "2026-06-21T13:30:57.685Z",
+          "ended_at": "2026-06-21T13:30:57.685Z",
+          "elapsed_ms": 254817
+        }
+      },
+      "ended_at": "2026-06-21T13:33:22.519Z",
+      "elapsed_ms": 2166190
+    }
+  },
+  "active_plan": "/home/indiw33d/petprojects/hyprline/.omo/plans/workspace-click-lua-dispatch-fallback.md",
+  "started_at": "2026-06-21T12:57:16.329Z",
+  "status": "completed",
+  "updated_at": "2026-06-21T13:33:22.519Z",
+  "session_ids": [
+    "opencode:ses_11f0b6823ffeNix0F67KCwi0TL"
+  ],
+  "session_origins": {
+    "opencode:ses_11f0b6823ffeNix0F67KCwi0TL": "direct"
+  },
+  "plan_name": "workspace-click-lua-dispatch-fallback",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "`hyprline-bar/src/infrastructure/hyprland_ipc.rs`: Add fake Unix socket red tests for workspace switching - expect legacy success, Lua fallback, and failures are observable",
+      "session_id": "opencode:ses_115bb3555ffe8wuDX5EDuQvQvI",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-21T13:11:07.020Z",
+      "started_at": "2026-06-21T13:09:36.135Z",
+      "status": "completed",
+      "ended_at": "2026-06-21T13:11:07.020Z",
+      "elapsed_ms": 90885
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "`hyprline-bar/src/infrastructure/hyprland_ipc.rs`: Implement response-aware workspace dispatch fallback - expect clicks work in legacy and Lua-dispatch Hyprland modes",
+      "session_id": "opencode:ses_115b0e9efffe4bFwasGBV6DnwR",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-21T13:16:13.837Z",
+      "started_at": "2026-06-21T13:15:30.363Z",
+      "status": "completed",
+      "ended_at": "2026-06-21T13:16:13.837Z",
+      "elapsed_ms": 43474
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Repository gates and live direct-socket QA: Verify fallback behavior against current Hyprland Lua config - expect tests/build pass and live Lua command returns `ok`",
+      "session_id": "opencode:ses_115ac1b85ffeAk25y3zJ8XvLrZ",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-21T13:20:14.642Z",
+      "started_at": "2026-06-21T13:19:36.249Z",
+      "status": "completed",
+      "ended_at": "2026-06-21T13:20:14.642Z",
+      "elapsed_ms": 38393
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "Plan compliance audit",
+      "session_id": "opencode:ses_115a849c3ffeiK1MaQDIE1o8EA",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-low",
+      "started_at": "2026-06-21T13:26:42.868Z",
+      "status": "completed",
+      "updated_at": "2026-06-21T13:30:57.685Z",
+      "ended_at": "2026-06-21T13:30:57.685Z",
+      "elapsed_ms": 254817
+    }
+  },
+  "agent": "atlas",
+  "ended_at": "2026-06-21T13:33:22.519Z",
+  "elapsed_ms": 2166190
+}

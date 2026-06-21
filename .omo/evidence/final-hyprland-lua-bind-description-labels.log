@@ -1,0 +1,14 @@
+
+=== FINAL VERIFICATION WAVE VERDICTS ===
+F1. Plan compliance audit: APPROVE
+    - Every Must Have satisfied; every Must NOT Have absent.
+F2. Code quality review: APPROVE
+    - No panics/subprocesses/D-Bus path; deterministic precedence; narrow helpers.
+F3. Live metadata QA + parser fixture proof: APPROVE
+    - Hyprland socket available; j/binds shows hyprline_descriptions=20.
+    - Parser fixture tests: 8 passed.
+F4. Scope fidelity: APPROVE
+    - Only README.md and hyprline-bar/src/infrastructure/hyprland_ipc.rs have meaningful new product changes.
+    - Unrelated tracked diff identical to baseline.
+    - Local /home/indiw33d/.config/hypr/hyprland.lua sha256 unchanged.
+    - Untracked manifest changed only in .omo/ orchestration artifacts (expected).

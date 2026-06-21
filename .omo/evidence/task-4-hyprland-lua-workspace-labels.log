@@ -1,0 +1,10 @@
+132:Hyprline reads registered workspace binds from Hyprland through its IPC socket to display workspace hotkeys.
+316:Hyprline читает зарегистрированные бинды воркспейсов из Hyprland через его IPC-сокет, чтобы показывать горячие клавиши воркспейсов.
+
+-- stale wording check --
+No matches for old parser wording.
+No matches for hyprland.conf location wording.
+
+-- corrected stale wording check --
+No matches for old parser wording.
+No matches for hyprland.conf location wording.

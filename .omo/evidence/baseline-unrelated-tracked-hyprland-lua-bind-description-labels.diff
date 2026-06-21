@@ -1,0 +1,3953 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 9d607ed..d75c7d9 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -34,19 +34,19 @@ dependencies = [
+ 
+ [[package]]
+ name = "annotate-snippets"
+-version = "0.9.2"
++version = "0.11.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ccaf7e9dfbb6ab22c82e473cd1a8a7bd313c19a5b7e40970f3d89ef5a5c9e81e"
++checksum = "710e8eae58854cdc1790fcb56cca04d712a17be849eeb81da2a724bf4bae2bc4"
+ dependencies = [
++ "anstyle",
+  "unicode-width",
+- "yansi-term",
+ ]
+ 
+ [[package]]
+-name = "anyhow"
+-version = "1.0.100"
++name = "anstyle"
++version = "1.0.14"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
++checksum = "940b3a0ca603d1eade50a4846a2afffd5ef57a9feac2c0e2ec2e14f9ead76000"
+ 
+ [[package]]
+ name = "async-broadcast"
+@@ -72,78 +72,6 @@ dependencies = [
+  "pin-project-lite",
+ ]
+ 
+-[[package]]
+-name = "async-executor"
+-version = "1.13.3"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "497c00e0fd83a72a79a39fcbd8e3e2f055d6f6c7e025f3b3d91f4f8e76527fb8"
+-dependencies = [
+- "async-task",
+- "concurrent-queue",
+- "fastrand",
+- "futures-lite",
+- "pin-project-lite",
+- "slab",
+-]
+-
+-[[package]]
+-name = "async-fs"
+-version = "2.2.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "8034a681df4aed8b8edbd7fbe472401ecf009251c8b40556b304567052e294c5"
+-dependencies = [
+- "async-lock",
+- "blocking",
+- "futures-lite",
+-]
+-
+-[[package]]
+-name = "async-io"
+-version = "2.6.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "456b8a8feb6f42d237746d4b3e9a178494627745c3c56c6ea55d92ba50d026fc"
+-dependencies = [
+- "autocfg",
+- "cfg-if",
+- "concurrent-queue",
+- "futures-io",
+- "futures-lite",
+- "parking",
+- "polling",
+- "rustix",
+- "slab",
+- "windows-sys 0.61.2",
+-]
+-
+-[[package]]
+-name = "async-lock"
+-version = "3.4.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5fd03604047cee9b6ce9de9f70c6cd540a0520c813cbd49bae61f33ab80ed1dc"
+-dependencies = [
+- "event-listener",
+- "event-listener-strategy",
+- "pin-project-lite",
+-]
+-
+-[[package]]
+-name = "async-process"
+-version = "2.5.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fc50921ec0055cdd8a16de48773bfeec5c972598674347252c0399676be7da75"
+-dependencies = [
+- "async-channel",
+- "async-io",
+- "async-lock",
+- "async-signal",
+- "async-task",
+- "blocking",
+- "cfg-if",
+- "event-listener",
+- "futures-lite",
+- "rustix",
+-]
+-
+ [[package]]
+ name = "async-recursion"
+ version = "1.1.1"
+@@ -155,30 +83,6 @@ dependencies = [
+  "syn",
+ ]
+ 
+-[[package]]
+-name = "async-signal"
+-version = "0.2.13"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "43c070bbf59cd3570b6b2dd54cd772527c7c3620fce8be898406dd3ed6adc64c"
+-dependencies = [
+- "async-io",
+- "async-lock",
+- "atomic-waker",
+- "cfg-if",
+- "futures-core",
+- "futures-io",
+- "rustix",
+- "signal-hook-registry",
+- "slab",
+- "windows-sys 0.61.2",
+-]
+-
+-[[package]]
+-name = "async-task"
+-version = "4.7.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
+-
+ [[package]]
+ name = "async-trait"
+ version = "0.1.89"
+@@ -190,12 +94,6 @@ dependencies = [
+  "syn",
+ ]
+ 
+-[[package]]
+-name = "atomic-waker"
+-version = "1.1.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
+-
+ [[package]]
+ name = "autocfg"
+ version = "1.5.0"
+@@ -204,17 +102,15 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
+ 
+ [[package]]
+ name = "bindgen"
+-version = "0.69.5"
++version = "0.72.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "271383c67ccabffb7381723dea0672a673f292304fcb45c01cc648c7a8d58088"
++checksum = "993776b509cfb49c750f11b8f07a46fa23e0a1386ffc01fb1e7d343efc387895"
+ dependencies = [
+  "annotate-snippets",
+  "bitflags 2.9.1",
+  "cexpr",
+  "clang-sys",
+  "itertools",
+- "lazy_static",
+- "lazycell",
+  "proc-macro2",
+  "quote",
+  "regex",
+@@ -235,28 +131,6 @@ version = "2.9.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "1b8e56985ec62d17e9c1001dc89c88ecd7dc08e47eba5ec7c29c7b5eeecde967"
+ 
+-[[package]]
+-name = "block-buffer"
+-version = "0.10.4"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "3078c7629b62d3f0439517fa394996acacc5cbc91c5a20d8c658e77abd503a71"
+-dependencies = [
+- "generic-array",
+-]
+-
+-[[package]]
+-name = "blocking"
+-version = "1.6.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e83f8d02be6967315521be875afa792a316e28d57b5a2d401897e2a7921b7f21"
+-dependencies = [
+- "async-channel",
+- "async-task",
+- "futures-io",
+- "futures-lite",
+- "piper",
+-]
+-
+ [[package]]
+ name = "bumpalo"
+ version = "3.19.0"
+@@ -289,7 +163,7 @@ checksum = "059cc746549898cbfd9a47754288e5a958756650ef4652bbb6c5f71a6bda4f8b"
+ dependencies = [
+  "glib-sys",
+  "libc",
+- "system-deps 7.0.5",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -308,17 +182,7 @@ version = "0.6.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "6fac387a98bb7c37292057cffc56d62ecb629900026402633ae9160df93a8766"
+ dependencies = [
+- "nom",
+-]
+-
+-[[package]]
+-name = "cfg-expr"
+-version = "0.15.8"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d067ad48b8650848b989a59a86c6c36a995d02d2bf778d45c3c5d57bc2718f02"
+-dependencies = [
+- "smallvec",
+- "target-lexicon 0.12.16",
++ "nom 7.1.3",
+ ]
+ 
+ [[package]]
+@@ -328,7 +192,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "0d0390889d58f934f01cd49736275b4c2da15bcfc328c78ff2349907e6cabf22"
+ dependencies = [
+  "smallvec",
+- "target-lexicon 0.13.2",
++ "target-lexicon",
+ ]
+ 
+ [[package]]
+@@ -337,12 +201,6 @@ version = "1.0.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
+ 
+-[[package]]
+-name = "cfg_aliases"
+-version = "0.2.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
+-
+ [[package]]
+ name = "chrono"
+ version = "0.4.42"
+@@ -377,23 +235,11 @@ dependencies = [
+  "crossbeam-utils",
+ ]
+ 
+-[[package]]
+-name = "convert_case"
+-version = "0.6.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+-dependencies = [
+- "unicode-segmentation",
+-]
+-
+ [[package]]
+ name = "cookie-factory"
+ version = "0.3.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "9885fa71e26b8ab7855e2ec7cae6e9b380edff76cd052e07c683a0319d51b3a2"
+-dependencies = [
+- "futures",
+-]
+ 
+ [[package]]
+ name = "core-foundation-sys"
+@@ -401,15 +247,6 @@ version = "0.8.7"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
+ 
+-[[package]]
+-name = "cpufeatures"
+-version = "0.2.17"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
+-dependencies = [
+- "libc",
+-]
+-
+ [[package]]
+ name = "crossbeam-channel"
+ version = "0.5.15"
+@@ -425,26 +262,6 @@ version = "0.8.21"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
+ 
+-[[package]]
+-name = "crypto-common"
+-version = "0.1.6"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "1bfb12502f3fc46cca1bb51ac28df9d618d813cdc3d2f25b9fe775a34af26bb3"
+-dependencies = [
+- "generic-array",
+- "typenum",
+-]
+-
+-[[package]]
+-name = "digest"
+-version = "0.10.7"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
+-dependencies = [
+- "block-buffer",
+- "crypto-common",
+-]
+-
+ [[package]]
+ name = "either"
+ version = "1.15.0"
+@@ -694,7 +511,7 @@ dependencies = [
+  "glib-sys",
+  "gobject-sys",
+  "libc",
+- "system-deps 7.0.5",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -727,28 +544,7 @@ dependencies = [
+  "libc",
+  "pango-sys",
+  "pkg-config",
+- "system-deps 7.0.5",
+-]
+-
+-[[package]]
+-name = "generic-array"
+-version = "0.14.9"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4bb6743198531e02858aeaea5398fcc883e71851fcbcb5a2f773e2fb6cb1edf2"
+-dependencies = [
+- "typenum",
+- "version_check",
+-]
+-
+-[[package]]
+-name = "getrandom"
+-version = "0.2.16"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "335ff9f135e4384c8150d6f27c6daed433577f86b4750418338c01a1a2528592"
+-dependencies = [
+- "cfg-if",
+- "libc",
+- "wasi",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -789,7 +585,7 @@ dependencies = [
+  "glib-sys",
+  "gobject-sys",
+  "libc",
+- "system-deps 7.0.5",
++ "system-deps",
+  "windows-sys 0.59.0",
+ ]
+ 
+@@ -854,7 +650,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "8ab79e1ed126803a8fb827e3de0e2ff95191912b8db65cee467edb56fc4cc215"
+ dependencies = [
+  "libc",
+- "system-deps 7.0.5",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -871,7 +667,7 @@ checksum = "ec9aca94bb73989e3cfdbf8f2e0f1f6da04db4d291c431f444838925c4c63eda"
+ dependencies = [
+  "glib-sys",
+  "libc",
+- "system-deps 7.0.5",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -894,7 +690,7 @@ dependencies = [
+  "glib-sys",
+  "libc",
+  "pkg-config",
+- "system-deps 7.0.5",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -925,7 +721,7 @@ dependencies = [
+  "graphene-sys",
+  "libc",
+  "pango-sys",
+- "system-deps 7.0.5",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -989,7 +785,7 @@ dependencies = [
+  "glib-sys",
+  "gtk4-sys",
+  "libc",
+- "system-deps 7.0.5",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -1020,7 +816,7 @@ dependencies = [
+  "gsk4-sys",
+  "libc",
+  "pango-sys",
+- "system-deps 7.0.5",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -1053,12 +849,6 @@ version = "0.5.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
+ 
+-[[package]]
+-name = "hermit-abi"
+-version = "0.5.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fc0fef456e4baa96da950455cd02c081ca953b141298e41db3fc7e36b1da849c"
+-
+ [[package]]
+ name = "hex"
+ version = "0.4.3"
+@@ -1215,12 +1005,6 @@ version = "1.5.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
+ 
+-[[package]]
+-name = "lazycell"
+-version = "1.3.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
+-
+ [[package]]
+ name = "libc"
+ version = "0.2.174"
+@@ -1250,30 +1034,29 @@ dependencies = [
+ 
+ [[package]]
+ name = "libspa"
+-version = "0.8.0"
++version = "0.10.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "65f3a4b81b2a2d8c7f300643676202debd1b7c929dbf5c9bb89402ea11d19810"
++checksum = "2909f3be29d674e7f10604aff18d1bbe1bb03c4cd61c8a8ba19c0b1d162f7d4e"
+ dependencies = [
+  "bitflags 2.9.1",
+  "cc",
+- "convert_case",
+  "cookie-factory",
+  "libc",
+  "libspa-sys",
+- "nix 0.27.1",
+- "nom",
+- "system-deps 6.2.2",
++ "nom 8.0.0",
++ "rustix",
++ "system-deps",
+ ]
+ 
+ [[package]]
+ name = "libspa-sys"
+-version = "0.8.0"
++version = "0.10.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "bf0d9716420364790e85cbb9d3ac2c950bde16a7dd36f3209b7dfdfc4a24d01f"
++checksum = "69ad52764fca54818486f3cf75afec844d1f1a1568c24dcee25d41b1ab007dda"
+ dependencies = [
+  "bindgen",
+  "cc",
+- "system-deps 6.2.2",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -1353,37 +1136,22 @@ dependencies = [
+ ]
+ 
+ [[package]]
+-name = "nix"
+-version = "0.27.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2eb04e9c688eff1c89d72b407f168cf79bb9e867a9d3323ed6c01519eb9cc053"
+-dependencies = [
+- "bitflags 2.9.1",
+- "cfg-if",
+- "libc",
+-]
+-
+-[[package]]
+-name = "nix"
+-version = "0.29.0"
++name = "nom"
++version = "7.1.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
++checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
+ dependencies = [
+- "bitflags 2.9.1",
+- "cfg-if",
+- "cfg_aliases",
+- "libc",
+- "memoffset",
++ "memchr",
++ "minimal-lexical",
+ ]
+ 
+ [[package]]
+ name = "nom"
+-version = "7.1.3"
++version = "8.0.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
++checksum = "df9761775871bdef83bee530e60050f7e54b1105350d6884eb0fb4f46c2f9405"
+ dependencies = [
+  "memchr",
+- "minimal-lexical",
+ ]
+ 
+ [[package]]
+@@ -1460,7 +1228,7 @@ dependencies = [
+  "glib-sys",
+  "gobject-sys",
+  "libc",
+- "system-deps 7.0.5",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -1504,43 +1272,29 @@ version = "0.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
+ 
+-[[package]]
+-name = "piper"
+-version = "0.2.4"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "96c8c490f422ef9a4efd2cb5b42b76c8613d7e7dfc1caf667b8a3350a5acc066"
+-dependencies = [
+- "atomic-waker",
+- "fastrand",
+- "futures-io",
+-]
+-
+ [[package]]
+ name = "pipewire"
+-version = "0.8.0"
++version = "0.10.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "08e645ba5c45109106d56610b3ee60eb13a6f2beb8b74f8dc8186cf261788dda"
++checksum = "8585aba8a52ad74ccc633b8e293c1dc4277976bd5d510b925533f34fd6685f38"
+ dependencies = [
+- "anyhow",
+  "bitflags 2.9.1",
+  "libc",
+  "libspa",
+  "libspa-sys",
+- "nix 0.27.1",
+- "once_cell",
+  "pipewire-sys",
+- "thiserror",
++ "rustix",
+ ]
+ 
+ [[package]]
+ name = "pipewire-sys"
+-version = "0.8.0"
++version = "0.10.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "849e188f90b1dda88fe2bfe1ad31fe5f158af2c98f80fb5d13726c44f3f01112"
++checksum = "f2089f245b548723e60325773c27f586b7a2372c79ea941b246cd0d654706adc"
+ dependencies = [
+  "bindgen",
+  "libspa-sys",
+- "system-deps 6.2.2",
++ "system-deps",
+ ]
+ 
+ [[package]]
+@@ -1549,29 +1303,6 @@ version = "0.3.32"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
+ 
+-[[package]]
+-name = "polling"
+-version = "3.11.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5d0e4f59085d47d8241c88ead0f274e8a0cb551f3625263c05eb8dd897c34218"
+-dependencies = [
+- "cfg-if",
+- "concurrent-queue",
+- "hermit-abi",
+- "pin-project-lite",
+- "rustix",
+- "windows-sys 0.61.2",
+-]
+-
+-[[package]]
+-name = "ppv-lite86"
+-version = "0.2.21"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
+-dependencies = [
+- "zerocopy",
+-]
+-
+ [[package]]
+ name = "proc-macro-crate"
+ version = "3.3.0"
+@@ -1605,36 +1336,6 @@ version = "5.3.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
+ 
+-[[package]]
+-name = "rand"
+-version = "0.8.5"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
+-dependencies = [
+- "libc",
+- "rand_chacha",
+- "rand_core",
+-]
+-
+-[[package]]
+-name = "rand_chacha"
+-version = "0.3.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
+-dependencies = [
+- "ppv-lite86",
+- "rand_core",
+-]
+-
+-[[package]]
+-name = "rand_core"
+-version = "0.6.4"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
+-dependencies = [
+- "getrandom 0.2.16",
+-]
+-
+ [[package]]
+ name = "redox_syscall"
+ version = "0.5.18"
+@@ -1704,9 +1405,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "rustc-hash"
+-version = "1.1.0"
++version = "2.1.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
++checksum = "94300abf3f1ae2e2b8ffb7b58043de3d399c73fa6f4b73826402a5c457614dbe"
+ 
+ [[package]]
+ name = "rustc_version"
+@@ -1765,18 +1466,28 @@ checksum = "56e6fa9c48d24d85fb3de5ad847117517440f6beceb7798af16b4a87d616b8d0"
+ 
+ [[package]]
+ name = "serde"
+-version = "1.0.219"
++version = "1.0.228"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5f0e2c6ed6606019b4e29e69dbaba95b11854410e5347d525002456dbbb786b6"
++checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
++dependencies = [
++ "serde_core",
++ "serde_derive",
++]
++
++[[package]]
++name = "serde_core"
++version = "1.0.228"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad"
+ dependencies = [
+  "serde_derive",
+ ]
+ 
+ [[package]]
+ name = "serde_derive"
+-version = "1.0.219"
++version = "1.0.228"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5b0276cf7f2c73365f7157c8123c21cd9a50fbbd844757af28ca1f5925fc2a00"
++checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -1815,17 +1526,6 @@ dependencies = [
+  "serde",
+ ]
+ 
+-[[package]]
+-name = "sha1"
+-version = "0.10.6"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e3bf829a2d51ab4a5ddf1352d8470c140cadc8301b2ae1789db023f01cedd6ba"
+-dependencies = [
+- "cfg-if",
+- "cpufeatures",
+- "digest",
+-]
+-
+ [[package]]
+ name = "sharded-slab"
+ version = "0.1.7"
+@@ -1872,12 +1572,6 @@ dependencies = [
+  "windows-sys 0.60.2",
+ ]
+ 
+-[[package]]
+-name = "static_assertions"
+-version = "1.1.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+-
+ [[package]]
+ name = "syn"
+ version = "2.0.104"
+@@ -1889,38 +1583,19 @@ dependencies = [
+  "unicode-ident",
+ ]
+ 
+-[[package]]
+-name = "system-deps"
+-version = "6.2.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a3e535eb8dded36d55ec13eddacd30dec501792ff23a0b1682c38601b8cf2349"
+-dependencies = [
+- "cfg-expr 0.15.8",
+- "heck",
+- "pkg-config",
+- "toml",
+- "version-compare",
+-]
+-
+ [[package]]
+ name = "system-deps"
+ version = "7.0.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "e4be53aa0cba896d2dc615bd42bbc130acdcffa239e0a2d965ea5b3b2a86ffdb"
+ dependencies = [
+- "cfg-expr 0.20.1",
++ "cfg-expr",
+  "heck",
+  "pkg-config",
+  "toml",
+  "version-compare",
+ ]
+ 
+-[[package]]
+-name = "target-lexicon"
+-version = "0.12.16"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
+-
+ [[package]]
+ name = "target-lexicon"
+ version = "0.13.2"
+@@ -1934,32 +1609,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "2d31c77bdf42a745371d260a26ca7163f1e0924b64afa0b688e61b5a9fa02f16"
+ dependencies = [
+  "fastrand",
+- "getrandom 0.3.4",
++ "getrandom",
+  "once_cell",
+  "rustix",
+  "windows-sys 0.61.2",
+ ]
+ 
+-[[package]]
+-name = "thiserror"
+-version = "1.0.69"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
+-dependencies = [
+- "thiserror-impl",
+-]
+-
+-[[package]]
+-name = "thiserror-impl"
+-version = "1.0.69"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
+-dependencies = [
+- "proc-macro2",
+- "quote",
+- "syn",
+-]
+-
+ [[package]]
+ name = "thread_local"
+ version = "1.1.9"
+@@ -2088,12 +1743,6 @@ dependencies = [
+  "tracing-log",
+ ]
+ 
+-[[package]]
+-name = "typenum"
+-version = "1.19.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
+-
+ [[package]]
+ name = "uds_windows"
+ version = "1.1.0"
+@@ -2112,16 +1761,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
+ 
+ [[package]]
+-name = "unicode-segmentation"
+-version = "1.12.0"
++name = "unicode-width"
++version = "0.2.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
++checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
+ 
+ [[package]]
+-name = "unicode-width"
+-version = "0.1.14"
++name = "uuid"
++version = "1.21.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
++checksum = "b672338555252d43fd2240c714dc444b8c6fb0a5c5335e65a07bba7742735ddb"
++dependencies = [
++ "js-sys",
++ "serde_core",
++ "wasm-bindgen",
++]
+ 
+ [[package]]
+ name = "valuable"
+@@ -2316,15 +1970,6 @@ dependencies = [
+  "windows-targets 0.48.5",
+ ]
+ 
+-[[package]]
+-name = "windows-sys"
+-version = "0.52.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
+-dependencies = [
+- "windows-targets 0.52.6",
+-]
+-
+ [[package]]
+ name = "windows-sys"
+ version = "0.59.0"
+@@ -2553,65 +2198,37 @@ version = "0.46.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
+ 
+-[[package]]
+-name = "xdg-home"
+-version = "1.3.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ec1cdab258fb55c0da61328dc52c8764709b249011b2cad0454c72f0bf10a1f6"
+-dependencies = [
+- "libc",
+- "windows-sys 0.59.0",
+-]
+-
+ [[package]]
+ name = "xml-rs"
+ version = "0.8.27"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "6fd8403733700263c6eb89f192880191f1b83e332f7a20371ddcf421c4a337c7"
+ 
+-[[package]]
+-name = "yansi-term"
+-version = "0.1.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fe5c30ade05e61656247b2e334a031dfd0cc466fadef865bdcdea8d537951bf1"
+-dependencies = [
+- "winapi",
+-]
+-
+ [[package]]
+ name = "zbus"
+-version = "4.4.0"
++version = "5.14.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "bb97012beadd29e654708a0fdb4c84bc046f537aecfde2c3ee0a9e4b4d48c725"
++checksum = "ca82f95dbd3943a40a53cfded6c2d0a2ca26192011846a1810c4256ef92c60bc"
+ dependencies = [
+  "async-broadcast",
+- "async-executor",
+- "async-fs",
+- "async-io",
+- "async-lock",
+- "async-process",
+  "async-recursion",
+- "async-task",
+  "async-trait",
+- "blocking",
+  "enumflags2",
+  "event-listener",
+  "futures-core",
+- "futures-sink",
+- "futures-util",
++ "futures-lite",
+  "hex",
+- "nix 0.29.0",
++ "libc",
+  "ordered-stream",
+- "rand",
++ "rustix",
+  "serde",
+  "serde_repr",
+- "sha1",
+- "static_assertions",
+  "tokio",
+  "tracing",
+  "uds_windows",
+- "windows-sys 0.52.0",
+- "xdg-home",
++ "uuid",
++ "windows-sys 0.61.2",
++ "winnow",
+  "zbus_macros",
+  "zbus_names",
+  "zvariant",
+@@ -2619,25 +2236,27 @@ dependencies = [
+ 
+ [[package]]
+ name = "zbus_macros"
+-version = "4.4.0"
++version = "5.14.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "267db9407081e90bbfa46d841d3cbc60f59c0351838c4bc65199ecd79ab1983e"
++checksum = "897e79616e84aac4b2c46e9132a4f63b93105d54fe8c0e8f6bffc21fa8d49222"
+ dependencies = [
+  "proc-macro-crate",
+  "proc-macro2",
+  "quote",
+  "syn",
++ "zbus_names",
++ "zvariant",
+  "zvariant_utils",
+ ]
+ 
+ [[package]]
+ name = "zbus_names"
+-version = "3.0.0"
++version = "4.3.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4b9b1fef7d021261cc16cba64c351d291b715febe0fa10dc3a443ac5a5022e6c"
++checksum = "ffd8af6d5b78619bab301ff3c560a5bd22426150253db278f164d6cf3b72c50f"
+ dependencies = [
+  "serde",
+- "static_assertions",
++ "winnow",
+  "zvariant",
+ ]
+ 
+@@ -2663,22 +2282,23 @@ dependencies = [
+ 
+ [[package]]
+ name = "zvariant"
+-version = "4.2.0"
++version = "5.10.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2084290ab9a1c471c38fc524945837734fbf124487e105daec2bb57fd48c81fe"
++checksum = "5708299b21903bbe348e94729f22c49c55d04720a004aa350f1f9c122fd2540b"
+ dependencies = [
+  "endi",
+  "enumflags2",
+  "serde",
+- "static_assertions",
++ "winnow",
+  "zvariant_derive",
++ "zvariant_utils",
+ ]
+ 
+ [[package]]
+ name = "zvariant_derive"
+-version = "4.2.0"
++version = "5.10.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "73e2ba546bda683a90652bac4a279bc146adad1386f25379cf73200d2002c449"
++checksum = "5b59b012ebe9c46656f9cc08d8da8b4c726510aef12559da3e5f1bf72780752c"
+ dependencies = [
+  "proc-macro-crate",
+  "proc-macro2",
+@@ -2689,11 +2309,13 @@ dependencies = [
+ 
+ [[package]]
+ name = "zvariant_utils"
+-version = "2.1.0"
++version = "3.3.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c51bcff7cc3dbb5055396bcf774748c3dab426b4b8659046963523cee4808340"
++checksum = "f75c23a64ef8f40f13a6989991e643554d9bef1d682a281160cf0c1bc389c5e9"
+ dependencies = [
+  "proc-macro2",
+  "quote",
++ "serde",
+  "syn",
++ "winnow",
+ ]
+diff --git a/hyprline-bar/Cargo.toml b/hyprline-bar/Cargo.toml
+index 01bacc1..aa0f42d 100644
+--- a/hyprline-bar/Cargo.toml
++++ b/hyprline-bar/Cargo.toml
+@@ -11,12 +11,12 @@ gdk-pixbuf = "0.20"
+ serde = { version = "1.0", features = ["derive"] }
+ serde_json = "1.0"
+ chrono = "0.4"
+-zbus = "4.0"
++zbus = { version = "5", default-features = false, features = ["tokio", "blocking-api"] }
+ async-channel = "2.1"
+ futures = "0.3"
+ futures-util = "0.3"
+ tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "macros", "time"] }
+-pipewire = "0.8"
++pipewire = "0.10"
+ rusqlite = { version = "0.32", features = ["bundled"] }
+ parking_lot = "0.12"
+ notify = "6.1"
+diff --git a/hyprline-bar/src/config/bar_config.rs b/hyprline-bar/src/config/bar_config.rs
+index ee492e0..4b23907 100644
+--- a/hyprline-bar/src/config/bar_config.rs
++++ b/hyprline-bar/src/config/bar_config.rs
+@@ -29,6 +29,7 @@ pub enum WidgetType {
+     KeyboardLayout,
+     SystemResources,
+     Network,
++    Bluetooth,
+     Brightness,
+ }
+ 
+@@ -130,13 +131,21 @@ impl Default for BarConfig {
+         );
+ 
+         widgets.insert(
+-            WidgetType::Brightness,
++            WidgetType::Bluetooth,
+             WidgetConfig {
+                 zone: WidgetZone::Right,
+                 order: 8,
+             },
+         );
+ 
++        widgets.insert(
++            WidgetType::Brightness,
++            WidgetConfig {
++                zone: WidgetZone::Right,
++                order: 9,
++            },
++        );
++
+         Self { widgets }
+     }
+ }
+@@ -145,4 +154,3 @@ pub fn load_bar_config() -> BarConfig {
+     // TODO: В будущем можно загружать из файла конфигурации
+     BarConfig::default()
+ }
+-
+diff --git a/hyprline-bar/src/config/mod.rs b/hyprline-bar/src/config/mod.rs
+index ee86ff9..9391808 100644
+--- a/hyprline-bar/src/config/mod.rs
++++ b/hyprline-bar/src/config/mod.rs
+@@ -7,44 +7,3 @@ pub use widget_config::{
+     NotificationCenterConfig,
+     get_config, save_config, subscribe_config_changes, notify_config_changed
+ };
+-
+-use std::collections::HashMap;
+-
+-pub fn parse_workspace_bindings() -> HashMap<i32, String> {
+-    let mut bindings = HashMap::new();
+-
+-    let config_path = if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
+-        format!("{}/hypr/hyprland.conf", xdg_config)
+-    } else if let Ok(home) = std::env::var("HOME") {
+-        format!("{}/.config/hypr/hyprland.conf", home)
+-    } else {
+-        return bindings;
+-    };
+-
+-    let config_content = match std::fs::read_to_string(&config_path) {
+-        Ok(content) => content,
+-        Err(_) => return bindings,
+-    };
+-
+-    for line in config_content.lines() {
+-        let line = line.trim();
+-
+-        if line.starts_with('#') {
+-            continue;
+-        }
+-
+-        if line.starts_with("bind") && line.contains("workspace") {
+-            let parts: Vec<&str> = line.split(',').collect();
+-            if parts.len() >= 4 {
+-                let key = parts[1].trim().to_uppercase();
+-                let workspace_str = parts[3].trim();
+-                if let Ok(workspace_id) = workspace_str.parse::<i32>() {
+-                    bindings.insert(workspace_id, key);
+-                }
+-            }
+-        }
+-    }
+-
+-    bindings
+-}
+-
+diff --git a/hyprline-bar/src/config/widget_config.rs b/hyprline-bar/src/config/widget_config.rs
+index 09de4d5..2c5b6fc 100644
+--- a/hyprline-bar/src/config/widget_config.rs
++++ b/hyprline-bar/src/config/widget_config.rs
+@@ -20,6 +20,7 @@ pub enum WidgetType {
+     SystemTray,
+     SystemResources,
+     Network,
++    Bluetooth,
+     Volume,
+     Brightness,
+     Battery,
+@@ -38,6 +39,7 @@ impl WidgetType {
+             WidgetType::SystemTray => "System Tray",
+             WidgetType::SystemResources => "CPU & RAM",
+             WidgetType::Network => "Network",
++            WidgetType::Bluetooth => "Bluetooth",
+             WidgetType::Volume => "Volume",
+             WidgetType::Brightness => "Brightness",
+             WidgetType::Battery => "Battery",
+@@ -56,6 +58,7 @@ impl WidgetType {
+             WidgetType::SystemTray => "󰏖",
+             WidgetType::SystemResources => "󰘚",
+             WidgetType::Network => "󰖩",
++            WidgetType::Bluetooth => "󰂯",
+             WidgetType::Volume => "󰕾",
+             WidgetType::Brightness => "󰃟",
+             WidgetType::Battery => "󰁹",
+@@ -74,6 +77,7 @@ impl WidgetType {
+             WidgetType::SystemTray,
+             WidgetType::SystemResources,
+             WidgetType::Network,
++            WidgetType::Bluetooth,
+             WidgetType::Volume,
+             WidgetType::Brightness,
+             WidgetType::Battery,
+@@ -107,23 +111,92 @@ impl Default for WidgetProfile {
+             name: "Default".to_string(),
+             widgets: vec![
+                 // Left zone
+-                WidgetConfig { widget_type: WidgetType::Menu, enabled: true, position: WidgetPosition::Left, order: 0 },
+-                WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 1 },
+-                WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Left, order: 2 },
+-                WidgetConfig { widget_type: WidgetType::Submap, enabled: true, position: WidgetPosition::Left, order: 3 },
+-
++                WidgetConfig {
++                    widget_type: WidgetType::Menu,
++                    enabled: true,
++                    position: WidgetPosition::Left,
++                    order: 0,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::Workspaces,
++                    enabled: true,
++                    position: WidgetPosition::Left,
++                    order: 1,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::ActiveWindow,
++                    enabled: true,
++                    position: WidgetPosition::Left,
++                    order: 2,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::Submap,
++                    enabled: true,
++                    position: WidgetPosition::Left,
++                    order: 3,
++                },
+                 // Center zone
+-                WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Center, order: 0 },
+-
++                WidgetConfig {
++                    widget_type: WidgetType::DateTime,
++                    enabled: true,
++                    position: WidgetPosition::Center,
++                    order: 0,
++                },
+                 // Right zone
+-                WidgetConfig { widget_type: WidgetType::SystemTray, enabled: true, position: WidgetPosition::Right, order: 0 },
+-                WidgetConfig { widget_type: WidgetType::SystemResources, enabled: true, position: WidgetPosition::Right, order: 1 },
+-                WidgetConfig { widget_type: WidgetType::Network, enabled: true, position: WidgetPosition::Right, order: 2 },
+-                WidgetConfig { widget_type: WidgetType::Volume, enabled: true, position: WidgetPosition::Right, order: 3 },
+-                WidgetConfig { widget_type: WidgetType::KeyboardLayout, enabled: true, position: WidgetPosition::Right, order: 4 },
+-                WidgetConfig { widget_type: WidgetType::Brightness, enabled: true, position: WidgetPosition::Right, order: 5 },
+-                WidgetConfig { widget_type: WidgetType::Battery, enabled: true, position: WidgetPosition::Right, order: 6 },
+-                WidgetConfig { widget_type: WidgetType::Notifications, enabled: true, position: WidgetPosition::Right, order: 7 },
++                WidgetConfig {
++                    widget_type: WidgetType::SystemTray,
++                    enabled: true,
++                    position: WidgetPosition::Right,
++                    order: 0,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::SystemResources,
++                    enabled: true,
++                    position: WidgetPosition::Right,
++                    order: 1,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::Network,
++                    enabled: true,
++                    position: WidgetPosition::Right,
++                    order: 2,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::Bluetooth,
++                    enabled: true,
++                    position: WidgetPosition::Right,
++                    order: 3,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::Volume,
++                    enabled: true,
++                    position: WidgetPosition::Right,
++                    order: 4,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::KeyboardLayout,
++                    enabled: true,
++                    position: WidgetPosition::Right,
++                    order: 5,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::Brightness,
++                    enabled: true,
++                    position: WidgetPosition::Right,
++                    order: 6,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::Battery,
++                    enabled: true,
++                    position: WidgetPosition::Right,
++                    order: 7,
++                },
++                WidgetConfig {
++                    widget_type: WidgetType::Notifications,
++                    enabled: true,
++                    position: WidgetPosition::Right,
++                    order: 8,
++                },
+             ],
+         }
+     }
+@@ -139,9 +212,7 @@ pub struct MonitorConfig {
+ 
+ impl Default for MonitorConfig {
+     fn default() -> Self {
+-        Self {
+-            profile_name: None,
+-        }
++        Self { profile_name: None }
+     }
+ }
+ 
+@@ -238,18 +309,53 @@ impl Default for HyprlineConfig {
+                 WidgetProfile {
+                     name: "Minimal".to_string(),
+                     widgets: vec![
+-                        WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 0 },
+-                        WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Center, order: 0 },
+-                        WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Right, order: 0 },
++                        WidgetConfig {
++                            widget_type: WidgetType::Workspaces,
++                            enabled: true,
++                            position: WidgetPosition::Left,
++                            order: 0,
++                        },
++                        WidgetConfig {
++                            widget_type: WidgetType::ActiveWindow,
++                            enabled: true,
++                            position: WidgetPosition::Center,
++                            order: 0,
++                        },
++                        WidgetConfig {
++                            widget_type: WidgetType::DateTime,
++                            enabled: true,
++                            position: WidgetPosition::Right,
++                            order: 0,
++                        },
+                     ],
+                 },
+                 WidgetProfile {
+                     name: "Secondary Monitor".to_string(),
+                     widgets: vec![
+-                        WidgetConfig { widget_type: WidgetType::Workspaces, enabled: true, position: WidgetPosition::Left, order: 0 },
+-                        WidgetConfig { widget_type: WidgetType::ActiveWindow, enabled: true, position: WidgetPosition::Center, order: 0 },
+-                        WidgetConfig { widget_type: WidgetType::SystemResources, enabled: true, position: WidgetPosition::Right, order: 0 },
+-                        WidgetConfig { widget_type: WidgetType::DateTime, enabled: true, position: WidgetPosition::Right, order: 1 },
++                        WidgetConfig {
++                            widget_type: WidgetType::Workspaces,
++                            enabled: true,
++                            position: WidgetPosition::Left,
++                            order: 0,
++                        },
++                        WidgetConfig {
++                            widget_type: WidgetType::ActiveWindow,
++                            enabled: true,
++                            position: WidgetPosition::Center,
++                            order: 0,
++                        },
++                        WidgetConfig {
++                            widget_type: WidgetType::SystemResources,
++                            enabled: true,
++                            position: WidgetPosition::Right,
++                            order: 0,
++                        },
++                        WidgetConfig {
++                            widget_type: WidgetType::DateTime,
++                            enabled: true,
++                            position: WidgetPosition::Right,
++                            order: 1,
++                        },
+                     ],
+                 },
+             ],
+@@ -296,7 +402,6 @@ impl HyprlineConfig {
+                                 }];
+                                 config.active_profile = "Default".to_string();
+                                 config.widgets.clear();
+-                                // Сохраняем мигрированный конфиг
+                                 let _ = config.save();
+                             }
+ 
+@@ -306,9 +411,63 @@ impl HyprlineConfig {
+                                 config.active_profile = "Default".to_string();
+                             }
+ 
++                            // Миграция: добавляем новые виджеты, которых нет в существующих профилях
++                            let all_types = WidgetType::all();
++                            let default_profile = WidgetProfile::default();
++                            let mut migrated = false;
++
++                            for profile in config.profiles.iter_mut() {
++                                let existing_types: Vec<WidgetType> =
++                                    profile.widgets.iter().map(|w| w.widget_type).collect();
++
++                                for wt in &all_types {
++                                    if !existing_types.contains(wt) {
++                                        // Берём конфигурацию из дефолтного профиля, если есть
++                                        let default_widget = default_profile
++                                            .widgets
++                                            .iter()
++                                            .find(|w| w.widget_type == *wt);
++
++                                        let new_widget = if let Some(dw) = default_widget {
++                                            dw.clone()
++                                        } else {
++                                            // Если нет в дефолте — добавляем выключенным в конец правой зоны
++                                            let max_order = profile
++                                                .widgets
++                                                .iter()
++                                                .filter(|w| w.position == WidgetPosition::Right)
++                                                .map(|w| w.order)
++                                                .max()
++                                                .unwrap_or(-1);
++                                            WidgetConfig {
++                                                widget_type: *wt,
++                                                enabled: false,
++                                                position: WidgetPosition::Right,
++                                                order: max_order + 1,
++                                            }
++                                        };
++
++                                        eprintln!(
++                                            "[Config] Migrating profile '{}': adding widget {:?}",
++                                            profile.name, wt
++                                        );
++                                        profile.widgets.push(new_widget);
++                                        migrated = true;
++                                    }
++                                }
++                            }
++
++                            if migrated {
++                                let _ = config.save();
++                                eprintln!("[Config] ✓ Migration saved");
++                            }
++
+                             eprintln!("[Config] ✓ Loaded from {:?}", path);
+                             eprintln!("[Config] Active profile: {}", config.active_profile);
+-                            eprintln!("[Config] Profiles: {:?}", config.profiles.iter().map(|p| &p.name).collect::<Vec<_>>());
++                            eprintln!(
++                                "[Config] Profiles: {:?}",
++                                config.profiles.iter().map(|p| &p.name).collect::<Vec<_>>()
++                            );
+                             return config;
+                         }
+                         Err(e) => {
+@@ -338,8 +497,7 @@ impl HyprlineConfig {
+         let content = serde_json::to_string_pretty(self)
+             .map_err(|e| format!("Failed to serialize config: {}", e))?;
+ 
+-        fs::write(&path, content)
+-            .map_err(|e| format!("Failed to write config: {}", e))?;
++        fs::write(&path, content).map_err(|e| format!("Failed to write config: {}", e))?;
+ 
+         eprintln!("[Config] ✓ Saved to {:?}", path);
+         Ok(())
+@@ -485,7 +643,8 @@ impl HyprlineConfig {
+     /// Получить виджеты для позиции (для обратной совместимости)
+     pub fn widgets_for_position(&self, position: WidgetPosition) -> Vec<&WidgetConfig> {
+         let profile = self.get_active_profile();
+-        let mut widgets: Vec<_> = profile.widgets
++        let mut widgets: Vec<_> = profile
++            .widgets
+             .iter()
+             .filter(|w| w.enabled && w.position == position)
+             .collect();
+@@ -495,14 +654,27 @@ impl HyprlineConfig {
+ 
+     /// Получить конфигурацию виджета по типу
+     pub fn get_widget(&self, widget_type: WidgetType) -> Option<&WidgetConfig> {
+-        self.get_active_profile().widgets.iter().find(|w| w.widget_type == widget_type)
++        self.get_active_profile()
++            .widgets
++            .iter()
++            .find(|w| w.widget_type == widget_type)
+     }
+ 
+     /// Обновить конфигурацию виджета
+-    pub fn update_widget(&mut self, widget_type: WidgetType, enabled: bool, position: WidgetPosition, order: i32) {
++    pub fn update_widget(
++        &mut self,
++        widget_type: WidgetType,
++        enabled: bool,
++        position: WidgetPosition,
++        order: i32,
++    ) {
+         let active_profile = self.active_profile.clone();
+         if let Some(profile) = self.get_profile_mut(&active_profile) {
+-            if let Some(widget) = profile.widgets.iter_mut().find(|w| w.widget_type == widget_type) {
++            if let Some(widget) = profile
++                .widgets
++                .iter_mut()
++                .find(|w| w.widget_type == widget_type)
++            {
+                 widget.enabled = enabled;
+                 widget.position = position;
+                 widget.order = order;
+@@ -519,15 +691,13 @@ impl HyprlineConfig {
+ }
+ 
+ /// Глобальный экземпляр конфигурации
+-use std::sync::{RwLock, OnceLock, Mutex};
++use std::sync::{Mutex, OnceLock, RwLock};
+ 
+ static CONFIG: OnceLock<RwLock<HyprlineConfig>> = OnceLock::new();
+ static CONFIG_CHANGE_CALLBACKS: OnceLock<Mutex<Vec<Box<dyn Fn() + Send + Sync>>>> = OnceLock::new();
+ 
+ pub fn get_config() -> &'static RwLock<HyprlineConfig> {
+-    CONFIG.get_or_init(|| {
+-        RwLock::new(HyprlineConfig::load())
+-    })
++    CONFIG.get_or_init(|| RwLock::new(HyprlineConfig::load()))
+ }
+ 
+ pub fn save_config() -> Result<(), String> {
+@@ -556,4 +726,3 @@ pub fn notify_config_changed() {
+         }
+     }
+ }
+-
+diff --git a/hyprline-bar/src/domain/mod.rs b/hyprline-bar/src/domain/mod.rs
+index 7bb255f..f741c3b 100644
+--- a/hyprline-bar/src/domain/mod.rs
++++ b/hyprline-bar/src/domain/mod.rs
+@@ -1,14 +1,14 @@
+-pub mod models;
+-pub mod workspace_service;
+-pub mod system_tray_service;
+-pub mod datetime_service;
+-pub mod status_notifier_watcher_service;
+ pub mod battery_service;
+-pub mod volume_service;
+-pub mod notification_service;
++pub mod bluetooth_service;
++pub mod brightness_service;
++pub mod datetime_service;
+ pub mod keyboard_layout_service;
+-pub mod system_resources_service;
++pub mod models;
+ pub mod network_service;
+-pub mod brightness_service;
++pub mod notification_service;
++pub mod status_notifier_watcher_service;
+ pub mod submap_service;
+-
++pub mod system_resources_service;
++pub mod system_tray_service;
++pub mod volume_service;
++pub mod workspace_service;
+diff --git a/hyprline-bar/src/domain/models.rs b/hyprline-bar/src/domain/models.rs
+index 48e6323..6a8eb1c 100644
+--- a/hyprline-bar/src/domain/models.rs
++++ b/hyprline-bar/src/domain/models.rs
+@@ -1,4 +1,5 @@
+ use serde::Deserialize;
++use std::fmt;
+ 
+ #[derive(Debug, Deserialize, Clone)]
+ pub struct Workspace {
+@@ -68,11 +69,11 @@ pub struct MenuItem {
+     pub enabled: bool,
+     pub visible: bool,
+     pub is_separator: bool,
+-    pub toggle_type: Option<String>,  // "checkmark" or "radio"
+-    pub toggle_state: i32,            // 0 = off, 1 = on, -1 = indeterminate
++    pub toggle_type: Option<String>, // "checkmark" or "radio"
++    pub toggle_state: i32,           // 0 = off, 1 = on, -1 = indeterminate
+     pub icon_name: Option<String>,
+     pub icon_data: Option<Vec<u8>>,
+-    pub children: Vec<MenuItem>,      // Для подменю
++    pub children: Vec<MenuItem>, // Для подменю
+ }
+ 
+ // DateTime models
+@@ -131,7 +132,7 @@ pub enum BatteryStatus {
+ // Volume models
+ #[derive(Debug, Clone, PartialEq)]
+ pub struct VolumeInfo {
+-    pub volume: u8,      // 0-100
++    pub volume: u8, // 0-100
+     pub muted: bool,
+ }
+ 
+@@ -194,8 +195,8 @@ pub enum WiFiSecurity {
+ // System resources models
+ #[derive(Debug, Clone)]
+ pub struct SystemResources {
+-    pub cpu_usage: f32,     // 0.0 - 100.0
+-    pub memory_usage: f32,  // 0.0 - 100.0
++    pub cpu_usage: f32,    // 0.0 - 100.0
++    pub memory_usage: f32, // 0.0 - 100.0
+     pub memory_used_gb: f32,
+     pub memory_total_gb: f32,
+ }
+@@ -209,6 +210,54 @@ pub struct KeyboardLayout {
+     pub full_name: String,
+ }
+ 
++// Bluetooth models
++#[derive(Debug, Clone)]
++pub struct BluetoothInfo {
++    pub powered: bool,
++    pub discovering: bool,
++    pub adapter_name: String,
++    pub connected_devices: Vec<BluetoothDevice>,
++}
++
++#[derive(Debug, Clone)]
++pub struct BluetoothDevice {
++    pub address: String,
++    pub name: String,
++    pub alias: String,
++    pub paired: bool,
++    pub connected: bool,
++    pub trusted: bool,
++    pub icon: Option<String>,
++    pub rssi: Option<i16>,
++    pub device_type: BluetoothDeviceType,
++    pub battery_percentage: Option<u8>,
++}
++
++#[derive(Debug, Clone, PartialEq)]
++pub enum BluetoothDeviceType {
++    Audio,
++    Phone,
++    Computer,
++    Keyboard,
++    Mouse,
++    Gamepad,
++    Other,
++}
++
++impl fmt::Display for BluetoothDeviceType {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        match self {
++            BluetoothDeviceType::Audio => write!(f, "Audio"),
++            BluetoothDeviceType::Phone => write!(f, "Phone"),
++            BluetoothDeviceType::Computer => write!(f, "Computer"),
++            BluetoothDeviceType::Keyboard => write!(f, "Keyboard"),
++            BluetoothDeviceType::Mouse => write!(f, "Mouse"),
++            BluetoothDeviceType::Gamepad => write!(f, "Gamepad"),
++            BluetoothDeviceType::Other => write!(f, "Other"),
++        }
++    }
++}
++
+ // Submap models
+ #[derive(Debug, Clone, PartialEq)]
+ pub struct SubmapInfo {
+@@ -246,4 +295,3 @@ pub struct SubmapBinding {
+     /// Человекочитаемое название из комментария #$name = ...
+     pub display_name: Option<String>,
+ }
+-
+diff --git a/hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs b/hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs
+index 212d4df..521f219 100644
+--- a/hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs
++++ b/hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs
+@@ -1,8 +1,8 @@
+ use crate::domain::status_notifier_watcher_service::StatusNotifierWatcherService;
+-use zbus::{ConnectionBuilder, interface};
+-use std::sync::{Arc, Mutex};
+ use async_channel::Sender;
+ use futures::stream::StreamExt;
++use std::sync::{Arc, Mutex};
++use zbus::{connection, interface, object_server::SignalEmitter};
+ 
+ /// Внутреннее состояние StatusNotifierWatcher
+ #[derive(Clone)]
+@@ -32,7 +32,11 @@ struct StatusNotifierWatcherInterface {
+ #[interface(name = "org.kde.StatusNotifierWatcher")]
+ impl StatusNotifierWatcherInterface {
+     /// Регистрирует новый элемент системного трея
+-    async fn register_status_notifier_item(&mut self, #[zbus(signal_context)] ctx: zbus::SignalContext<'_>, service: String) -> zbus::fdo::Result<()> {
++    async fn register_status_notifier_item(
++        &mut self,
++        #[zbus(signal_context)] ctx: SignalEmitter<'_>,
++        service: String,
++    ) -> zbus::fdo::Result<()> {
+         let should_register = {
+             let mut items = self.state.registered_items.lock().unwrap();
+ 
+@@ -55,7 +59,11 @@ impl StatusNotifierWatcherInterface {
+     }
+ 
+     /// Отменяет регистрацию элемента системного трея
+-    async fn unregister_status_notifier_item(&mut self, #[zbus(signal_context)] ctx: zbus::SignalContext<'_>, service: String) -> zbus::fdo::Result<()> {
++    async fn unregister_status_notifier_item(
++        &mut self,
++        #[zbus(signal_context)] ctx: SignalEmitter<'_>,
++        service: String,
++    ) -> zbus::fdo::Result<()> {
+         let was_removed = {
+             let mut items = self.state.registered_items.lock().unwrap();
+             let before = items.len();
+@@ -70,7 +78,8 @@ impl StatusNotifierWatcherInterface {
+ 
+         if was_removed {
+             // Отправляем D-Bus сигнал
+-            self.status_notifier_item_unregistered(&ctx, &service).await?;
++            self.status_notifier_item_unregistered(&ctx, &service)
++                .await?;
+         }
+ 
+         Ok(())
+@@ -104,24 +113,23 @@ impl StatusNotifierWatcherInterface {
+     #[zbus(signal)]
+     async fn status_notifier_item_registered(
+         &self,
+-        ctx: &zbus::SignalContext<'_>,
++        ctx: &SignalEmitter<'_>,
+         service: &str,
+-    ) -> zbus::Result<()> {}
++    ) -> zbus::Result<()> {
++    }
+ 
+     /// Сигнал: элемент удалён
+     #[zbus(signal)]
+     async fn status_notifier_item_unregistered(
+         &self,
+-        ctx: &zbus::SignalContext<'_>,
++        ctx: &SignalEmitter<'_>,
+         service: &str,
+-    ) -> zbus::Result<()> {}
++    ) -> zbus::Result<()> {
++    }
+ 
+     /// Сигнал: хост зарегистрирован
+     #[zbus(signal)]
+-    async fn status_notifier_host_registered(
+-        &self,
+-        ctx: &zbus::SignalContext<'_>,
+-    ) -> zbus::Result<()> {}
++    async fn status_notifier_host_registered(&self, ctx: &SignalEmitter<'_>) -> zbus::Result<()> {}
+ }
+ 
+ pub struct DbusStatusNotifierWatcher {
+@@ -175,7 +183,13 @@ impl StatusNotifierWatcherService for DbusStatusNotifierWatcher {
+     }
+ 
+     fn get_registered_items(&self) -> Vec<String> {
+-        self.state.lock().unwrap().registered_items.lock().unwrap().clone()
++        self.state
++            .lock()
++            .unwrap()
++            .registered_items
++            .lock()
++            .unwrap()
++            .clone()
+     }
+ 
+     fn stop(&self) -> Result<(), String> {
+@@ -199,14 +213,17 @@ impl StatusNotifierWatcherService for DbusStatusNotifierWatcher {
+     }
+ }
+ 
+-async fn start_watcher_async(state: WatcherState, shutdown_rx: async_channel::Receiver<()>) -> Result<(), Box<dyn std::error::Error>> {
++async fn start_watcher_async(
++    state: WatcherState,
++    shutdown_rx: async_channel::Receiver<()>,
++) -> Result<(), Box<dyn std::error::Error>> {
+     // Создаём интерфейс
+     let interface = StatusNotifierWatcherInterface {
+         state: state.clone(),
+     };
+ 
+     // Регистрируем интерфейс на D-Bus
+-    let conn = ConnectionBuilder::session()?
++    let conn = connection::Builder::session()?
+         .name("org.kde.StatusNotifierWatcher")?
+         .serve_at("/StatusNotifierWatcher", interface)?
+         .build()
+@@ -269,10 +286,10 @@ async fn start_watcher_async(state: WatcherState, shutdown_rx: async_channel::Re
+ 
+                             if let Ok(iface) = iface_ref {
+                                 // Отправляем D-Bus сигнал через интерфейс
+-                                let signal_ctx = iface.signal_context();
++                                let signal_emitter = iface.signal_emitter();
+                                 let _ = iface.get()
+                                     .await
+-                                    .status_notifier_item_unregistered(signal_ctx, &removed_item)
++                                    .status_notifier_item_unregistered(signal_emitter, &removed_item)
+                                     .await;
+                             }
+                         }
+diff --git a/hyprline-bar/src/infrastructure/lumen_brightness.rs b/hyprline-bar/src/infrastructure/lumen_brightness.rs
+index b8c17a1..9714269 100644
+--- a/hyprline-bar/src/infrastructure/lumen_brightness.rs
++++ b/hyprline-bar/src/infrastructure/lumen_brightness.rs
+@@ -1,7 +1,7 @@
+ use crate::domain::brightness_service::BrightnessService;
+-use std::sync::Arc;
+-use zbus::{Connection, proxy};
+ use parking_lot::Mutex;
++use std::sync::Arc;
++use zbus::{proxy, Connection};
+ 
+ #[proxy(
+     interface = "org.lumen.Brightness",
+@@ -48,11 +48,11 @@ trait Lumen {
+     /// Проверить состояние обучения
+     #[zbus(name = "IsLearningEnabled")]
+     async fn is_learning_enabled(&self) -> zbus::Result<bool>;
+-    
++
+     /// Сигнал изменения яркости
+     #[zbus(signal, name = "BrightnessChanged")]
+     fn brightness_changed(&self, value: f64) -> zbus::Result<()>;
+-    
++
+     /// Сигнал изменения состояния автоматической регулировки
+     #[zbus(signal, name = "AutoEnabledChanged")]
+     fn auto_enabled_changed(&self, enabled: bool) -> zbus::Result<()>;
+@@ -69,7 +69,8 @@ impl LumenBrightnessService {
+             .map_err(|e| format!("Failed to create runtime: {}", e))?;
+ 
+         let connection = rt.block_on(async {
+-            Connection::session().await
++            Connection::session()
++                .await
+                 .map_err(|e| format!("Failed to connect to session bus: {}", e))
+         })?;
+ 
+@@ -82,18 +83,39 @@ impl LumenBrightnessService {
+     }
+ 
+     async fn get_proxy(&self) -> Result<LumenProxy<'_>, String> {
+-        LumenProxy::new(&self.connection).await
++        LumenProxy::new(&self.connection)
++            .await
+             .map_err(|e| format!("Failed to create Lumen proxy: {}", e))
+     }
+ 
+     pub fn start_signal_monitoring(self: Arc<Self>) {
+         let callback = self.callback.clone();
+-        let connection = self.connection.clone();
+-        
++
+         std::thread::spawn(move || {
+-            let rt = tokio::runtime::Runtime::new().unwrap();
++            eprintln!("[Brightness] Signal monitoring thread started");
++            let rt = match tokio::runtime::Runtime::new() {
++                Ok(rt) => rt,
++                Err(e) => {
++                    eprintln!("[Brightness] ✗ Failed to create tokio runtime: {}", e);
++                    return;
++                }
++            };
+             rt.block_on(async move {
++                // Создаём свежее подключение к D-Bus в этом потоке/рантайме,
++                // чтобы внутренний event loop zbus был привязан к текущему tokio runtime
++                let connection = match Connection::session().await {
++                    Ok(c) => c,
++                    Err(e) => {
++                        eprintln!(
++                            "[Brightness] ✗ Failed to connect to session bus for monitoring: {}",
++                            e
++                        );
++                        return;
++                    }
++                };
++                eprintln!("[Brightness] Creating proxy for signal monitoring...");
+                 if let Ok(proxy) = LumenProxy::new(&connection).await {
++                    eprintln!("[Brightness] Proxy created successfully");
+                     // Сначала получаем текущее значение яркости
+                     match proxy.get_brightness().await {
+                         Ok(value) => {
+@@ -107,7 +129,7 @@ impl LumenBrightnessService {
+                             eprintln!("[Brightness] ✗ Failed to get initial brightness: {}", e);
+                         }
+                     }
+-                    
++
+                     // Затем подписываемся на изменения
+                     if let Ok(mut stream) = proxy.receive_brightness_changed().await {
+                         eprintln!("[Brightness] ✓ Subscribed to BrightnessChanged signal");
+@@ -129,6 +151,7 @@ impl LumenBrightnessService {
+                 } else {
+                     eprintln!("[Brightness] ✗ Failed to create proxy for signal monitoring");
+                 }
++                eprintln!("[Brightness] Signal monitoring async block exited");
+             });
+         });
+     }
+@@ -141,7 +164,9 @@ impl BrightnessService for LumenBrightnessService {
+ 
+         rt.block_on(async {
+             let proxy = self.get_proxy().await?;
+-            let brightness = proxy.get_brightness().await
++            let brightness = proxy
++                .get_brightness()
++                .await
+                 .map_err(|e| format!("Failed to get brightness: {}", e))?;
+             // Конвертируем f64 (0.0-1.0) в u32 (0-100)
+             Ok((brightness * 100.0).round() as u32)
+@@ -156,7 +181,9 @@ impl BrightnessService for LumenBrightnessService {
+             let proxy = self.get_proxy().await?;
+             // Конвертируем u32 (0-100) в f64 (0.0-1.0)
+             let brightness = (value as f64) / 100.0;
+-            proxy.set_brightness(brightness).await
++            proxy
++                .set_brightness(brightness)
++                .await
+                 .map_err(|e| format!("Failed to set brightness: {}", e))
+         })
+     }
+@@ -169,7 +196,9 @@ impl BrightnessService for LumenBrightnessService {
+             let proxy = self.get_proxy().await?;
+             // Конвертируем u32 (0-100) в f64 (0.0-1.0)
+             let percentage = (percent as f64) / 100.0;
+-            proxy.increase(percentage).await
++            proxy
++                .increase(percentage)
++                .await
+                 .map_err(|e| format!("Failed to increase brightness: {}", e))
+         })
+     }
+@@ -182,7 +211,9 @@ impl BrightnessService for LumenBrightnessService {
+             let proxy = self.get_proxy().await?;
+             // Конвертируем u32 (0-100) в f64 (0.0-1.0)
+             let percentage = (percent as f64) / 100.0;
+-            proxy.decrease(percentage).await
++            proxy
++                .decrease(percentage)
++                .await
+                 .map_err(|e| format!("Failed to decrease brightness: {}", e))
+         })
+     }
+@@ -193,7 +224,9 @@ impl BrightnessService for LumenBrightnessService {
+ 
+         rt.block_on(async {
+             let proxy = self.get_proxy().await?;
+-            proxy.enable_auto().await
++            proxy
++                .enable_auto()
++                .await
+                 .map_err(|e| format!("Failed to enable auto adjustment: {}", e))
+         })
+     }
+@@ -204,7 +237,9 @@ impl BrightnessService for LumenBrightnessService {
+ 
+         rt.block_on(async {
+             let proxy = self.get_proxy().await?;
+-            proxy.disable_auto().await
++            proxy
++                .disable_auto()
++                .await
+                 .map_err(|e| format!("Failed to disable auto adjustment: {}", e))
+         })
+     }
+@@ -215,7 +250,9 @@ impl BrightnessService for LumenBrightnessService {
+ 
+         rt.block_on(async {
+             let proxy = self.get_proxy().await?;
+-            proxy.is_auto_enabled().await
++            proxy
++                .is_auto_enabled()
++                .await
+                 .map_err(|e| format!("Failed to check auto adjustment: {}", e))
+         })
+     }
+@@ -224,4 +261,3 @@ impl BrightnessService for LumenBrightnessService {
+         *self.callback.lock() = Some(callback);
+     }
+ }
+-
+diff --git a/hyprline-bar/src/infrastructure/mod.rs b/hyprline-bar/src/infrastructure/mod.rs
+index 056e472..aa5b7bc 100644
+--- a/hyprline-bar/src/infrastructure/mod.rs
++++ b/hyprline-bar/src/infrastructure/mod.rs
+@@ -1,19 +1,18 @@
+-pub mod hyprland_ipc;
+-pub mod event_listener;
+-pub mod monitor_listener;
+-pub mod status_notifier_tray;
+-pub mod system_datetime;
++pub mod bluez_bluetooth;
+ pub mod dbus_status_notifier_watcher;
+-pub mod system_battery;
+-pub mod pipewire_volume;
++pub mod event_listener;
++pub mod hyprland_ipc;
+ pub mod hyprland_keyboard_layout;
++pub mod hyprland_submap;
+ pub mod keyboard_layout_listener;
+-pub mod system_resources;
+-pub mod networkmanager;
+ pub mod lumen_brightness;
++pub mod monitor_listener;
++pub mod networkmanager;
+ pub mod notification_client;
++pub mod pipewire_volume;
+ pub mod remote_notification_service;
+-pub mod hyprland_submap;
++pub mod status_notifier_tray;
+ pub mod submap_listener;
+-
+-
++pub mod system_battery;
++pub mod system_datetime;
++pub mod system_resources;
+diff --git a/hyprline-bar/src/infrastructure/pipewire_volume.rs b/hyprline-bar/src/infrastructure/pipewire_volume.rs
+index b1f8f5c..c7930ab 100644
+--- a/hyprline-bar/src/infrastructure/pipewire_volume.rs
++++ b/hyprline-bar/src/infrastructure/pipewire_volume.rs
+@@ -1,8 +1,8 @@
+ use crate::domain::models::VolumeInfo;
+ use crate::domain::volume_service::VolumeService;
++use async_channel::Sender;
+ use std::process::Command;
+ use std::sync::{Arc, Mutex};
+-use async_channel::Sender;
+ use std::thread;
+ 
+ pub struct PipewireVolume {
+@@ -38,16 +38,29 @@ impl PipewireVolume {
+     }
+ 
+     /// Мониторинг событий PipeWire через API с подпиской на изменения
+-    fn monitor_pipewire_events(current_info: Arc<Mutex<Option<VolumeInfo>>>, update_txs: Arc<Mutex<Vec<Sender<()>>>>) {
++    fn monitor_pipewire_events(
++        current_info: Arc<Mutex<Option<VolumeInfo>>>,
++        update_txs: Arc<Mutex<Vec<Sender<()>>>>,
++    ) {
++        if let Err(error) = Self::run_pipewire_monitor(current_info, update_txs) {
++            eprintln!("Failed to monitor PipeWire events: {error}");
++        }
++    }
++
++    fn run_pipewire_monitor(
++        current_info: Arc<Mutex<Option<VolumeInfo>>>,
++        update_txs: Arc<Mutex<Vec<Sender<()>>>>,
++    ) -> Result<(), pipewire::Error> {
+         use pipewire as pw;
++        use pw::{context::ContextBox, main_loop::MainLoopBox};
+ 
+         // Инициализируем PipeWire
+         pw::init();
+ 
+-        let mainloop = pw::main_loop::MainLoop::new(None).expect("Failed to create PipeWire mainloop");
+-        let context = pw::context::Context::new(&mainloop).expect("Failed to create PipeWire context");
+-        let core = context.connect(None).expect("Failed to connect to PipeWire");
+-        let registry = core.get_registry().expect("Failed to get registry");
++        let mainloop = MainLoopBox::new(None)?;
++        let context = ContextBox::new(mainloop.loop_(), None)?;
++        let core = context.connect(None)?;
++        let registry = core.get_registry()?;
+ 
+         let current_info_global = Arc::clone(&current_info);
+         let update_txs_global = Arc::clone(&update_txs);
+@@ -87,6 +100,8 @@ impl PipewireVolume {
+             .register();
+ 
+         mainloop.run();
++
++        Ok(())
+     }
+ 
+     /// Парсит вывод wpctl get-volume для получения громкости
+@@ -220,4 +235,3 @@ impl VolumeService for PipewireVolume {
+ pub fn create_volume_channel() -> (Sender<()>, async_channel::Receiver<()>) {
+     async_channel::unbounded()
+ }
+-
+diff --git a/hyprline-bar/src/main.rs b/hyprline-bar/src/main.rs
+index 9e2eda9..dd11248 100644
+--- a/hyprline-bar/src/main.rs
++++ b/hyprline-bar/src/main.rs
+@@ -4,35 +4,36 @@ mod infrastructure;
+ mod shared_state;
+ mod ui;
+ 
+-use config::parse_workspace_bindings;
+-use domain::workspace_service::WorkspaceService;
+-use domain::system_tray_service::SystemTrayService;
+-use domain::datetime_service::DateTimeService;
+ use domain::battery_service::BatteryService;
+-use domain::volume_service::VolumeService;
+-use domain::notification_service::NotificationService;
++use domain::bluetooth_service::BluetoothService;
++use domain::brightness_service::BrightnessService;
++use domain::datetime_service::DateTimeService;
+ use domain::keyboard_layout_service::KeyboardLayoutService;
+-use domain::system_resources_service::SystemResourcesService;
++use domain::models::DateTimeConfig;
+ use domain::network_service::NetworkService;
+-use domain::brightness_service::BrightnessService;
+-use domain::submap_service::SubmapService;
++use domain::notification_service::NotificationService;
+ use domain::status_notifier_watcher_service::StatusNotifierWatcherService;
+-use domain::models::DateTimeConfig;
+-use infrastructure::hyprland_ipc::HyprlandIpc;
+-use infrastructure::status_notifier_tray::StatusNotifierTrayService;
+-use infrastructure::system_datetime::SystemDateTimeService;
+-use infrastructure::system_battery::SystemBatteryService;
+-use infrastructure::system_resources::LinuxSystemResources;
+-use infrastructure::networkmanager::NetworkManagerService;
++use domain::submap_service::SubmapService;
++use domain::system_resources_service::SystemResourcesService;
++use domain::system_tray_service::SystemTrayService;
++use domain::volume_service::VolumeService;
++use domain::workspace_service::WorkspaceService;
++use infrastructure::bluez_bluetooth::BluezBluetoothService;
+ use infrastructure::dbus_status_notifier_watcher::DbusStatusNotifierWatcher;
+-use infrastructure::remote_notification_service::RemoteNotificationService;
++use infrastructure::hyprland_ipc::HyprlandIpc;
+ use infrastructure::hyprland_keyboard_layout::HyprlandKeyboardLayoutService;
+-use infrastructure::lumen_brightness::LumenBrightnessService;
+ use infrastructure::hyprland_submap::HyprlandSubmapService;
++use infrastructure::lumen_brightness::LumenBrightnessService;
+ use infrastructure::monitor_listener::{start_monitor_listener, MonitorEvent};
++use infrastructure::networkmanager::NetworkManagerService;
++use infrastructure::remote_notification_service::RemoteNotificationService;
++use infrastructure::status_notifier_tray::StatusNotifierTrayService;
++use infrastructure::system_battery::SystemBatteryService;
++use infrastructure::system_datetime::SystemDateTimeService;
++use infrastructure::system_resources::LinuxSystemResources;
++use shared_state::get_shared_state;
+ use ui::bar::Bar;
+ use ui::volume_osd::VolumeOsd;
+-use shared_state::get_shared_state;
+ 
+ use gtk4::prelude::*;
+ use gtk4::{gdk, glib};
+@@ -87,7 +88,11 @@ fn get_layout_full_name(short_name: &str) -> String {
+         "japanese" | "jp" => "JP".to_string(),
+         "korean" | "kr" => "KR".to_string(),
+         "chinese" | "cn" => "CN".to_string(),
+-        _ => short_name.chars().take(2).collect::<String>().to_uppercase(),
++        _ => short_name
++            .chars()
++            .take(2)
++            .collect::<String>()
++            .to_uppercase(),
+     }
+ }
+ 
+@@ -95,22 +100,27 @@ fn build_ui(app: &gtk4::Application) {
+     // Запускаем свой StatusNotifierWatcher D-Bus сервис
+     let watcher_service = Arc::new(DbusStatusNotifierWatcher::new());
+     if let Err(e) = watcher_service.start() {
+-        eprintln!("[Main] Warning: Failed to start StatusNotifierWatcher: {}", e);
++        eprintln!(
++            "[Main] Warning: Failed to start StatusNotifierWatcher: {}",
++            e
++        );
+     }
+-    
++
+     // Даём время сервису зарегистрироваться в D-Bus
+     std::thread::sleep(std::time::Duration::from_millis(200));
+-    
+-    let service: Arc<dyn WorkspaceService + Send + Sync> = Arc::new(HyprlandIpc::new());
+-    
++
++    let hyprland_ipc_impl = Arc::new(HyprlandIpc::new());
++    let service: Arc<dyn WorkspaceService + Send + Sync> = hyprland_ipc_impl.clone();
++
+     // Создаём системный трей сервис
+     let tray_service_impl = Arc::new(StatusNotifierTrayService::new());
+     let tray_service: Arc<dyn SystemTrayService + Send + Sync> = tray_service_impl.clone();
+-    
++
+     // Создаём DateTime сервис
+-    let datetime_service: Arc<dyn DateTimeService + Send + Sync> = Arc::new(SystemDateTimeService::new());
++    let datetime_service: Arc<dyn DateTimeService + Send + Sync> =
++        Arc::new(SystemDateTimeService::new());
+     let datetime_config = DateTimeConfig::default();
+-    
++
+     // Создаём Battery сервис с мониторингом событий
+     let (battery_tx, battery_rx) = async_channel::unbounded();
+     let battery_service_impl = Arc::new(SystemBatteryService::new());
+@@ -134,12 +144,13 @@ fn build_ui(app: &gtk4::Application) {
+         Arc::new(RemoteNotificationService::new());
+ 
+     // Создаём KeyboardLayout сервис
+-    let keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync> = 
++    let keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync> =
+         Arc::new(HyprlandKeyboardLayoutService::new());
+ 
+     // Создаём канал для событий смены раскладки
+-    let (keyboard_layout_tx, keyboard_layout_rx) = infrastructure::keyboard_layout_listener::create_keyboard_layout_channel();
+-    
++    let (keyboard_layout_tx, keyboard_layout_rx) =
++        infrastructure::keyboard_layout_listener::create_keyboard_layout_channel();
++
+     // Запускаем мониторинг событий раскладки
+     infrastructure::keyboard_layout_listener::start_keyboard_layout_listener(keyboard_layout_tx);
+ 
+@@ -151,6 +162,10 @@ fn build_ui(app: &gtk4::Application) {
+     let network_service: Arc<dyn NetworkService + Send + Sync> =
+         Arc::new(NetworkManagerService::new());
+ 
++    // Создаём Bluetooth сервис
++    let bluetooth_service: Arc<dyn BluetoothService + Send + Sync> =
++        Arc::new(BluezBluetoothService::new());
++
+     // Создаём Brightness сервис
+     eprintln!("[Main] Creating brightness service...");
+     let brightness_service_impl = match LumenBrightnessService::new() {
+@@ -164,7 +179,8 @@ fn build_ui(app: &gtk4::Application) {
+             panic!("Cannot create brightness service");
+         }
+     };
+-    let brightness_service: Arc<dyn BrightnessService + Send + Sync> = brightness_service_impl.clone();
++    let brightness_service: Arc<dyn BrightnessService + Send + Sync> =
++        brightness_service_impl.clone();
+ 
+     // Сначала подписываемся на изменения яркости
+     let shared_state_brightness = get_shared_state();
+@@ -187,28 +203,33 @@ fn build_ui(app: &gtk4::Application) {
+ 
+     // Запускаем мониторинг изменений конфига Hyprland для обновления названий биндингов
+     let (config_change_tx, config_change_rx) = async_channel::unbounded::<()>();
+-    submap_service_impl.clone().start_config_monitoring(config_change_tx);
++    submap_service_impl
++        .clone()
++        .start_config_monitoring(config_change_tx);
+ 
+     // Создаём канал для обновлений трея
+     let (tray_tx, tray_rx) = async_channel::unbounded();
+-    
++
+     // Запускаем мониторинг трея
+     tray_service_impl.start_monitoring(tray_tx.clone());
+-    
++
+     // Подключаем обработчик завершения приложения
+     let watcher_service_cleanup = watcher_service.clone();
+     let tray_service_cleanup = tray_service_impl.clone();
+     app.connect_shutdown(move |_| {
+         eprintln!("[Main] Application shutting down...");
+-        
++
+         // Останавливаем мониторинг трея
+         tray_service_cleanup.stop();
+-        
++
+         // Останавливаем StatusNotifierWatcher
+         if let Err(e) = watcher_service_cleanup.stop() {
+-            eprintln!("[Main] Warning: Failed to stop StatusNotifierWatcher: {}", e);
++            eprintln!(
++                "[Main] Warning: Failed to stop StatusNotifierWatcher: {}",
++                e
++            );
+         }
+-        
++
+         eprintln!("[Main] Cleanup completed");
+     });
+ 
+@@ -275,7 +296,11 @@ fn build_ui(app: &gtk4::Application) {
+         let submap_service_clone = submap_service.clone();
+         glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+             while let Ok(submap_name) = submap_rx.try_recv() {
+-                eprintln!("[Main] Submap changed: '{}' (active: {})", submap_name, !submap_name.is_empty());
++                eprintln!(
++                    "[Main] Submap changed: '{}' (active: {})",
++                    submap_name,
++                    !submap_name.is_empty()
++                );
+                 let bindings = submap_service_clone.get_submap_bindings(&submap_name);
+                 eprintln!("[Main] Found {} bindings for submap", bindings.len());
+                 let submap = domain::models::SubmapInfo {
+@@ -346,6 +371,17 @@ fn build_ui(app: &gtk4::Application) {
+         });
+     }
+ 
++    // Централизованное обновление Bluetooth каждые 3 секунды
++    {
++        let shared_state = shared_state.clone();
++        let bluetooth_service = bluetooth_service.clone();
++        glib::timeout_add_local(std::time::Duration::from_secs(3), move || {
++            let info = bluetooth_service.get_bluetooth_info();
++            shared_state.update_bluetooth(info);
++            glib::ControlFlow::Continue
++        });
++    }
++
+     // Инициализация начального состояния
+     if let Some(info) = battery_service.get_battery_info() {
+         shared_state.update_battery(Some(info));
+@@ -365,6 +401,8 @@ fn build_ui(app: &gtk4::Application) {
+     shared_state.update_system_resources(system_resources_service.get_resources());
+     // Инициализация сети
+     shared_state.update_network(network_service.get_current_connection());
++    // Инициализация Bluetooth
++    shared_state.update_bluetooth(bluetooth_service.get_bluetooth_info());
+ 
+     // Подписка на события сервиса уведомлений в реальном времени
+     {
+@@ -387,12 +425,12 @@ fn build_ui(app: &gtk4::Application) {
+                     NotificationEvent::CountChanged(count) => {
+                         let new_count = count as usize;
+                         let old_count = *prev_count_clone.borrow();
+-                        
++
+                         // Если количество увеличилось - пришло новое уведомление
+                         if new_count > old_count && old_count > 0 {
+                             shared_state_for_listener.trigger_notification_alert();
+                         }
+-                        
++
+                         *prev_count_clone.borrow_mut() = new_count;
+                         shared_state_for_listener.update_notifications(new_count);
+                     }
+@@ -412,13 +450,17 @@ fn build_ui(app: &gtk4::Application) {
+         });
+     }
+ 
+-    let workspace_keys = parse_workspace_bindings();
++    let workspace_keys = hyprland_ipc_impl.get_workspace_key_labels();
+     let monitors = service.get_monitors();
+-    eprintln!("[Main] Found {} monitors: {:?}", monitors.len(), monitors.iter().map(|m| &m.name).collect::<Vec<_>>());
++    eprintln!(
++        "[Main] Found {} monitors: {:?}",
++        monitors.len(),
++        monitors.iter().map(|m| &m.name).collect::<Vec<_>>()
++    );
+ 
+     // Создаём bars и храним их для hot reload и динамического управления
+-    let bars: Arc<std::sync::Mutex<Vec<Bar>>> = Arc::new(std::sync::Mutex::new(
+-        if monitors.is_empty() {
++    let bars: Arc<std::sync::Mutex<Vec<Bar>>> =
++        Arc::new(std::sync::Mutex::new(if monitors.is_empty() {
+             eprintln!("[Main] No monitors found, creating default bar");
+             vec![Bar::new(
+                 app,
+@@ -434,33 +476,37 @@ fn build_ui(app: &gtk4::Application) {
+                 keyboard_layout_service.clone(),
+                 system_resources_service.clone(),
+                 network_service.clone(),
++                bluetooth_service.clone(),
+                 brightness_service.clone(),
+                 submap_service.clone(),
+                 shared_state.clone(),
+             )]
+         } else {
+-            monitors.iter().map(|monitor| {
+-                Bar::new(
+-                    app,
+-                    &monitor.name,
+-                    workspace_keys.clone(),
+-                    service.clone(),
+-                    tray_service.clone(),
+-                    datetime_service.clone(),
+-                    datetime_config.clone(),
+-                    battery_service.clone(),
+-                    volume_service.clone(),
+-                    notification_service.clone(),
+-                    keyboard_layout_service.clone(),
+-                    system_resources_service.clone(),
+-                    network_service.clone(),
+-                    brightness_service.clone(),
+-                    submap_service.clone(),
+-                    shared_state.clone(),
+-                )
+-            }).collect()
+-        }
+-    ));
++            monitors
++                .iter()
++                .map(|monitor| {
++                    Bar::new(
++                        app,
++                        &monitor.name,
++                        workspace_keys.clone(),
++                        service.clone(),
++                        tray_service.clone(),
++                        datetime_service.clone(),
++                        datetime_config.clone(),
++                        battery_service.clone(),
++                        volume_service.clone(),
++                        notification_service.clone(),
++                        keyboard_layout_service.clone(),
++                        system_resources_service.clone(),
++                        network_service.clone(),
++                        bluetooth_service.clone(),
++                        brightness_service.clone(),
++                        submap_service.clone(),
++                        shared_state.clone(),
++                    )
++                })
++                .collect()
++        }));
+ 
+     // Подписка на изменения конфигурации для hot reload
+     {
+@@ -504,6 +550,7 @@ fn build_ui(app: &gtk4::Application) {
+         let keyboard_layout_service_clone = keyboard_layout_service.clone();
+         let system_resources_service_clone = system_resources_service.clone();
+         let network_service_clone = network_service.clone();
++        let bluetooth_service_clone = bluetooth_service.clone();
+         let brightness_service_clone = brightness_service.clone();
+         let submap_service_clone = submap_service.clone();
+         let shared_state_clone = shared_state.clone();
+@@ -526,52 +573,62 @@ fn build_ui(app: &gtk4::Application) {
+                         let keyboard_layout_service = keyboard_layout_service_clone.clone();
+                         let system_resources_service = system_resources_service_clone.clone();
+                         let network_service = network_service_clone.clone();
++                        let bluetooth_service = bluetooth_service_clone.clone();
+                         let brightness_service = brightness_service_clone.clone();
+                         let submap_service = submap_service_clone.clone();
+                         let shared_state = shared_state_clone.clone();
+ 
+-                        glib::timeout_add_local_once(std::time::Duration::from_millis(300), move || {
+-                            let mut bars = bars_clone.lock().unwrap();
+-
+-                            // Проверяем, нет ли уже бара для этого монитора
+-                            if bars.iter().any(|b| b.monitor_name() == monitor_name) {
+-                                eprintln!("[Main] Bar for monitor {} already exists", monitor_name);
+-                                return;
+-                            }
+-
+-                            eprintln!("[Main] Creating bar for new monitor: {}", monitor_name);
+-
+-                            let bar = Bar::new(
+-                                &app,
+-                                &monitor_name,
+-                                workspace_keys,
+-                                service,
+-                                tray_service,
+-                                datetime_service,
+-                                datetime_config,
+-                                battery_service,
+-                                volume_service,
+-                                notification_service,
+-                                keyboard_layout_service,
+-                                system_resources_service,
+-                                network_service,
+-                                brightness_service,
+-                                submap_service,
+-                                shared_state,
+-                            );
+-
+-                            bar.setup_event_listener();
+-                            bar.present();
+-                            bars.push(bar);
+-
+-                            eprintln!("[Main] ✓ Bar created for monitor: {}", monitor_name);
+-                        });
++                        glib::timeout_add_local_once(
++                            std::time::Duration::from_millis(300),
++                            move || {
++                                let mut bars = bars_clone.lock().unwrap();
++
++                                // Проверяем, нет ли уже бара для этого монитора
++                                if bars.iter().any(|b| b.monitor_name() == monitor_name) {
++                                    eprintln!(
++                                        "[Main] Bar for monitor {} already exists",
++                                        monitor_name
++                                    );
++                                    return;
++                                }
++
++                                eprintln!("[Main] Creating bar for new monitor: {}", monitor_name);
++
++                                let bar = Bar::new(
++                                    &app,
++                                    &monitor_name,
++                                    workspace_keys,
++                                    service,
++                                    tray_service,
++                                    datetime_service,
++                                    datetime_config,
++                                    battery_service,
++                                    volume_service,
++                                    notification_service,
++                                    keyboard_layout_service,
++                                    system_resources_service,
++                                    network_service,
++                                    bluetooth_service,
++                                    brightness_service,
++                                    submap_service,
++                                    shared_state,
++                                );
++
++                                bar.setup_event_listener();
++                                bar.present();
++                                bars.push(bar);
++
++                                eprintln!("[Main] ✓ Bar created for monitor: {}", monitor_name);
++                            },
++                        );
+                     }
+                     MonitorEvent::Removed(monitor_name) => {
+                         let mut bars = bars_for_monitors.lock().unwrap();
+ 
+                         // Находим и удаляем бар для этого монитора
+-                        if let Some(pos) = bars.iter().position(|b| b.monitor_name() == monitor_name) {
++                        if let Some(pos) =
++                            bars.iter().position(|b| b.monitor_name() == monitor_name)
++                        {
+                             eprintln!("[Main] Removing bar for monitor: {}", monitor_name);
+                             let bar = bars.remove(pos);
+                             bar.close();
+diff --git a/hyprline-bar/src/shared_state.rs b/hyprline-bar/src/shared_state.rs
+index 92cd2c8..2884700 100644
+--- a/hyprline-bar/src/shared_state.rs
++++ b/hyprline-bar/src/shared_state.rs
+@@ -1,4 +1,7 @@
+-use crate::domain::models::{BatteryInfo, KeyboardLayout, NetworkConnection, SubmapInfo, SystemResources, TrayItem, VolumeInfo};
++use crate::domain::models::{
++    BatteryInfo, BluetoothInfo, KeyboardLayout, NetworkConnection, SubmapInfo, SystemResources,
++    TrayItem, VolumeInfo,
++};
+ use std::sync::{Arc, Mutex, RwLock};
+ 
+ /// Тип callback-функции для обновления виджетов
+@@ -11,7 +14,9 @@ struct Callbacks {
+ 
+ impl Callbacks {
+     fn new() -> Self {
+-        Self { callbacks: Vec::new() }
++        Self {
++            callbacks: Vec::new(),
++        }
+     }
+ 
+     fn add(&mut self, callback: UpdateCallback) {
+@@ -38,6 +43,7 @@ pub struct SharedState {
+     pub brightness: RwLock<u32>,
+     pub system_resources: RwLock<Option<SystemResources>>,
+     pub network_connection: RwLock<Option<NetworkConnection>>,
++    pub bluetooth_info: RwLock<Option<BluetoothInfo>>,
+     pub submap: RwLock<SubmapInfo>,
+ 
+     // Callback-и для обновления UI
+@@ -50,6 +56,7 @@ pub struct SharedState {
+     brightness_callbacks: Mutex<Callbacks>,
+     system_resources_callbacks: Mutex<Callbacks>,
+     network_callbacks: Mutex<Callbacks>,
++    bluetooth_callbacks: Mutex<Callbacks>,
+     config_changed_callbacks: Mutex<Callbacks>,
+     submap_callbacks: Mutex<Callbacks>,
+ }
+@@ -67,6 +74,7 @@ impl SharedState {
+             brightness: RwLock::new(100),
+             system_resources: RwLock::new(None),
+             network_connection: RwLock::new(None),
++            bluetooth_info: RwLock::new(None),
+             submap: RwLock::new(SubmapInfo::default()),
+             battery_callbacks: Mutex::new(Callbacks::new()),
+             volume_callbacks: Mutex::new(Callbacks::new()),
+@@ -77,6 +85,7 @@ impl SharedState {
+             brightness_callbacks: Mutex::new(Callbacks::new()),
+             system_resources_callbacks: Mutex::new(Callbacks::new()),
+             network_callbacks: Mutex::new(Callbacks::new()),
++            bluetooth_callbacks: Mutex::new(Callbacks::new()),
+             config_changed_callbacks: Mutex::new(Callbacks::new()),
+             submap_callbacks: Mutex::new(Callbacks::new()),
+         }
+@@ -96,7 +105,10 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.battery_callbacks.lock().unwrap().add(Box::new(callback));
++        self.battery_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ 
+     // === Volume ===
+@@ -113,7 +125,10 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.volume_callbacks.lock().unwrap().add(Box::new(callback));
++        self.volume_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ 
+     // === Tray ===
+@@ -147,7 +162,10 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.keyboard_layout_callbacks.lock().unwrap().add(Box::new(callback));
++        self.keyboard_layout_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ 
+     // === Notifications ===
+@@ -174,13 +192,19 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.notification_callbacks.lock().unwrap().add(Box::new(callback));
++        self.notification_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ 
+     // === Notification Alert (для моргания) ===
+     pub fn trigger_notification_alert(&self) {
+         *self.notification_alert.write().unwrap() = true;
+-        self.notification_alert_callbacks.lock().unwrap().notify_all();
++        self.notification_alert_callbacks
++            .lock()
++            .unwrap()
++            .notify_all();
+     }
+ 
+     pub fn clear_notification_alert(&self) {
+@@ -195,7 +219,10 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.notification_alert_callbacks.lock().unwrap().add(Box::new(callback));
++        self.notification_alert_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ 
+     // === Brightness ===
+@@ -212,7 +239,10 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.brightness_callbacks.lock().unwrap().add(Box::new(callback));
++        self.brightness_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ 
+     // === System Resources ===
+@@ -229,7 +259,10 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.system_resources_callbacks.lock().unwrap().add(Box::new(callback));
++        self.system_resources_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ 
+     // === Network ===
+@@ -246,7 +279,30 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.network_callbacks.lock().unwrap().add(Box::new(callback));
++        self.network_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
++    }
++
++    // === Bluetooth ===
++    pub fn update_bluetooth(&self, info: Option<BluetoothInfo>) {
++        *self.bluetooth_info.write().unwrap() = info;
++        self.bluetooth_callbacks.lock().unwrap().notify_all();
++    }
++
++    pub fn get_bluetooth(&self) -> Option<BluetoothInfo> {
++        self.bluetooth_info.read().unwrap().clone()
++    }
++
++    pub fn subscribe_bluetooth<F>(&self, callback: F)
++    where
++        F: Fn() + Send + Sync + 'static,
++    {
++        self.bluetooth_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ 
+     // === Config Changed ===
+@@ -258,7 +314,10 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.config_changed_callbacks.lock().unwrap().add(Box::new(callback));
++        self.config_changed_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ 
+     // === Submap ===
+@@ -275,7 +334,10 @@ impl SharedState {
+     where
+         F: Fn() + Send + Sync + 'static,
+     {
+-        self.submap_callbacks.lock().unwrap().add(Box::new(callback));
++        self.submap_callbacks
++            .lock()
++            .unwrap()
++            .add(Box::new(callback));
+     }
+ }
+ 
+@@ -289,6 +351,7 @@ impl Default for SharedState {
+ static SHARED_STATE: std::sync::OnceLock<Arc<SharedState>> = std::sync::OnceLock::new();
+ 
+ pub fn get_shared_state() -> Arc<SharedState> {
+-    SHARED_STATE.get_or_init(|| Arc::new(SharedState::new())).clone()
++    SHARED_STATE
++        .get_or_init(|| Arc::new(SharedState::new()))
++        .clone()
+ }
+-
+diff --git a/hyprline-bar/src/styles.css b/hyprline-bar/src/styles.css
+index 985c126..c3c20f6 100644
+--- a/hyprline-bar/src/styles.css
++++ b/hyprline-bar/src/styles.css
+@@ -3,7 +3,7 @@ window.window {
+     /* padding управляется через конфиг */
+     font-size: 1rem;
+     line-height: 1rem;
+-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
++    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+ }
+ 
+ /* Табличные цифры - все цифры одинаковой ширины */
+@@ -27,7 +27,7 @@ popover.background {
+ }
+ 
+ popover > contents {
+-    background: #000000AA;
++    background: #000000aa;
+     border: none;
+     border-radius: 4px;
+     padding: 0;
+@@ -37,7 +37,7 @@ popover > contents {
+ .main-button {
+     min-height: 22px;
+     /*min-width: 28px;*/
+-    background: #000000AA;
++    background: #000000aa;
+     border: none;
+     border-radius: 4px;
+ }
+@@ -82,7 +82,7 @@ popover > contents {
+ 
+ /* Workspaces section */
+ box.workspaces {
+-    background: #000000AA;
++    background: #000000aa;
+     border-radius: 4px;
+ }
+ 
+@@ -108,7 +108,7 @@ box.workspaces {
+ 
+ /* Active window title */
+ .active-window {
+-    background: #000000AA;
++    background: #000000aa;
+     color: #ffffff;
+     padding: 0 10px;
+     /* spacing управляется через конфиг */
+@@ -129,7 +129,7 @@ box.zone-right {
+ 
+ /* DateTime widget */
+ .datetime-button {
+-    background: #000000AA;
++    background: #000000aa;
+     border: none;
+     border-radius: 4px;
+     padding: 0 10px;
+@@ -210,7 +210,7 @@ box.zone-right {
+ 
+ /* System Tray */
+ .system-tray {
+-    background: #000000AA;
++    background: #000000aa;
+     border-radius: 4px;
+     /* spacing управляется через конфиг */
+     padding: 0 10px;
+@@ -312,7 +312,7 @@ box.zone-right {
+ 
+ /* Battery Widget */
+ .battery-widget {
+-    background: #000000AA;
++    background: #000000aa;
+     border-radius: 4px;
+     /* spacing управляется через конфиг */
+     padding: 0 10px;
+@@ -368,7 +368,7 @@ box.zone-right {
+ 
+ /* Volume Widget */
+ .volume-widget {
+-    background: #000000AA;
++    background: #000000aa;
+     border-radius: 4px;
+     /* spacing управляется через конфиг */
+     padding: 0 10px;
+@@ -407,7 +407,7 @@ box.zone-right {
+ }
+ 
+ .volume-popover {
+-    background: #000000DD;
++    background: #000000dd;
+     padding: 8px;
+     border-radius: 4px;
+ }
+@@ -436,7 +436,7 @@ box.zone-right {
+ 
+ /* Notification Widget */
+ .notification-button {
+-    background: #000000AA;
++    background: #000000aa;
+     border-radius: 4px;
+     /* spacing управляется через конфиг */
+     padding: 0 10px;
+@@ -444,8 +444,8 @@ box.zone-right {
+ 
+ /* Анимация моргания при новом уведомлении */
+ .notification-button.notification-alert {
+-    background: #4CAF50;
+-    box-shadow: 0 0 8px #4CAF50;
++    background: #4caf50;
++    box-shadow: 0 0 8px #4caf50;
+ }
+ 
+ .notification-button.notification-alert .notification-icon {
+@@ -473,7 +473,7 @@ box.zone-right {
+ 
+ /* Notification Center Window (layer-shell) */
+ .notification-center-window {
+-    background: #000000EE;
++    background: #000000ee;
+ }
+ 
+ /* Notification History Popover */
+@@ -690,7 +690,7 @@ box.zone-right {
+ 
+ /* Keyboard Layout Widget */
+ .keyboard-layout {
+-    background: #000000AA;
++    background: #000000aa;
+     border-radius: 4px;
+     /* spacing управляется через конфиг */
+     padding: 0 12px;
+@@ -702,7 +702,7 @@ box.zone-right {
+ 
+ /* Submap Widget */
+ .submap-widget {
+-    background: #FF5722AA;
++    background: #ff5722aa;
+     border-radius: 4px;
+     /* spacing управляется через конфиг */
+     padding: 4px 12px;
+@@ -741,13 +741,13 @@ box.zone-right {
+ 
+ .submap-key-inline {
+     font-family: monospace;
+-    color: #FFD700;
++    color: #ffd700;
+     font-size: 12px;
+     font-weight: bold;
+ }
+ 
+ .submap-action-inline {
+-    color: #ffffffCC;
++    color: #ffffffcc;
+     font-size: 11px;
+ }
+ 
+@@ -765,7 +765,7 @@ box.zone-right {
+ 
+ /* System Resources Widget */
+ .system-resources-widget {
+-    background: #000000AA;
++    background: #000000aa;
+     border-radius: 4px;
+     /* spacing управляется через конфиг */
+     padding: 4px 12px;
+@@ -776,11 +776,11 @@ box.zone-right {
+ }
+ 
+ .cpu-icon {
+-    color: #4CAF50;
++    color: #4caf50;
+ }
+ 
+ .ram-icon {
+-    color: #2196F3;
++    color: #2196f3;
+ }
+ 
+ .system-resources-value {
+@@ -789,11 +789,11 @@ box.zone-right {
+ }
+ 
+ .cpu-value {
+-    color: #81C784;
++    color: #81c784;
+ }
+ 
+ .ram-value {
+-    color: #64B5F6;
++    color: #64b5f6;
+ }
+ 
+ .system-resources-separator {
+@@ -804,30 +804,30 @@ box.zone-right {
+ 
+ /* CPU usage level colors */
+ .cpu-high .cpu-value {
+-    color: #EF5350;
++    color: #ef5350;
+     font-weight: bold;
+ }
+ 
+ .cpu-medium .cpu-value {
+-    color: #FFA726;
++    color: #ffa726;
+ }
+ 
+ .cpu-low .cpu-value {
+-    color: #81C784;
++    color: #81c784;
+ }
+ 
+ /* RAM usage level colors */
+ .ram-high .ram-value {
+-    color: #EF5350;
++    color: #ef5350;
+     font-weight: bold;
+ }
+ 
+ .ram-medium .ram-value {
+-    color: #FFA726;
++    color: #ffa726;
+ }
+ 
+ .ram-low .ram-value {
+-    color: #64B5F6;
++    color: #64b5f6;
+ }
+ 
+ /* Volume OSD (On-Screen Display) */
+@@ -836,7 +836,7 @@ box.zone-right {
+ }
+ 
+ .volume-osd {
+-    background: #000000DD;
++    background: #000000dd;
+     border-radius: 8px;
+     padding: 16px 12px;
+     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+@@ -868,18 +868,18 @@ box.zone-right {
+ }
+ 
+ .volume-osd-progress progress {
+-    background: linear-gradient(to top, #4CAF50, #8BC34A);
++    background: linear-gradient(to top, #4caf50, #8bc34a);
+     border-radius: 4px;
+     min-width: 8px;
+ }
+ 
+ .volume-osd-progress.volume-osd-muted progress {
+-    background: #EF5350;
++    background: #ef5350;
+ }
+ 
+ /* Network Widget */
+ .network-widget {
+-    background: #000000AA;
++    background: #000000aa;
+     border-radius: 4px;
+     /* spacing управляется через конфиг */
+     padding: 4px 12px;
+@@ -892,7 +892,7 @@ box.zone-right {
+ 
+ .network-icon {
+     font-size: 16px;
+-    color: #4CAF50;
++    color: #4caf50;
+ }
+ 
+ .network-info {
+@@ -928,7 +928,7 @@ box.zone-right {
+ 
+ .connection-icon {
+     font-size: 18px;
+-    color: #4CAF50;
++    color: #4caf50;
+ }
+ 
+ .connection-name {
+@@ -940,14 +940,14 @@ box.zone-right {
+ .refresh-button {
+     margin-top: 8px;
+     padding: 8px 16px;
+-    background: #2196F3;
++    background: #2196f3;
+     color: #ffffff;
+     border: none;
+     border-radius: 4px;
+ }
+ 
+ .refresh-button:hover {
+-    background: #1976D2;
++    background: #1976d2;
+ }
+ 
+ .loading-label,
+@@ -977,7 +977,7 @@ box.zone-right {
+ 
+ .network-item-icon {
+     font-size: 16px;
+-    color: #4CAF50;
++    color: #4caf50;
+     margin-right: 8px;
+ }
+ 
+@@ -988,7 +988,7 @@ box.zone-right {
+ 
+ .security-icon {
+     font-size: 12px;
+-    color: #FFB74D;
++    color: #ffb74d;
+     margin-right: 8px;
+ }
+ 
+@@ -999,7 +999,7 @@ box.zone-right {
+ 
+ /* Brightness Widget */
+ .brightness-widget {
+-    background: #000000AA;
++    background: #000000aa;
+     border-radius: 4px;
+     /* spacing управляется через конфиг */
+     padding: 0 10px;
+@@ -1025,22 +1025,22 @@ box.zone-right {
+ 
+ .brightness-low .brightness-icon,
+ .brightness-low .brightness-percentage {
+-    color: #FFA726;
++    color: #ffa726;
+ }
+ 
+ .brightness-medium .brightness-icon,
+ .brightness-medium .brightness-percentage {
+-    color: #FFD54F;
++    color: #ffd54f;
+ }
+ 
+ .brightness-high .brightness-icon,
+ .brightness-high .brightness-percentage {
+-    color: #FFF59D;
++    color: #fff59d;
+ }
+ 
+ .brightness-full .brightness-icon,
+ .brightness-full .brightness-percentage {
+-    color: #FFEB3B;
++    color: #ffeb3b;
+ }
+ 
+ /* Brightness Popover */
+@@ -1073,7 +1073,7 @@ box.zone-right {
+ }
+ 
+ .brightness-slider highlight {
+-    background: linear-gradient(to right, #FFA726, #FFEB3B);
++    background: linear-gradient(to right, #ffa726, #ffeb3b);
+     border-radius: 2px;
+ }
+ 
+@@ -1092,12 +1092,12 @@ box.zone-right {
+ 
+ /* ===== Settings Window Styles ===== */
+ .settings-window {
+-    background: #000000DD;
++    background: #000000dd;
+ }
+ 
+ /* HeaderBar для окна настроек */
+ headerbar {
+-    background: #000000DD;
++    background: #000000dd;
+     border: none;
+     box-shadow: none;
+     min-height: 40px;
+@@ -1429,3 +1429,144 @@ headerbar windowcontrols button.close:hover image {
+     background: #66bbff;
+ }
+ 
++/* Bluetooth Widget */
++.bluetooth-widget {
++    background: #000000aa;
++    border-radius: 4px;
++    padding: 4px 12px;
++    cursor: pointer;
++}
++
++.bluetooth-widget:hover {
++    background: #ffffff20;
++}
++
++.bluetooth-icon {
++    font-size: 16px;
++    color: #2196f3;
++}
++
++.bluetooth-connected {
++    color: #4caf50;
++}
++
++.bluetooth-off {
++    color: #666666;
++}
++
++/* Bluetooth Popover */
++.bluetooth-popover {
++    background: transparent;
++}
++
++.bluetooth-title {
++    font-size: 16px;
++    font-weight: bold;
++    color: #ffffff;
++}
++
++.bluetooth-connected-list {
++    padding: 4px 0;
++}
++
++.bluetooth-no-devices {
++    padding: 12px;
++    font-size: 13px;
++    color: #888888;
++    font-style: italic;
++}
++
++/* Bluetooth Device Items */
++.bluetooth-device-item {
++    padding: 8px 8px;
++    background: transparent;
++    border-radius: 4px;
++}
++
++.bluetooth-device-item:hover {
++    background: #ffffff10;
++}
++
++.bluetooth-device-connected {
++    background: #ffffff08;
++}
++
++.bluetooth-device-icon {
++    font-size: 18px;
++    color: #2196f3;
++    min-width: 24px;
++}
++
++.bluetooth-device-connected .bluetooth-device-icon {
++    color: #4caf50;
++}
++
++.bluetooth-device-name {
++    font-size: 14px;
++    font-weight: 500;
++    color: #ffffff;
++}
++
++.bluetooth-device-status {
++    font-size: 11px;
++    color: #aaaaaa;
++}
++
++/* Bluetooth Action Buttons */
++.bluetooth-connect-button,
++.bluetooth-disconnect-button,
++.bluetooth-pair-button {
++    padding: 4px 12px;
++    border: none;
++    border-radius: 4px;
++    font-size: 12px;
++    min-height: 28px;
++}
++
++.bluetooth-connect-button {
++    background: #2196f3;
++    color: #ffffff;
++}
++
++.bluetooth-connect-button:hover {
++    background: #1976d2;
++}
++
++.bluetooth-disconnect-button {
++    background: #f4433620;
++    color: #f44336;
++}
++
++.bluetooth-disconnect-button:hover {
++    background: #f4433640;
++}
++
++.bluetooth-pair-button {
++    background: #ffffff15;
++    color: #ffffff;
++}
++
++.bluetooth-pair-button:hover {
++    background: #ffffff25;
++}
++
++.bluetooth-scan-button {
++    margin-top: 8px;
++    padding: 8px 16px;
++    background: #2196f3;
++    color: #ffffff;
++    border: none;
++    border-radius: 4px;
++}
++
++.bluetooth-scan-button:hover {
++    background: #1976d2;
++}
++
++.bluetooth-scanning {
++    background: #f44336;
++}
++
++.bluetooth-scanning:hover {
++    background: #d32f2f;
++}
+diff --git a/hyprline-bar/src/ui/bar.rs b/hyprline-bar/src/ui/bar.rs
+index 9598a6b..32c833f 100644
+--- a/hyprline-bar/src/ui/bar.rs
++++ b/hyprline-bar/src/ui/bar.rs
+@@ -1,24 +1,25 @@
+-use crate::config::{get_config, subscribe_config_changes, WidgetType, WidgetPosition};
+-use crate::domain::workspace_service::WorkspaceService;
+-use crate::domain::system_tray_service::SystemTrayService;
+-use crate::domain::datetime_service::DateTimeService;
++use crate::config::{get_config, subscribe_config_changes, WidgetPosition, WidgetType};
+ use crate::domain::battery_service::BatteryService;
+-use crate::domain::volume_service::VolumeService;
+-use crate::domain::notification_service::NotificationService;
++use crate::domain::bluetooth_service::BluetoothService;
++use crate::domain::brightness_service::BrightnessService;
++use crate::domain::datetime_service::DateTimeService;
+ use crate::domain::keyboard_layout_service::KeyboardLayoutService;
+-use crate::domain::system_resources_service::SystemResourcesService;
++use crate::domain::models::DateTimeConfig;
+ use crate::domain::network_service::NetworkService;
+-use crate::domain::brightness_service::BrightnessService;
++use crate::domain::notification_service::NotificationService;
+ use crate::domain::submap_service::SubmapService;
+-use crate::domain::models::DateTimeConfig;
++use crate::domain::system_resources_service::SystemResourcesService;
++use crate::domain::system_tray_service::SystemTrayService;
++use crate::domain::volume_service::VolumeService;
++use crate::domain::workspace_service::WorkspaceService;
+ use crate::infrastructure::event_listener;
+ use crate::shared_state::SharedState;
+ use crate::ui::{
+-    active_window::ActiveWindowWidget, datetime::DateTimeWidget, menu::Menu,
+-    system_tray::SystemTrayWidget, workspaces::WorkspacesWidget, battery::BatteryWidget,
+-    volume::VolumeWidget, notifications::NotificationWidget,
+-    keyboard_layout::KeyboardLayoutWidget, system_resources::SystemResourcesWidget,
+-    network::NetworkWidget, brightness::BrightnessWidget, submap::SubmapWidget,
++    active_window::ActiveWindowWidget, battery::BatteryWidget, bluetooth::BluetoothWidget,
++    brightness::BrightnessWidget, datetime::DateTimeWidget, keyboard_layout::KeyboardLayoutWidget,
++    menu::Menu, network::NetworkWidget, notifications::NotificationWidget, submap::SubmapWidget,
++    system_resources::SystemResourcesWidget, system_tray::SystemTrayWidget, volume::VolumeWidget,
++    workspaces::WorkspacesWidget,
+ };
+ use gtk4::prelude::*;
+ use gtk4::{gdk, glib};
+@@ -44,6 +45,7 @@ pub struct WidgetContext {
+     pub keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync>,
+     pub system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
+     pub network_service: Arc<dyn NetworkService + Send + Sync>,
++    pub bluetooth_service: Arc<dyn BluetoothService + Send + Sync>,
+     pub brightness_service: Arc<dyn BrightnessService + Send + Sync>,
+     pub submap_service: Arc<dyn SubmapService + Send + Sync>,
+     pub shared_state: Arc<SharedState>,
+@@ -61,6 +63,7 @@ struct CreatedWidgets {
+     keyboard_layout: Option<Arc<Mutex<KeyboardLayoutWidget>>>,
+     system_resources: Option<Arc<Mutex<SystemResourcesWidget>>>,
+     network: Option<NetworkWidget>,
++    bluetooth: Option<BluetoothWidget>,
+     brightness: Option<BrightnessWidget>,
+     submap: Option<Arc<Mutex<SubmapWidget>>>,
+ }
+@@ -78,6 +81,7 @@ impl CreatedWidgets {
+             keyboard_layout: None,
+             system_resources: None,
+             network: None,
++            bluetooth: None,
+             brightness: None,
+             submap: None,
+         }
+@@ -110,6 +114,7 @@ impl Bar {
+         keyboard_layout_service: Arc<dyn KeyboardLayoutService + Send + Sync>,
+         system_resources_service: Arc<dyn SystemResourcesService + Send + Sync>,
+         network_service: Arc<dyn NetworkService + Send + Sync>,
++        bluetooth_service: Arc<dyn BluetoothService + Send + Sync>,
+         brightness_service: Arc<dyn BrightnessService + Send + Sync>,
+         submap_service: Arc<dyn SubmapService + Send + Sync>,
+         shared_state: Arc<SharedState>,
+@@ -117,8 +122,11 @@ impl Bar {
+         let window = gtk4::ApplicationWindow::new(app);
+ 
+         eprintln!("[Bar] Creating bar for monitor: {}", monitor_name);
+-        eprintln!("[Bar] Layer shell supported: {}", gtk4_layer_shell::is_supported());
+-        
++        eprintln!(
++            "[Bar] Layer shell supported: {}",
++            gtk4_layer_shell::is_supported()
++        );
++
+         window.init_layer_shell();
+         eprintln!("[Bar] Layer shell initialized for window");
+         window.set_title(Some(&format!("Bar - {}", monitor_name)));
+@@ -138,7 +146,10 @@ impl Bar {
+                     if Self::try_bind_to_monitor(&win, &monitor_name_owned) {
+                         eprintln!("[Bar] ✓ Delayed binding to monitor: {}", monitor_name_owned);
+                     } else {
+-                        eprintln!("[Bar] ✗ Monitor not found after delay: {}", monitor_name_owned);
++                        eprintln!(
++                            "[Bar] ✗ Monitor not found after delay: {}",
++                            monitor_name_owned
++                        );
+                     }
+                 }
+             });
+@@ -205,6 +216,7 @@ impl Bar {
+             keyboard_layout_service,
+             system_resources_service,
+             network_service,
++            bluetooth_service,
+             brightness_service,
+             submap_service,
+             shared_state: shared_state.clone(),
+@@ -282,15 +294,21 @@ impl Bar {
+             let config = get_config().read().unwrap();
+             let profile = config.get_profile_for_monitor(&self.context.monitor_name);
+ 
+-            let mut left: Vec<_> = profile.widgets.iter()
++            let mut left: Vec<_> = profile
++                .widgets
++                .iter()
+                 .filter(|w| w.enabled && w.position == WidgetPosition::Left)
+                 .map(|w| (w.widget_type, w.order))
+                 .collect();
+-            let mut center: Vec<_> = profile.widgets.iter()
++            let mut center: Vec<_> = profile
++                .widgets
++                .iter()
+                 .filter(|w| w.enabled && w.position == WidgetPosition::Center)
+                 .map(|w| (w.widget_type, w.order))
+                 .collect();
+-            let mut right: Vec<_> = profile.widgets.iter()
++            let mut right: Vec<_> = profile
++                .widgets
++                .iter()
+                 .filter(|w| w.enabled && w.position == WidgetPosition::Right)
+                 .map(|w| (w.widget_type, w.order))
+                 .collect();
+@@ -301,8 +319,12 @@ impl Bar {
+ 
+             (left, center, right)
+         };
+-        eprintln!("[Bar] Config loaded: {} left, {} center, {} right widgets", 
+-                  left_widgets.len(), center_widgets.len(), right_widgets.len());
++        eprintln!(
++            "[Bar] Config loaded: {} left, {} center, {} right widgets",
++            left_widgets.len(),
++            center_widgets.len(),
++            right_widgets.len()
++        );
+ 
+         // Создаём виджеты для каждой зоны
+         for (widget_type, _) in left_widgets {
+@@ -354,7 +376,9 @@ impl Bar {
+                 widgets.workspaces = Some(widget);
+             }
+             WidgetType::ActiveWindow => {
+-                let widget = Arc::new(Mutex::new(ActiveWindowWidget::new(ctx.workspace_service.clone())));
++                let widget = Arc::new(Mutex::new(ActiveWindowWidget::new(
++                    ctx.workspace_service.clone(),
++                )));
+                 container.append(widget.lock().unwrap().widget());
+                 widgets.active_window = Some(widget);
+             }
+@@ -382,17 +406,23 @@ impl Bar {
+                 widgets.volume = Some(widget);
+             }
+             WidgetType::Notifications => {
+-                let widget = Arc::new(Mutex::new(NotificationWidget::new(ctx.notification_service.clone())));
++                let widget = Arc::new(Mutex::new(NotificationWidget::new(
++                    ctx.notification_service.clone(),
++                )));
+                 container.append(widget.lock().unwrap().widget());
+                 widgets.notifications = Some(widget);
+             }
+             WidgetType::KeyboardLayout => {
+-                let widget = Arc::new(Mutex::new(KeyboardLayoutWidget::new(ctx.keyboard_layout_service.clone())));
++                let widget = Arc::new(Mutex::new(KeyboardLayoutWidget::new(
++                    ctx.keyboard_layout_service.clone(),
++                )));
+                 container.append(widget.lock().unwrap().widget());
+                 widgets.keyboard_layout = Some(widget);
+             }
+             WidgetType::SystemResources => {
+-                let widget = Arc::new(Mutex::new(SystemResourcesWidget::new(ctx.system_resources_service.clone())));
++                let widget = Arc::new(Mutex::new(SystemResourcesWidget::new(
++                    ctx.system_resources_service.clone(),
++                )));
+                 container.append(widget.lock().unwrap().widget());
+                 widgets.system_resources = Some(widget);
+             }
+@@ -401,6 +431,11 @@ impl Bar {
+                 container.append(&widget.container);
+                 widgets.network = Some(widget);
+             }
++            WidgetType::Bluetooth => {
++                let widget = BluetoothWidget::new(ctx.bluetooth_service.clone());
++                container.append(&widget.container);
++                widgets.bluetooth = Some(widget);
++            }
+             WidgetType::Brightness => {
+                 let widget = BrightnessWidget::new(ctx.brightness_service.clone());
+                 container.append(&widget.container);
+@@ -669,7 +704,11 @@ impl Bar {
+ 
+     /// Получить ссылку на контейнеры для hot reload
+     pub fn get_zone_boxes(&self) -> (gtk4::Box, gtk4::Box, gtk4::Box) {
+-        (self.left_box.clone(), self.center_box.clone(), self.right_box.clone())
++        (
++            self.left_box.clone(),
++            self.center_box.clone(),
++            self.right_box.clone(),
++        )
+     }
+ 
+     /// Пытается привязать окно к монитору по имени
+@@ -678,7 +717,10 @@ impl Bar {
+         if let Some(display) = gdk::Display::default() {
+             let monitors = display.monitors();
+             for i in 0..monitors.n_items() {
+-                if let Some(monitor) = monitors.item(i).and_then(|m| m.downcast::<gdk::Monitor>().ok()) {
++                if let Some(monitor) = monitors
++                    .item(i)
++                    .and_then(|m| m.downcast::<gdk::Monitor>().ok())
++                {
+                     if let Some(connector) = monitor.connector() {
+                         if connector.as_str() == monitor_name {
+                             window.set_monitor(Some(&monitor));
+@@ -692,4 +734,3 @@ impl Bar {
+         false
+     }
+ }
+-
+diff --git a/hyprline-bar/src/ui/mod.rs b/hyprline-bar/src/ui/mod.rs
+index 0effef8..51e2730 100644
+--- a/hyprline-bar/src/ui/mod.rs
++++ b/hyprline-bar/src/ui/mod.rs
+@@ -1,19 +1,19 @@
+ pub mod active_window;
+ pub mod bar;
++pub mod battery;
++pub mod bluetooth;
++pub mod brightness;
+ pub mod calendar;
+ pub mod datetime;
++pub mod keyboard_layout;
+ pub mod menu;
++pub mod network;
++pub mod notifications;
++pub mod settings;
++pub mod submap;
++pub mod system_resources;
+ pub mod system_tray;
+-pub mod workspaces;
+-pub mod battery;
+ pub mod volume;
+ pub mod volume_osd;
+ pub mod volume_slider;
+-pub mod notifications;
+-pub mod keyboard_layout;
+-pub mod system_resources;
+-pub mod network;
+-pub mod brightness;
+-pub mod settings;
+-pub mod submap;
+-
++pub mod workspaces;
+diff --git a/hyprline-bar/src/ui/settings.rs b/hyprline-bar/src/ui/settings.rs
+index 702e629..6329b89 100644
+--- a/hyprline-bar/src/ui/settings.rs
++++ b/hyprline-bar/src/ui/settings.rs
+@@ -1,13 +1,14 @@
+ use gtk4::prelude::*;
+ use gtk4::{
+-    Box as GtkBox, Button, Label, ListBox, ListBoxRow, Orientation,
+-    ScrolledWindow, Separator, Window, Switch, Frame, ComboBoxText, Entry,
+-    glib,
++    glib, Box as GtkBox, Button, ComboBoxText, Entry, Frame, Label, ListBox, ListBoxRow,
++    Orientation, ScrolledWindow, Separator, Switch, Window,
+ };
+ use std::cell::RefCell;
+ use std::rc::Rc;
+ 
+-use crate::config::{WidgetType, WidgetPosition, WidgetConfig, get_config, save_config, HyprlineConfig};
++use crate::config::{
++    get_config, save_config, HyprlineConfig, WidgetConfig, WidgetPosition, WidgetType,
++};
+ use crate::domain::workspace_service::WorkspaceService;
+ 
+ /// Окно настроек
+@@ -52,7 +53,9 @@ impl SettingsWindow {
+         header.set_halign(gtk4::Align::Start);
+         container.append(&header);
+ 
+-        let description = Label::new(Some("Manage widget profiles. Each profile can have different widget configuration."));
++        let description = Label::new(Some(
++            "Manage widget profiles. Each profile can have different widget configuration.",
++        ));
+         description.add_css_class("settings-description");
+         description.set_halign(gtk4::Align::Start);
+         description.set_wrap(true);
+@@ -117,7 +120,9 @@ impl SettingsWindow {
+         let profile_combo_for_new = profile_combo.clone();
+         new_btn.connect_clicked(move |btn| {
+             let dialog = create_input_dialog(
+-                btn.root().and_then(|r| r.downcast::<Window>().ok()).as_ref(),
++                btn.root()
++                    .and_then(|r| r.downcast::<Window>().ok())
++                    .as_ref(),
+                 "New Profile",
+                 "Profile name:",
+                 "",
+@@ -126,9 +131,11 @@ impl SettingsWindow {
+             let combo = profile_combo_for_new.clone();
+             dialog.connect_response(move |dlg, response| {
+                 if response == gtk4::ResponseType::Ok {
+-                    if let Some(entry) = dlg.content_area().first_child().and_then(|w| {
+-                        w.last_child().and_then(|e| e.downcast::<Entry>().ok())
+-                    }) {
++                    if let Some(entry) = dlg
++                        .content_area()
++                        .first_child()
++                        .and_then(|w| w.last_child().and_then(|e| e.downcast::<Entry>().ok()))
++                    {
+                         let name = entry.text().to_string();
+                         if !name.is_empty() {
+                             let mut config = get_config().write().unwrap();
+@@ -152,7 +159,9 @@ impl SettingsWindow {
+         duplicate_btn.connect_clicked(move |btn| {
+             if let Some(current) = profile_combo_for_dup.active_id() {
+                 let dialog = create_input_dialog(
+-                    btn.root().and_then(|r| r.downcast::<Window>().ok()).as_ref(),
++                    btn.root()
++                        .and_then(|r| r.downcast::<Window>().ok())
++                        .as_ref(),
+                     "Duplicate Profile",
+                     "New profile name:",
+                     &format!("{} (Copy)", current),
+@@ -162,9 +171,11 @@ impl SettingsWindow {
+                 let current_name = current.to_string();
+                 dialog.connect_response(move |dlg, response| {
+                     if response == gtk4::ResponseType::Ok {
+-                        if let Some(entry) = dlg.content_area().first_child().and_then(|w| {
+-                            w.last_child().and_then(|e| e.downcast::<Entry>().ok())
+-                        }) {
++                        if let Some(entry) = dlg
++                            .content_area()
++                            .first_child()
++                            .and_then(|w| w.last_child().and_then(|e| e.downcast::<Entry>().ok()))
++                        {
+                             let name = entry.text().to_string();
+                             if !name.is_empty() {
+                                 let mut config = get_config().write().unwrap();
+@@ -191,7 +202,9 @@ impl SettingsWindow {
+                 }
+ 
+                 let dialog = create_input_dialog(
+-                    btn.root().and_then(|r| r.downcast::<Window>().ok()).as_ref(),
++                    btn.root()
++                        .and_then(|r| r.downcast::<Window>().ok())
++                        .as_ref(),
+                     "Rename Profile",
+                     "New name:",
+                     &current,
+@@ -201,9 +214,11 @@ impl SettingsWindow {
+                 let current_name = current.to_string();
+                 dialog.connect_response(move |dlg, response| {
+                     if response == gtk4::ResponseType::Ok {
+-                        if let Some(entry) = dlg.content_area().first_child().and_then(|w| {
+-                            w.last_child().and_then(|e| e.downcast::<Entry>().ok())
+-                        }) {
++                        if let Some(entry) = dlg
++                            .content_area()
++                            .first_child()
++                            .and_then(|w| w.last_child().and_then(|e| e.downcast::<Entry>().ok()))
++                        {
+                             let new_name = entry.text().to_string();
+                             if !new_name.is_empty() && new_name != current_name {
+                                 let mut config = get_config().write().unwrap();
+@@ -251,7 +266,9 @@ impl SettingsWindow {
+     }
+ 
+     /// Создаёт UI для настройки мониторов
+-    pub fn create_monitors_settings(workspace_service: std::sync::Arc<dyn WorkspaceService + Send + Sync>) -> GtkBox {
++    pub fn create_monitors_settings(
++        workspace_service: std::sync::Arc<dyn WorkspaceService + Send + Sync>,
++    ) -> GtkBox {
+         let container = GtkBox::new(Orientation::Vertical, 16);
+         container.add_css_class("settings-monitors");
+         container.set_margin_start(24);
+@@ -607,7 +624,10 @@ impl SettingsWindow {
+         // Загружаем текущие значения
+         let (current_width, current_bottom_margin) = {
+             let config = get_config().read().unwrap();
+-            (config.notification_center.width, config.notification_center.bottom_margin)
++            (
++                config.notification_center.width,
++                config.notification_center.bottom_margin,
++            )
+         };
+ 
+         // Width
+@@ -659,26 +679,26 @@ impl SettingsWindow {
+         let retention_label = Label::new(Some("Keep notifications:"));
+         retention_label.set_halign(gtk4::Align::Start);
+         retention_label.set_hexpand(true);
+-        
++
+         let current_retention = {
+             let config = get_config().read().unwrap();
+             config.notification_retention_days
+         };
+-        
++
+         let retention_spin = gtk4::SpinButton::with_range(0.0, 30.0, 1.0);
+         retention_spin.set_value(current_retention as f64);
+         retention_spin.set_width_chars(4);
+-        
++
+         let retention_suffix = Label::new(Some("days (0 = forever)"));
+         retention_suffix.add_css_class("settings-hint");
+-        
++
+         retention_spin.connect_value_changed(move |spin| {
+             let mut config = get_config().write().unwrap();
+             config.notification_retention_days = spin.value() as u32;
+             drop(config);
+             let _ = save_config();
+         });
+-        
++
+         retention_row.append(&retention_label);
+         retention_row.append(&retention_spin);
+         retention_row.append(&retention_suffix);
+@@ -719,22 +739,29 @@ impl SettingsWindow {
+ 
+         // Загружаем данные из конфигурации
+         let left_widgets: Rc<RefCell<Vec<(WidgetType, bool)>>> = Rc::new(RefCell::new(Vec::new()));
+-        let center_widgets: Rc<RefCell<Vec<(WidgetType, bool)>>> = Rc::new(RefCell::new(Vec::new()));
++        let center_widgets: Rc<RefCell<Vec<(WidgetType, bool)>>> =
++            Rc::new(RefCell::new(Vec::new()));
+         let right_widgets: Rc<RefCell<Vec<(WidgetType, bool)>>> = Rc::new(RefCell::new(Vec::new()));
+ 
+         {
+             let config = get_config().read().unwrap();
+             let profile = config.get_active_profile();
+ 
+-            let mut left_vec: Vec<_> = profile.widgets.iter()
++            let mut left_vec: Vec<_> = profile
++                .widgets
++                .iter()
+                 .filter(|w| w.position == WidgetPosition::Left)
+                 .map(|w| (w.widget_type, w.enabled, w.order))
+                 .collect();
+-            let mut center_vec: Vec<_> = profile.widgets.iter()
++            let mut center_vec: Vec<_> = profile
++                .widgets
++                .iter()
+                 .filter(|w| w.position == WidgetPosition::Center)
+                 .map(|w| (w.widget_type, w.enabled, w.order))
+                 .collect();
+-            let mut right_vec: Vec<_> = profile.widgets.iter()
++            let mut right_vec: Vec<_> = profile
++                .widgets
++                .iter()
+                 .filter(|w| w.position == WidgetPosition::Right)
+                 .map(|w| (w.widget_type, w.enabled, w.order))
+                 .collect();
+@@ -889,7 +916,11 @@ impl SettingsWindow {
+             let mut new_widgets = Vec::new();
+ 
+             // Функция для сбора виджетов из GtkBox
+-            fn collect_widgets(list: &GtkBox, position: WidgetPosition, new_widgets: &mut Vec<WidgetConfig>) {
++            fn collect_widgets(
++                list: &GtkBox,
++                position: WidgetPosition,
++                new_widgets: &mut Vec<WidgetConfig>,
++            ) {
+                 let mut child = list.first_child();
+                 let mut order = 0i32;
+                 while let Some(widget) = child {
+@@ -934,12 +965,20 @@ impl SettingsWindow {
+ }
+ 
+ /// Создаёт диалог ввода текста
+-fn create_input_dialog(parent: Option<&Window>, title: &str, label: &str, default: &str) -> gtk4::Dialog {
++fn create_input_dialog(
++    parent: Option<&Window>,
++    title: &str,
++    label: &str,
++    default: &str,
++) -> gtk4::Dialog {
+     let dialog = gtk4::Dialog::with_buttons(
+         Some(title),
+         parent,
+         gtk4::DialogFlags::MODAL | gtk4::DialogFlags::DESTROY_WITH_PARENT,
+-        &[("Cancel", gtk4::ResponseType::Cancel), ("OK", gtk4::ResponseType::Ok)],
++        &[
++            ("Cancel", gtk4::ResponseType::Cancel),
++            ("OK", gtk4::ResponseType::Ok),
++        ],
+     );
+ 
+     let content = dialog.content_area();
+@@ -979,8 +1018,8 @@ fn create_widget_row(
+ 
+     // Сохраняем тип виджета в data
+     unsafe {
+-        row.set_data("widget_type", widget_type as i32);
+-        row.set_data("enabled", enabled as i32);
++        row.set_data("widget_type", widget_type);
++        row.set_data("enabled", enabled);
+     }
+ 
+     // Верхняя строка: кнопки вверх/вниз, иконка и название
+@@ -1112,7 +1151,7 @@ fn create_widget_row(
+     switch.connect_state_set(move |_, state| {
+         if let Some(r) = row_weak.upgrade() {
+             unsafe {
+-                r.set_data("enabled", state as i32);
++                r.set_data("enabled", state);
+             }
+         }
+         glib::Propagation::Proceed
+@@ -1127,27 +1166,11 @@ fn create_widget_row(
+ /// Получает тип виджета и состояние enabled из GtkBox child
+ fn get_widget_from_box_child(widget: &gtk4::Widget) -> Option<(WidgetType, bool)> {
+     unsafe {
+-        let widget_type_raw: Option<i32> = widget.data("widget_type").map(|p| *p.as_ref());
+-        let enabled_raw: Option<i32> = widget.data("enabled").map(|p| *p.as_ref());
+-
+-        if let (Some(wt), Some(en)) = (widget_type_raw, enabled_raw) {
+-            let widget_type = match wt {
+-                0 => WidgetType::Menu,
+-                1 => WidgetType::Workspaces,
+-                2 => WidgetType::ActiveWindow,
+-                3 => WidgetType::SystemTray,
+-                4 => WidgetType::SystemResources,
+-                5 => WidgetType::Network,
+-                6 => WidgetType::Volume,
+-                7 => WidgetType::Brightness,
+-                8 => WidgetType::Battery,
+-                9 => WidgetType::KeyboardLayout,
+-                10 => WidgetType::Notifications,
+-                11 => WidgetType::DateTime,
+-                12 => WidgetType::Submap,
+-                _ => return None,
+-            };
+-            return Some((widget_type, en != 0));
++        let widget_type: Option<WidgetType> = widget.data("widget_type").map(|p| *p.as_ref());
++        let enabled: Option<bool> = widget.data("enabled").map(|p| *p.as_ref());
++
++        if let (Some(wt), Some(en)) = (widget_type, enabled) {
++            return Some((wt, en));
+         }
+     }
+     None
+@@ -1193,19 +1216,27 @@ pub fn show_settings(app: &gtk4::Application) {
+ 
+     // Пункты меню
+     let profiles_item = SettingsWindow::create_menu_item("󰁯", "Profiles");
+-    unsafe { profiles_item.set_data("page", "profiles"); }
++    unsafe {
++        profiles_item.set_data("page", "profiles");
++    }
+     menu_list.append(&profiles_item);
+ 
+     let monitors_item = SettingsWindow::create_menu_item("󰍹", "Monitors");
+-    unsafe { monitors_item.set_data("page", "monitors"); }
++    unsafe {
++        monitors_item.set_data("page", "monitors");
++    }
+     menu_list.append(&monitors_item);
+ 
+     let widgets_item = SettingsWindow::create_menu_item("󰘔", "Widgets");
+-    unsafe { widgets_item.set_data("page", "widgets"); }
++    unsafe {
++        widgets_item.set_data("page", "widgets");
++    }
+     menu_list.append(&widgets_item);
+ 
+     let appearance_item = SettingsWindow::create_menu_item("󰏘", "Appearance");
+-    unsafe { appearance_item.set_data("page", "appearance"); }
++    unsafe {
++        appearance_item.set_data("page", "appearance");
++    }
+     menu_list.append(&appearance_item);
+ 
+     menu_box.append(&menu_list);
+@@ -1226,7 +1257,9 @@ pub fn show_settings(app: &gtk4::Application) {
+     content_container.borrow().set_vexpand(true);
+ 
+     // Показываем настройки профилей по умолчанию
+-    content_container.borrow().append(&SettingsWindow::create_profiles_settings());
++    content_container
++        .borrow()
++        .append(&SettingsWindow::create_profiles_settings());
+ 
+     content_box.append(&content_container.borrow().clone());
+     main_box.append(&content_box);
+@@ -1236,8 +1269,9 @@ pub fn show_settings(app: &gtk4::Application) {
+ 
+     // Обработчик выбора пункта меню
+     let content_container_clone = content_container.clone();
+-    let workspace_service: std::sync::Arc<dyn crate::domain::workspace_service::WorkspaceService + Send + Sync>
+-        = std::sync::Arc::new(HyprlandIpc::new());
++    let workspace_service: std::sync::Arc<
++        dyn crate::domain::workspace_service::WorkspaceService + Send + Sync,
++    > = std::sync::Arc::new(HyprlandIpc::new());
+ 
+     menu_list.connect_row_selected(move |_, row| {
+         if let Some(row) = row {
+@@ -1249,9 +1283,7 @@ pub fn show_settings(app: &gtk4::Application) {
+             }
+ 
+             // Получаем имя страницы из data
+-            let page_name: Option<&str> = unsafe {
+-                row.data::<&str>("page").map(|p| *p.as_ref())
+-            };
++            let page_name: Option<&str> = unsafe { row.data::<&str>("page").map(|p| *p.as_ref()) };
+ 
+             // Показываем нужную страницу
+             match page_name {
+@@ -1259,7 +1291,9 @@ pub fn show_settings(app: &gtk4::Application) {
+                     content.append(&SettingsWindow::create_profiles_settings());
+                 }
+                 Some("monitors") => {
+-                    content.append(&SettingsWindow::create_monitors_settings(workspace_service.clone()));
++                    content.append(&SettingsWindow::create_monitors_settings(
++                        workspace_service.clone(),
++                    ));
+                 }
+                 Some("widgets") => {
+                     content.append(&SettingsWindow::create_widgets_settings());
+@@ -1279,4 +1313,3 @@ pub fn show_settings(app: &gtk4::Application) {
+ 
+     window.present();
+ }
+-
+diff --git a/hyprline-notifications/Cargo.toml b/hyprline-notifications/Cargo.toml
+index 83446a5..8f14e4f 100644
+--- a/hyprline-notifications/Cargo.toml
++++ b/hyprline-notifications/Cargo.toml
+@@ -11,7 +11,7 @@ gtk4 = "0.9"
+ gtk4-layer-shell = "0.4"
+ 
+ # D-Bus
+-zbus = { version = "4", default-features = false, features = ["tokio"] }
++zbus = { version = "5", default-features = false, features = ["tokio"] }
+ 
+ # Async runtime
+ tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+@@ -33,4 +33,3 @@ tracing-subscriber = "0.3"
+ 
+ # HTML parsing
+ regex-lite = "0.1"
+-
+diff --git a/hyprline-notifications/src/dbus_service.rs b/hyprline-notifications/src/dbus_service.rs
+index c72ba5e..4bd1102 100644
+--- a/hyprline-notifications/src/dbus_service.rs
++++ b/hyprline-notifications/src/dbus_service.rs
+@@ -1,9 +1,9 @@
++use async_channel::Sender;
+ use std::collections::HashMap;
+-use std::sync::Arc;
+ use std::sync::atomic::{AtomicU32, Ordering};
++use std::sync::Arc;
+ use tokio::sync::Mutex;
+-use zbus::{interface, Connection, SignalContext};
+-use async_channel::Sender;
++use zbus::{interface, object_server::SignalEmitter, Connection};
+ 
+ use crate::notification::{Notification, NotificationData, NotificationUrgency};
+ use crate::repository::NotificationRepository;
+@@ -52,7 +52,7 @@ impl NotificationDbusService {
+     }
+ 
+     /// Отправить сигнал об изменении количества уведомлений
+-    async fn emit_count_changed(&self, ctxt: &SignalContext<'_>) {
++    async fn emit_count_changed(&self, ctxt: &SignalEmitter<'_>) {
+         let count = {
+             let repo = self.repository.lock().await;
+             repo.get_count().unwrap_or(0) as u32
+@@ -86,7 +86,7 @@ impl NotificationDbusService {
+     /// Отправить уведомление
+     async fn notify(
+         &self,
+-        #[zbus(signal_context)] ctxt: SignalContext<'_>,
++        #[zbus(signal_context)] ctxt: SignalEmitter<'_>,
+         app_name: String,
+         replaces_id: u32,
+         app_icon: String,
+@@ -157,11 +157,11 @@ impl NotificationDbusService {
+     /// Закрыть уведомление (закрывает popup, но НЕ удаляет из истории)
+     async fn close_notification(
+         &self,
+-        #[zbus(signal_context)] ctxt: SignalContext<'_>,
++        #[zbus(signal_context)] ctxt: SignalEmitter<'_>,
+         id: u32,
+     ) -> zbus::fdo::Result<()> {
+         eprintln!("[NotificationService] CloseNotification called for id={} (popup only, keeping in history)", id);
+-        
++
+         // НЕ удаляем из БД - только закрываем popup
+         // Уведомление остаётся в истории для просмотра пользователем
+         // Удаление из истории происходит только через DeleteNotification
+@@ -175,7 +175,7 @@ impl NotificationDbusService {
+     /// Сигнал: уведомление закрыто
+     #[zbus(signal)]
+     async fn notification_closed(
+-        ctxt: &SignalContext<'_>,
++        ctxt: &SignalEmitter<'_>,
+         id: u32,
+         reason: u32,
+     ) -> zbus::Result<()>;
+@@ -183,7 +183,7 @@ impl NotificationDbusService {
+     /// Сигнал: действие активировано
+     #[zbus(signal)]
+     async fn action_invoked(
+-        ctxt: &SignalContext<'_>,
++        ctxt: &SignalEmitter<'_>,
+         id: u32,
+         action_key: String,
+     ) -> zbus::Result<()>;
+@@ -215,7 +215,7 @@ impl NotificationDbusService {
+     /// Удалить уведомление по ID
+     async fn delete_notification(
+         &self,
+-        #[zbus(signal_context)] ctxt: SignalContext<'_>,
++        #[zbus(signal_context)] ctxt: SignalEmitter<'_>,
+         id: u32,
+     ) -> bool {
+         let result = {
+@@ -232,10 +232,7 @@ impl NotificationDbusService {
+     }
+ 
+     /// Очистить все уведомления
+-    async fn clear_history(
+-        &self,
+-        #[zbus(signal_context)] ctxt: SignalContext<'_>,
+-    ) -> u32 {
++    async fn clear_history(&self, #[zbus(signal_context)] ctxt: SignalEmitter<'_>) -> u32 {
+         let deleted = {
+             let mut repo = self.repository.lock().await;
+             repo.clear_all().unwrap_or(0) as u32
+@@ -261,9 +258,5 @@ impl NotificationDbusService {
+ 
+     /// Сигнал: количество уведомлений изменилось
+     #[zbus(signal)]
+-    async fn notification_count_changed(
+-        ctxt: &SignalContext<'_>,
+-        count: u32,
+-    ) -> zbus::Result<()>;
++    async fn notification_count_changed(ctxt: &SignalEmitter<'_>, count: u32) -> zbus::Result<()>;
+ }
+-

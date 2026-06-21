@@ -1,0 +1,748 @@
+cargo test: 4 passed (1 suite, 0.00s)
+cargo test: 4 passed (1 suite, 0.00s)
+warning: unused imports: `BarPadding`, `MonitorConfig`, `NotificationCenterConfig`, and `notify_config_changed`
+ --> hyprline-bar/src/config/mod.rs:6:20
+  |
+6 |     WidgetProfile, MonitorConfig, BarPadding,
+  |                    ^^^^^^^^^^^^^  ^^^^^^^^^^
+7 |     NotificationCenterConfig,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+8 |     get_config, save_config, subscribe_config_changes, notify_config_changed
+  |                                                        ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+warning: unused import: `crate::domain::models::MenuItem`
+   --> hyprline-bar/src/infrastructure/status_notifier_tray.rs:389:13
+    |
+389 |         use crate::domain::models::MenuItem;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+warning: unused import: `subscribe_config_changes`
+ --> hyprline-bar/src/ui/bar.rs:1:33
+  |
+1 | use crate::config::{get_config, subscribe_config_changes, WidgetPosition, WidgetType};
+  |                                 ^^^^^^^^^^^^^^^^^^^^^^^^
+warning: unused import: `RefCell`
+ --> hyprline-bar/src/ui/notifications.rs:4:23
+  |
+4 | use std::cell::{Cell, RefCell};
+  |                       ^^^^^^^
+warning: unused import: `HyprlineConfig`
+  --> hyprline-bar/src/ui/settings.rs:10:30
+   |
+10 |     get_config, save_config, HyprlineConfig, WidgetConfig, WidgetPosition, WidgetType,
+   |                              ^^^^^^^^^^^^^^
+warning: unused variable: `ctx`
+   --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:116:9
+    |
+116 |         ctx: &SignalEmitter<'_>,
+    |         ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+warning: unused variable: `ctx`
+   --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:125:9
+    |
+125 |         ctx: &SignalEmitter<'_>,
+    |         ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+warning: unused variable: `ctx`
+   --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:132:53
+    |
+132 |     async fn status_notifier_host_registered(&self, ctx: &SignalEmitter<'_>) -> zbus::Result<()> {}
+    |                                                     ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+warning: unused variable: `ctx`
+   --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:116:9
+    |
+116 |         ctx: &SignalEmitter<'_>,
+    |         ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+warning: unused variable: `profile_combo_clone`
+   --> hyprline-bar/src/ui/settings.rs:109:13
+    |
+109 |         let profile_combo_clone = profile_combo.clone();
+    |             ^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_profile_combo_clone`
+warning: unused variable: `top_spin_clone`
+   --> hyprline-bar/src/ui/settings.rs:463:13
+    |
+463 |         let top_spin_clone = top_spin.clone();
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_top_spin_clone`
+warning: unused variable: `bottom_spin_clone`
+   --> hyprline-bar/src/ui/settings.rs:479:13
+    |
+479 |         let bottom_spin_clone = bottom_spin.clone();
+    |             ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_bottom_spin_clone`
+warning: unused variable: `left_spin_clone`
+   --> hyprline-bar/src/ui/settings.rs:495:13
+    |
+495 |         let left_spin_clone = left_spin.clone();
+    |             ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_left_spin_clone`
+warning: struct `WidgetConfig` is never constructed
+ --> hyprline-bar/src/config/bar_config.rs:5:12
+  |
+5 | pub struct WidgetConfig {
+  |            ^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+warning: enum `WidgetZone` is never used
+  --> hyprline-bar/src/config/bar_config.rs:12:10
+   |
+12 | pub enum WidgetZone {
+   |          ^^^^^^^^^^
+warning: enum `WidgetType` is never used
+  --> hyprline-bar/src/config/bar_config.rs:20:10
+   |
+20 | pub enum WidgetType {
+   |          ^^^^^^^^^^
+warning: struct `BarConfig` is never constructed
+  --> hyprline-bar/src/config/bar_config.rs:37:12
+   |
+37 | pub struct BarConfig {
+   |            ^^^^^^^^^
+warning: function `load_bar_config` is never used
+   --> hyprline-bar/src/config/bar_config.rs:153:8
+    |
+153 | pub fn load_bar_config() -> BarConfig {
+    |        ^^^^^^^^^^^^^^^
+warning: methods `get_profile_names`, `widgets_for_position`, `get_widget`, and `update_widget` are never used
+   --> hyprline-bar/src/config/widget_config.rs:639:12
+    |
+374 | impl HyprlineConfig {
+    | ------------------- methods in this implementation
+...
+639 |     pub fn get_profile_names(&self) -> Vec<&str> {
+    |            ^^^^^^^^^^^^^^^^^
+...
+644 |     pub fn widgets_for_position(&self, position: WidgetPosition) -> Vec<&WidgetConfig> {
+    |            ^^^^^^^^^^^^^^^^^^^^
+...
+656 |     pub fn get_widget(&self, widget_type: WidgetType) -> Option<&WidgetConfig> {
+    |            ^^^^^^^^^^
+...
+664 |     pub fn update_widget(
+    |            ^^^^^^^^^^^^^
+warning: methods `get_connected_devices` and `remove_device` are never used
+  --> hyprline-bar/src/domain/bluetooth_service.rs:12:8
+   |
+ 4 | pub trait BluetoothService: Send + Sync {
+   |           ---------------- methods in this trait
+...
+12 |     fn get_connected_devices(&self) -> Vec<BluetoothDevice>;
+   |        ^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     fn remove_device(&self, address: &str) -> Result<(), String>;
+   |        ^^^^^^^^^^^^^
+warning: methods `increase_brightness` and `decrease_brightness` are never used
+  --> hyprline-bar/src/domain/brightness_service.rs:12:8
+   |
+ 4 | pub trait BrightnessService: Send + Sync {
+   |           ----------------- methods in this trait
+...
+12 |     fn increase_brightness(&self, percent: u32) -> Result<(), String>;
+   |        ^^^^^^^^^^^^^^^^^^^
+...
+15 |     fn decrease_brightness(&self, percent: u32) -> Result<(), String>;
+   |        ^^^^^^^^^^^^^^^^^^^
+warning: field `actions` is never read
+   --> hyprline-bar/src/domain/models.rs:149:9
+    |
+141 | pub struct Notification {
+    |            ------------ field in this struct
+...
+149 |     pub actions: Vec<String>,
+    |         ^^^^^^^
+    |
+    = note: `Notification` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: field `speed` is never read
+   --> hyprline-bar/src/domain/models.rs:167:9
+    |
+161 | pub struct NetworkConnection {
+    |            ----------------- field in this struct
+...
+167 |     pub speed: Option<u64>,          // Mbps
+    |         ^^^^^
+    |
+    = note: `NetworkConnection` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: field `in_use` is never read
+   --> hyprline-bar/src/domain/models.rs:182:9
+    |
+178 | pub struct WiFiNetwork {
+    |            ----------- field in this struct
+...
+182 |     pub in_use: bool,
+    |         ^^^^^^
+    |
+    = note: `WiFiNetwork` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: variants `WPA3` and `Enterprise` are never constructed
+   --> hyprline-bar/src/domain/models.rs:191:5
+    |
+186 | pub enum WiFiSecurity {
+    |          ------------ variants in this enum
+...
+191 |     WPA3,
+    |     ^^^^
+192 |     Enterprise,
+    |     ^^^^^^^^^^
+    |
+    = note: `WiFiSecurity` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: field `adapter_name` is never read
+   --> hyprline-bar/src/domain/models.rs:218:9
+    |
+215 | pub struct BluetoothInfo {
+    |            ------------- field in this struct
+...
+218 |     pub adapter_name: String,
+    |         ^^^^^^^^^^^^
+    |
+    = note: `BluetoothInfo` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: fields `trusted` and `icon` are never read
+   --> hyprline-bar/src/domain/models.rs:229:9
+    |
+223 | pub struct BluetoothDevice {
+    |            --------------- fields in this struct
+...
+229 |     pub trusted: bool,
+    |         ^^^^^^^
+230 |     pub icon: Option<String>,
+    |         ^^^^
+    |
+    = note: `BluetoothDevice` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+warning: method `disconnect` is never used
+  --> hyprline-bar/src/domain/network_service.rs:15:8
+   |
+ 4 | pub trait NetworkService {
+   |           -------------- method in this trait
+...
+15 |     fn disconnect(&self) -> Result<(), String>;
+   |        ^^^^^^^^^^
+warning: methods `get_history_page` and `show_history_window` are never used
+  --> hyprline-bar/src/domain/notification_service.rs:15:8
+   |
+ 4 | pub trait NotificationService: Send + Sync {
+   |           ------------------- methods in this trait
+...
+15 |     fn get_history_page(&self, offset: usize, limit: usize) -> Vec<Notification>;
+   |        ^^^^^^^^^^^^^^^^
+...
+24 |     fn show_history_window(&self);
+   |        ^^^^^^^^^^^^^^^^^^^
+warning: method `get_registered_items` is never used
+  --> hyprline-bar/src/domain/status_notifier_watcher_service.rs:12:8
+   |
+ 3 | pub trait StatusNotifierWatcherService: Send + Sync {
+   |           ---------------------------- method in this trait
+...
+12 |     fn get_registered_items(&self) -> Vec<String>;
+   |        ^^^^^^^^^^^^^^^^^^^^
+warning: method `get_current_submap` is never used
+ --> hyprline-bar/src/domain/submap_service.rs:6:8
+  |
+4 | pub trait SubmapService: Send + Sync {
+  |           ------------- method in this trait
+5 |     /// Получает информацию о текущем submap
+6 |     fn get_current_submap(&self) -> SubmapInfo;
+  |        ^^^^^^^^^^^^^^^^^^
+warning: method `set_mute` is never used
+  --> hyprline-bar/src/domain/volume_service.rs:15:8
+   |
+ 4 | pub trait VolumeService {
+   |           ------------- method in this trait
+...
+15 |     fn set_mute(&self, muted: bool) -> Result<(), String>;
+   |        ^^^^^^^^
+warning: fields `item_registered_tx` and `item_unregistered_tx` are never read
+  --> hyprline-bar/src/infrastructure/dbus_status_notifier_watcher.rs:11:5
+   |
+ 9 | struct WatcherState {
+   |        ------------ fields in this struct
+10 |     registered_items: Arc<Mutex<Vec<String>>>,
+11 |     item_registered_tx: Option<Sender<String>>,
+   |     ^^^^^^^^^^^^^^^^^^
+12 |     item_unregistered_tx: Option<Sender<String>>,
+   |     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `WatcherState` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+warning: struct `HyprlandDevice` is never constructed
+ --> hyprline-bar/src/infrastructure/hyprland_keyboard_layout.rs:7:8
+  |
+7 | struct HyprlandDevice {
+  |        ^^^^^^^^^^^^^^
+warning: method `get_current_submap_name` is never used
+   --> hyprline-bar/src/infrastructure/hyprland_submap.rs:291:12
+    |
+ 20 | impl HyprlandSubmapService {
+    | -------------------------- method in this implementation
+...
+291 |     pub fn get_current_submap_name(&self) -> String {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^
+warning: associated items `start_monitoring` and `monitor_network_changes` are never used
+  --> hyprline-bar/src/infrastructure/networkmanager.rs:37:12
+   |
+13 | impl NetworkManagerService {
+   | -------------------------- associated items in this implementation
+...
+37 |     pub fn start_monitoring(&mut self, update_tx: Sender<()>) {
+   |            ^^^^^^^^^^^^^^^^
+...
+56 |     fn monitor_network_changes(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^
+warning: methods `get_history_page` and `show_history_window` are never used
+   --> hyprline-bar/src/infrastructure/notification_client.rs:81:12
+    |
+ 54 | impl NotificationClient {
+    | ----------------------- methods in this implementation
+...
+ 81 |     pub fn get_history_page(&self, offset: u32, limit: u32) -> Result<Vec<NotificationData>, String> {
+    |            ^^^^^^^^^^^^^^^^
+...
+102 |     pub fn show_history_window(&self) -> Result<(), String> {
+    |            ^^^^^^^^^^^^^^^^^^^
+warning: method `is_connected` is never used
+  --> hyprline-bar/src/infrastructure/remote_notification_service.rs:32:12
+   |
+12 | impl RemoteNotificationService {
+   | ------------------------------ method in this implementation
+...
+32 |     pub fn is_connected(&self) -> bool {
+   |            ^^^^^^^^^^^^
+warning: field `config_changed_callbacks` is never read
+  --> hyprline-bar/src/shared_state.rs:60:5
+   |
+34 | pub struct SharedState {
+   |            ----------- field in this struct
+...
+60 |     config_changed_callbacks: Mutex<Callbacks>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+warning: methods `get_battery`, `get_volume`, `is_notification_alert`, `notify_config_changed`, and `subscribe_config_changed` are never used
+   --> hyprline-bar/src/shared_state.rs:100:12
+    |
+ 64 | impl SharedState {
+    | ---------------- methods in this implementation
+...
+100 |     pub fn get_battery(&self) -> Option<BatteryInfo> {
+    |            ^^^^^^^^^^^
+...
+120 |     pub fn get_volume(&self) -> Option<VolumeInfo> {
+    |            ^^^^^^^^^^
+...
+214 |     pub fn is_notification_alert(&self) -> bool {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+...
+309 |     pub fn notify_config_changed(&self) {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+...
+313 |     pub fn subscribe_config_changed<F>(&self, callback: F)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+warning: field `shared_state` is never read
+  --> hyprline-bar/src/ui/bar.rs:51:9
+   |
+34 | pub struct WidgetContext {
+   |            ------------- field in this struct
+...
+51 |     pub shared_state: Arc<SharedState>,
+   |         ^^^^^^^^^^^^
+   |
+   = note: `WidgetContext` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+warning: method `get_zone_boxes` is never used
+   --> hyprline-bar/src/ui/bar.rs:706:12
+    |
+102 | impl Bar {
+    | -------- method in this implementation
+...
+706 |     pub fn get_zone_boxes(&self) -> (gtk4::Box, gtk4::Box, gtk4::Box) {
+    |            ^^^^^^^^^^^^^^
+warning: fields `icon_label` and `percentage_label` are never read
+  --> hyprline-bar/src/ui/brightness.rs:11:5
+   |
+ 9 | pub struct BrightnessWidget {
+   |            ---------------- fields in this struct
+10 |     pub container: GtkBox,
+11 |     icon_label: Label,
+   |     ^^^^^^^^^^
+12 |     percentage_label: Label,
+   |     ^^^^^^^^^^^^^^^^
+warning: method `update` is never used
+  --> hyprline-bar/src/ui/brightness.rs:78:12
+   |
+15 | impl BrightnessWidget {
+   | --------------------- method in this implementation
+...
+78 |     pub fn update(&self) {
+   |            ^^^^^^
+warning: field `service` is never read
+  --> hyprline-bar/src/ui/notifications.rs:14:5
+   |
+12 | pub struct NotificationWidget {
+   |            ------------------ field in this struct
+13 |     button: gtk4::Button,
+14 |     service: Arc<dyn NotificationService + Send + Sync>,
+   |     ^^^^^^^
+warning: field `is_interactive` is never read
+  --> hyprline-bar/src/ui/volume_slider.rs:11:5
+   |
+ 7 | pub struct VolumeSlider {
+   |            ------------ field in this struct
+...
+11 |     is_interactive: bool,
+   |     ^^^^^^^^^^^^^^
+warning: methods `set_value`, `set_muted`, `get_value`, and `is_muted` are never used
+   --> hyprline-bar/src/ui/volume_slider.rs:245:12
+    |
+ 14 | impl VolumeSlider {
+    | ----------------- methods in this implementation
+...
+245 |     pub fn set_value(&self, volume: u8) {
+    |            ^^^^^^^^^
+...
+258 |     pub fn set_muted(&self, muted: bool) {
+    |            ^^^^^^^^^
+...
+264 |     pub fn get_value(&self) -> u8 {
+    |            ^^^^^^^^^
+...
+269 |     pub fn is_muted(&self) -> bool {
+    |            ^^^^^^^^
+warning: unused `Result` that must be used
+   --> hyprline-bar/src/ui/settings.rs:459:13
+    |
+459 |             save_config();
+    |             ^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` (part of `#[warn(unused)]`) on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+459 |             let _ = save_config();
+    |             +++++++
+cargo build: 0 errors, 48 warnings (1 crates)
+git diff exit code: 0
+--- .omo/evidence/baseline-hyprland-lua-workspace-labels.diff	2026-06-19 21:35:54.629057161 +0300
++++ .omo/evidence/final-target-diff-hyprland-lua-workspace-labels.diff	2026-06-19 22:29:06.527814721 +0300
+@@ -1,11 +1,257 @@
++diff --git a/README.md b/README.md
++index e0dbd3b..0a92adb 100644
++--- a/README.md
+++++ b/README.md
++@@ -129,15 +129,15 @@ Built-in StatusNotifierWatcher automatically:
++ 
++ ### Workspace Keybindings
++ 
++-Hyprline automatically reads your Hyprland configuration to display workspace hotkeys.
+++Hyprline reads registered workspace binds from Hyprland through its IPC socket to display workspace hotkeys.
++ 
++ **How it works:**
++-1. Locates `hyprland.conf` in `$XDG_CONFIG_HOME/hypr/` or `~/.config/hypr/`
++-2. Parses lines starting with `bind` that contain `workspace`
++-3. Extracts keybindings in format: `bind = MODIFIERS, KEY, workspace, NUMBER`
++-4. Displays the key on each workspace button
+++1. Reads the registered bind list from Hyprland over the socket
+++2. Extracts the key from binds using the `workspace` dispatcher
+++3. Displays the key on each workspace button
+++4. Falls back to the workspace number when no label is available
++ 
++-**Example config:**
+++**Example registered binds:**
++ ```conf
++ bind = SUPER, 1, workspace, 1
++ bind = SUPER, 2, workspace, 2
++@@ -148,8 +148,6 @@ Result: Workspace buttons show `1`, `2`, `Q` respectively.
++ 
++ **Features:**
++ - Auto-detection of workspace keybindings
++-- Case-insensitive key matching
++-- Ignores commented lines (`#`)
++ - Falls back to numbers if bindings not found
++ 
++ ### Dependencies
++@@ -315,15 +313,15 @@ exec-once = /path/to/hyprline
++ 
++ ### Горячие клавиши воркспейсов
++ 
++-Hyprline автоматически читает конфигурацию Hyprland для отображения горячих клавиш воркспейсов.
+++Hyprline читает зарегистрированные бинды воркспейсов из Hyprland через его IPC-сокет, чтобы показывать горячие клавиши воркспейсов.
++ 
++ **Как это работает:**
++-1. Находит `hyprland.conf` в `$XDG_CONFIG_HOME/hypr/` или `~/.config/hypr/`
++-2. Парсит строки, начинающиеся с `bind`, содержащие `workspace`
++-3. Извлекает привязки клавиш в формате: `bind = МОДИФИКАТОРЫ, КЛАВИША, workspace, НОМЕР`
++-4. Отображает клавишу на каждой кнопке воркспейса
+++1. Читает список зарегистрированных биндов из Hyprland по сокету
+++2. Извлекает клавишу из биндов с диспетчером `workspace`
+++3. Показывает эту клавишу на каждой кнопке воркспейса
+++4. Откатывается к номеру воркспейса, если метка недоступна
++ 
++-**Пример конфига:**
+++**Пример зарегистрированных биндов:**
++ ```conf
++ bind = SUPER, 1, workspace, 1
++ bind = SUPER, 2, workspace, 2
++@@ -334,8 +332,6 @@ bind = SUPER, Q, workspace, 3
++ 
++ **Возможности:**
++ - Автоопределение привязок клавиш воркспейсов
++-- Регистронезависимое сопоставление клавиш
++-- Игнорирование закомментированных строк (`#`)
++ - Откат к номерам, если привязки не найдены
++ 
++ ### Зависимости
++@@ -377,4 +373,3 @@ bind = SUPER, Q, workspace, 3
++ - **Хранилище:** SQLite (rusqlite)
++ - **Сборка:** Cargo со встраиванием ресурсов
++ 
++-
++diff --git a/hyprline-bar/src/config/mod.rs b/hyprline-bar/src/config/mod.rs
++index ee86ff9..9391808 100644
++--- a/hyprline-bar/src/config/mod.rs
+++++ b/hyprline-bar/src/config/mod.rs
++@@ -7,44 +7,3 @@ pub use widget_config::{
++     NotificationCenterConfig,
++     get_config, save_config, subscribe_config_changes, notify_config_changed
++ };
++-
++-use std::collections::HashMap;
++-
++-pub fn parse_workspace_bindings() -> HashMap<i32, String> {
++-    let mut bindings = HashMap::new();
++-
++-    let config_path = if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
++-        format!("{}/hypr/hyprland.conf", xdg_config)
++-    } else if let Ok(home) = std::env::var("HOME") {
++-        format!("{}/.config/hypr/hyprland.conf", home)
++-    } else {
++-        return bindings;
++-    };
++-
++-    let config_content = match std::fs::read_to_string(&config_path) {
++-        Ok(content) => content,
++-        Err(_) => return bindings,
++-    };
++-
++-    for line in config_content.lines() {
++-        let line = line.trim();
++-
++-        if line.starts_with('#') {
++-            continue;
++-        }
++-
++-        if line.starts_with("bind") && line.contains("workspace") {
++-            let parts: Vec<&str> = line.split(',').collect();
++-            if parts.len() >= 4 {
++-                let key = parts[1].trim().to_uppercase();
++-                let workspace_str = parts[3].trim();
++-                if let Ok(workspace_id) = workspace_str.parse::<i32>() {
++-                    bindings.insert(workspace_id, key);
++-                }
++-            }
++-        }
++-    }
++-
++-    bindings
++-}
++-
++diff --git a/hyprline-bar/src/infrastructure/hyprland_ipc.rs b/hyprline-bar/src/infrastructure/hyprland_ipc.rs
++index beba875..660fba7 100644
++--- a/hyprline-bar/src/infrastructure/hyprland_ipc.rs
+++++ b/hyprline-bar/src/infrastructure/hyprland_ipc.rs
++@@ -1,5 +1,8 @@
++ use crate::domain::models::{ActiveWorkspace, Monitor, MonitorInfo, MonitorWithWorkspace, Workspace};
++ use crate::domain::workspace_service::WorkspaceService;
+++use serde::Deserialize;
+++use std::collections::HashMap;
+++use std::collections::hash_map::Entry;
++ use std::io::{Read, Write};
++ use std::os::unix::net::UnixStream;
++ 
++@@ -10,6 +13,13 @@ impl HyprlandIpc {
++         Self
++     }
++ 
+++    pub fn get_workspace_key_labels(&self) -> HashMap<i32, String> {
+++        self.send_request("j/binds")
+++            .ok()
+++            .and_then(|response| parse_workspace_bind_labels(&response).ok())
+++            .unwrap_or_default()
+++    }
+++
++     fn get_control_socket(&self) -> Option<String> {
++         if let Ok(sig) = std::env::var("HYPRLAND_INSTANCE_SIGNATURE") {
++             if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
++@@ -83,6 +93,60 @@ impl HyprlandIpc {
++     }
++ }
++ 
+++fn parse_workspace_bind_labels(response: &str) -> Result<HashMap<i32, String>, serde_json::Error> {
+++    let binds: Vec<HyprlandBind> = serde_json::from_str(response)?;
+++    let mut labels = HashMap::new();
+++
+++    for bind in binds {
+++        let Some(workspace_id) = bind.workspace_id() else {
+++            continue;
+++        };
+++
+++        let label = bind.key.to_uppercase();
+++
+++        match labels.entry(workspace_id) {
+++            Entry::Vacant(entry) => {
+++                entry.insert(label);
+++            }
+++            Entry::Occupied(mut entry) if is_numeric_label(entry.get()) && !is_numeric_label(&label) => {
+++                entry.insert(label);
+++            }
+++            Entry::Occupied(_) => {}
+++        }
+++    }
+++
+++    Ok(labels)
+++}
+++
+++fn is_numeric_label(label: &str) -> bool {
+++    !label.is_empty() && label.chars().all(|ch| ch.is_ascii_digit())
+++}
+++
+++#[derive(Debug, Deserialize)]
+++struct HyprlandBind {
+++    dispatcher: String,
+++    arg: String,
+++    key: String,
+++    #[serde(default)]
+++    submap: Option<String>,
+++    #[serde(default)]
+++    mouse: bool,
+++}
+++
+++impl HyprlandBind {
+++    fn workspace_id(&self) -> Option<i32> {
+++        if self.dispatcher != "workspace" || self.mouse || !self.submap.as_deref().unwrap_or("").is_empty() {
+++            return None;
+++        }
+++
+++        if !self.arg.chars().all(|ch| ch.is_ascii_digit()) {
+++            return None;
+++        }
+++
+++        self.arg.parse::<i32>().ok().filter(|id| *id > 0)
+++    }
+++}
+++
++ impl WorkspaceService for HyprlandIpc {
++     fn get_monitors(&self) -> Vec<Monitor> {
++         match self.send_request("j/monitors") {
++@@ -164,3 +228,36 @@ impl WorkspaceService for HyprlandIpc {
++     }
++ }
++ 
+++#[cfg(test)]
+++mod tests {
+++    use super::parse_workspace_bind_labels;
+++    use std::collections::HashMap;
+++
+++    fn parse_labels(input: &str) -> HashMap<i32, String> {
+++        parse_workspace_bind_labels(input).expect("workspace bind labels parse")
+++    }
+++
+++    #[test]
+++    fn workspace_bind_labels_workspace_1_numeric_key_maps_to_numeric_label() {
+++        let labels = parse_labels(r#"[{"dispatcher":"workspace","arg":"1","key":"1","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
+++        assert_eq!(labels, HashMap::from([(1, String::from("1"))]));
+++    }
+++
+++    #[test]
+++    fn workspace_bind_labels_workspace_2_letter_key_maps_to_uppercase_label() {
+++        let labels = parse_labels(r#"[{"dispatcher":"workspace","arg":"2","key":"q","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
+++        assert_eq!(labels, HashMap::from([(2, String::from("Q"))]));
+++    }
+++
+++    #[test]
+++    fn workspace_bind_labels_ignores_non_workspace_and_non_default_bind_rows() {
+++        let labels = parse_labels(r#"[{"dispatcher":"movetoworkspace","arg":"1","key":"q","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"special:magic","key":"w","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"e+1","key":"e","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"-1","key":"r","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"4","key":"t","modmask":64,"submap":"resize","mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"5","key":"y","modmask":64,"submap":null,"mouse":true,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"not-a-workspace","key":"u","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
+++        assert!(labels.is_empty());
+++    }
+++
+++    #[test]
+++    fn workspace_bind_labels_prefers_non_numeric_key_over_numeric_key_for_same_workspace() {
+++        let labels = parse_labels(r#"[{"dispatcher":"workspace","arg":"3","key":"3","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"3","key":"q","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
+++        assert_eq!(labels, HashMap::from([(3, String::from("Q"))]));
+++    }
+++}
+ diff --git a/hyprline-bar/src/main.rs b/hyprline-bar/src/main.rs
+-index 9e2eda9..f17907c 100644
++index 9e2eda9..dd11248 100644
+ --- a/hyprline-bar/src/main.rs
+ +++ b/hyprline-bar/src/main.rs
+-@@ -5,34 +5,36 @@ mod shared_state;
++@@ -4,35 +4,36 @@ mod infrastructure;
++ mod shared_state;
+  mod ui;
+  
+- use config::parse_workspace_bindings;
++-use config::parse_workspace_bindings;
+ -use domain::workspace_service::WorkspaceService;
+ -use domain::system_tray_service::SystemTrayService;
+ -use domain::datetime_service::DateTimeService;
+@@ -57,7 +303,7 @@
+  
+  use gtk4::prelude::*;
+  use gtk4::{gdk, glib};
+-@@ -87,7 +89,11 @@ fn get_layout_full_name(short_name: &str) -> String {
++@@ -87,7 +88,11 @@ fn get_layout_full_name(short_name: &str) -> String {
+          "japanese" | "jp" => "JP".to_string(),
+          "korean" | "kr" => "KR".to_string(),
+          "chinese" | "cn" => "CN".to_string(),
+@@ -70,7 +316,7 @@
+      }
+  }
+  
+-@@ -95,22 +101,26 @@ fn build_ui(app: &gtk4::Application) {
++@@ -95,22 +100,27 @@ fn build_ui(app: &gtk4::Application) {
+      // Запускаем свой StatusNotifierWatcher D-Bus сервис
+      let watcher_service = Arc::new(DbusStatusNotifierWatcher::new());
+      if let Err(e) = watcher_service.start() {
+@@ -85,10 +331,12 @@
+      // Даём время сервису зарегистрироваться в D-Bus
+      std::thread::sleep(std::time::Duration::from_millis(200));
+ -    
+-+
+-     let service: Arc<dyn WorkspaceService + Send + Sync> = Arc::new(HyprlandIpc::new());
++-    let service: Arc<dyn WorkspaceService + Send + Sync> = Arc::new(HyprlandIpc::new());
+ -    
+ +
+++    let hyprland_ipc_impl = Arc::new(HyprlandIpc::new());
+++    let service: Arc<dyn WorkspaceService + Send + Sync> = hyprland_ipc_impl.clone();
+++
+      // Создаём системный трей сервис
+      let tray_service_impl = Arc::new(StatusNotifierTrayService::new());
+      let tray_service: Arc<dyn SystemTrayService + Send + Sync> = tray_service_impl.clone();
+@@ -238,9 +486,12 @@
+                          *prev_count_clone.borrow_mut() = new_count;
+                          shared_state_for_listener.update_notifications(new_count);
+                      }
+-@@ -414,11 +452,15 @@ fn build_ui(app: &gtk4::Application) {
++@@ -412,13 +450,17 @@ fn build_ui(app: &gtk4::Application) {
++         });
++     }
+  
+-     let workspace_keys = parse_workspace_bindings();
++-    let workspace_keys = parse_workspace_bindings();
+++    let workspace_keys = hyprland_ipc_impl.get_workspace_key_labels();
+      let monitors = service.get_monitors();
+ -    eprintln!("[Main] Found {} monitors: {:?}", monitors.len(), monitors.iter().map(|m| &m.name).collect::<Vec<_>>());
+ +    eprintln!(
+ Cargo.lock                                         | 570 ++++-----------------
+ README.md                                          |  29 +-
+ hyprline-bar/Cargo.toml                            |   4 +-
+ hyprline-bar/src/config/bar_config.rs              |  12 +-
+ hyprline-bar/src/config/mod.rs                     |  41 --
+ hyprline-bar/src/config/widget_config.rs           | 245 +++++++--
+ hyprline-bar/src/domain/mod.rs                     |  20 +-
+ hyprline-bar/src/domain/models.rs                  |  62 ++-
+ .../infrastructure/dbus_status_notifier_watcher.rs |  53 +-
+ hyprline-bar/src/infrastructure/hyprland_ipc.rs    |  97 ++++
+ .../src/infrastructure/lumen_brightness.rs         |  72 ++-
+ hyprline-bar/src/infrastructure/mod.rs             |  23 +-
+ hyprline-bar/src/infrastructure/pipewire_volume.rs |  28 +-
+ hyprline-bar/src/main.rs                           | 267 ++++++----
+ hyprline-bar/src/shared_state.rs                   |  93 +++-
+ hyprline-bar/src/styles.css                        | 235 +++++++--
+ hyprline-bar/src/ui/bar.rs                         |  99 ++--
+ hyprline-bar/src/ui/mod.rs                         |  20 +-
+ hyprline-bar/src/ui/settings.rs                    | 167 +++---
+ hyprline-notifications/Cargo.toml                  |   3 +-
+ hyprline-notifications/src/dbus_service.rs         |  31 +-
+ 21 files changed, 1231 insertions(+), 940 deletions(-)
+no forbidden runtime path added in feature files

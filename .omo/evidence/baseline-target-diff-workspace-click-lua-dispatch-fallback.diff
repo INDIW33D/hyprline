@@ -1,0 +1,319 @@
+diff --git a/hyprline-bar/src/infrastructure/hyprland_ipc.rs b/hyprline-bar/src/infrastructure/hyprland_ipc.rs
+index beba875..4d3c4ab 100644
+--- a/hyprline-bar/src/infrastructure/hyprland_ipc.rs
++++ b/hyprline-bar/src/infrastructure/hyprland_ipc.rs
+@@ -1,5 +1,8 @@
+ use crate::domain::models::{ActiveWorkspace, Monitor, MonitorInfo, MonitorWithWorkspace, Workspace};
+ use crate::domain::workspace_service::WorkspaceService;
++use serde::Deserialize;
++use std::collections::HashMap;
++use std::collections::hash_map::Entry;
+ use std::io::{Read, Write};
+ use std::os::unix::net::UnixStream;
+ 
+@@ -10,6 +13,13 @@ impl HyprlandIpc {
+         Self
+     }
+ 
++    pub fn get_workspace_key_labels(&self) -> HashMap<i32, String> {
++        self.send_request("j/binds")
++            .ok()
++            .and_then(|response| parse_workspace_bind_labels(&response).ok())
++            .unwrap_or_default()
++    }
++
+     fn get_control_socket(&self) -> Option<String> {
+         if let Ok(sig) = std::env::var("HYPRLAND_INSTANCE_SIGNATURE") {
+             if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
+@@ -83,6 +93,128 @@ impl HyprlandIpc {
+     }
+ }
+ 
++fn parse_workspace_bind_labels(response: &str) -> Result<HashMap<i32, String>, serde_json::Error> {
++    let binds: Vec<HyprlandBind> = serde_json::from_str(response)?;
++    let mut labels: HashMap<i32, (String, LabelSource)> = HashMap::new();
++
++    for bind in binds {
++        let Some((workspace_id, label, source)) = bind.workspace_label() else {
++            continue;
++        };
++
++        match labels.entry(workspace_id) {
++            Entry::Vacant(entry) => {
++                entry.insert((label, source));
++            }
++            Entry::Occupied(mut entry) => match (entry.get().1, source) {
++                (LabelSource::Legacy, LabelSource::Description) => {
++                    entry.insert((label, source));
++                }
++                (LabelSource::Description, LabelSource::Description) => {}
++                (LabelSource::Description, LabelSource::Legacy) => {}
++                (LabelSource::Legacy, LabelSource::Legacy)
++                    if is_numeric_label(&entry.get().0) && !is_numeric_label(&label) =>
++                {
++                    entry.insert((label, source));
++                }
++                (LabelSource::Legacy, LabelSource::Legacy) => {}
++            }
++        }
++    }
++
++    Ok(labels
++        .into_iter()
++        .map(|(workspace_id, (label, _source))| (workspace_id, label))
++        .collect())
++}
++
++fn is_numeric_label(label: &str) -> bool {
++    !label.is_empty() && label.chars().all(|ch| ch.is_ascii_digit())
++}
++
++fn normalize_label(label: &str) -> String {
++    if label == "semicolon" {
++        String::from(";")
++    } else {
++        label.to_uppercase()
++    }
++}
++
++#[derive(Clone, Copy, Debug, Eq, PartialEq)]
++enum LabelSource {
++    Description,
++    Legacy,
++}
++
++#[derive(Debug, Deserialize)]
++struct HyprlandBind {
++    dispatcher: String,
++    arg: String,
++    key: String,
++    #[serde(default)]
++    description: Option<String>,
++    #[serde(default)]
++    has_description: bool,
++    #[serde(default)]
++    submap: Option<String>,
++    #[serde(default)]
++    mouse: bool,
++}
++
++impl HyprlandBind {
++    fn workspace_label(&self) -> Option<(i32, String, LabelSource)> {
++        if self.mouse || !self.submap.as_deref().unwrap_or("").is_empty() {
++            return None;
++        }
++
++        if let Some((workspace_id, label)) = self.description_workspace_label() {
++            return Some((workspace_id, label, LabelSource::Description));
++        }
++
++        self.legacy_workspace_id()
++            .map(|workspace_id| (workspace_id, normalize_label(&self.key), LabelSource::Legacy))
++    }
++
++    fn description_workspace_label(&self) -> Option<(i32, String)> {
++        const PREFIX: &str = "hyprline:workspace:";
++
++        if !self.has_description {
++            return None;
++        }
++
++        let description = self.description.as_deref()?;
++        let remainder = description.strip_prefix(PREFIX)?;
++        let (workspace_id_raw, label_raw) = remainder.split_once(':')?;
++
++        if workspace_id_raw.is_empty() || label_raw.is_empty() || label_raw.contains(':') {
++            return None;
++        }
++
++        if workspace_id_raw.starts_with('-') || !workspace_id_raw.chars().all(|ch| ch.is_ascii_digit()) {
++            return None;
++        }
++
++        if label_raw.chars().any(char::is_whitespace) {
++            return None;
++        }
++
++        let workspace_id = workspace_id_raw.parse::<i32>().ok().filter(|id| *id > 0)?;
++        Some((workspace_id, normalize_label(label_raw)))
++    }
++
++    fn legacy_workspace_id(&self) -> Option<i32> {
++        if self.dispatcher != "workspace" {
++            return None;
++        }
++
++        if !self.arg.chars().all(|ch| ch.is_ascii_digit()) {
++            return None;
++        }
++
++        self.arg.parse::<i32>().ok().filter(|id| *id > 0)
++    }
++}
++
+ impl WorkspaceService for HyprlandIpc {
+     fn get_monitors(&self) -> Vec<Monitor> {
+         match self.send_request("j/monitors") {
+@@ -164,3 +296,162 @@ impl WorkspaceService for HyprlandIpc {
+     }
+ }
+ 
++#[cfg(test)]
++mod tests {
++    use super::parse_workspace_bind_labels;
++    use std::collections::HashMap;
++
++    fn parse_labels(input: &str) -> HashMap<i32, String> {
++        parse_workspace_bind_labels(input).expect("workspace bind labels parse")
++    }
++
++    fn described_lua_bind(
++        key: &str,
++        arg: &str,
++        has_description: bool,
++        description: Option<&str>,
++        submap: Option<&str>,
++        mouse: bool,
++    ) -> String {
++        let description_json = description
++            .map(|value| format!("\"{value}\""))
++            .unwrap_or_else(|| String::from("null"));
++        let submap_json = submap
++            .map(|value| format!("\"{value}\""))
++            .unwrap_or_else(|| String::from("null"));
++
++        format!(
++            concat!(
++                "{{",
++                "\"dispatcher\":\"__lua\"",
++                ",\"arg\":\"{arg}\"",
++                ",\"key\":\"{key}\"",
++                ",\"has_description\":{has_description}",
++                ",\"description\":{description_json}",
++                ",\"submap\":{submap_json}",
++                ",\"mouse\":{mouse}",
++                "}}"
++            ),
++            arg = arg,
++            key = key,
++            has_description = has_description,
++            description_json = description_json,
++            submap_json = submap_json,
++            mouse = mouse,
++        )
++    }
++
++    fn legacy_workspace_bind(workspace_id: &str, key: &str) -> String {
++        format!(
++            concat!(
++                "{{",
++                "\"dispatcher\":\"workspace\"",
++                ",\"arg\":\"{workspace_id}\"",
++                ",\"key\":\"{key}\"",
++                ",\"modmask\":64",
++                ",\"submap\":null",
++                ",\"mouse\":false",
++                ",\"release\":false",
++                ",\"repeat\":false",
++                "}}"
++            ),
++            workspace_id = workspace_id,
++            key = key,
++        )
++    }
++
++    fn bind_array(rows: &[String]) -> String {
++        format!("[{}]", rows.join(","))
++    }
++
++    #[test]
++    fn workspace_bind_labels_workspace_1_numeric_key_maps_to_numeric_label() {
++        let labels = parse_labels(r#"[{"dispatcher":"workspace","arg":"1","key":"1","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
++        assert_eq!(labels, HashMap::from([(1, String::from("1"))]));
++    }
++
++    #[test]
++    fn workspace_bind_labels_workspace_2_letter_key_maps_to_uppercase_label() {
++        let labels = parse_labels(r#"[{"dispatcher":"workspace","arg":"2","key":"q","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
++        assert_eq!(labels, HashMap::from([(2, String::from("Q"))]));
++    }
++
++    #[test]
++    fn workspace_bind_labels_ignores_non_workspace_and_non_default_bind_rows() {
++        let labels = parse_labels(r#"[{"dispatcher":"movetoworkspace","arg":"1","key":"q","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"special:magic","key":"w","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"e+1","key":"e","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"-1","key":"r","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"4","key":"t","modmask":64,"submap":"resize","mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"5","key":"y","modmask":64,"submap":null,"mouse":true,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"not-a-workspace","key":"u","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
++        assert!(labels.is_empty());
++    }
++
++    #[test]
++    fn workspace_bind_labels_prefers_non_numeric_key_over_numeric_key_for_same_workspace() {
++        let labels = parse_labels(r#"[{"dispatcher":"workspace","arg":"3","key":"3","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false},{"dispatcher":"workspace","arg":"3","key":"q","modmask":64,"submap":null,"mouse":false,"release":false,"repeat":false}]"#);
++        assert_eq!(labels, HashMap::from([(3, String::from("Q"))]));
++    }
++
++    #[test]
++    fn workspace_bind_labels_described_lua_binds_map_and_normalize_labels() {
++        let labels = parse_labels(&bind_array(&[
++            described_lua_bind("q", "29", true, Some("hyprline:workspace:1:q"), None, false),
++            described_lua_bind("p", "48", true, Some("hyprline:workspace:20:semicolon"), None, false),
++            described_lua_bind("Q", "30", true, Some("hyprline:workspace:2:Q"), None, false),
++            described_lua_bind("1", "31", true, Some("hyprline:workspace:3:1"), None, false),
++        ]));
++
++        assert_eq!(
++            labels,
++            HashMap::from([
++                (1, String::from("Q")),
++                (2, String::from("Q")),
++                (3, String::from("1")),
++                (20, String::from(";")),
++            ])
++        );
++    }
++
++    #[test]
++    fn workspace_bind_labels_ignores_described_lua_binds_without_valid_description_metadata() {
++        let labels = parse_labels(&bind_array(&[
++            described_lua_bind("q", "29", false, Some("hyprline:workspace:1:q"), None, false),
++            described_lua_bind("w", "30", true, None, None, false),
++            described_lua_bind("e", "31", true, Some("workspace:1:e"), None, false),
++            described_lua_bind("r", "32", true, Some("hyprline:workspace::r"), None, false),
++            described_lua_bind("t", "33", true, Some("hyprline:workspace:5:"), None, false),
++            described_lua_bind("y", "34", true, Some("hyprline:workspace:not-a-number:y"), None, false),
++            described_lua_bind("u", "35", true, Some("hyprline:workspace:0:u"), None, false),
++            described_lua_bind("i", "36", true, Some("hyprline:workspace:-1:i"), None, false),
++            described_lua_bind("o", "37", true, Some("hyprline:workspace:1:o:extra"), None, false),
++            described_lua_bind("p", "38", true, Some(" hyprline:workspace:1:p"), None, false),
++            described_lua_bind("a", "39", true, Some("hyprline:workspace: 1:a"), None, false),
++            described_lua_bind("s", "40", true, Some("hyprline:workspace:1:s"), Some("resize"), false),
++            described_lua_bind("d", "41", true, Some("hyprline:workspace:1:d"), None, true),
++            described_lua_bind("f", "42", true, Some("hyprline:workspace:2:f"), None, false),
++        ]));
++
++        assert_eq!(labels, HashMap::from([(2, String::from("F"))]));
++    }
++
++    #[test]
++    fn workspace_bind_labels_described_lua_binds_take_precedence_over_legacy_binds_regardless_of_row_order() {
++        let labels = parse_labels(&bind_array(&[
++            legacy_workspace_bind("7", "7"),
++            described_lua_bind("q", "29", true, Some("hyprline:workspace:7:q"), None, false),
++            described_lua_bind("w", "30", true, Some("hyprline:workspace:8:w"), None, false),
++            legacy_workspace_bind("8", "8"),
++        ]));
++
++        assert_eq!(
++            labels,
++            HashMap::from([(7, String::from("Q")), (8, String::from("W"))])
++        );
++    }
++
++    #[test]
++    fn workspace_bind_labels_keeps_first_described_lua_label_for_same_workspace() {
++        let labels = parse_labels(&bind_array(&[
++            described_lua_bind("q", "29", true, Some("hyprline:workspace:9:q"), None, false),
++            described_lua_bind("w", "30", true, Some("hyprline:workspace:9:w"), None, false),
++        ]));
++
++        assert_eq!(labels, HashMap::from([(9, String::from("Q"))]));
++    }
++}

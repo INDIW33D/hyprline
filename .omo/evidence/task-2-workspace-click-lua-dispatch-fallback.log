@@ -1,0 +1,15 @@
+cargo test: 4 passed, 8 filtered out (1 suite, 0.34s)
+cargo test: 12 passed (1 suite, 0.34s)
+
+FORBIDDEN-PATH GREP: no matches for hyprctl|Command::new|std::process|read_to_string|zbus|dbus in hyprland_ipc.rs
+
+FAILURE PROOF (fallback temporarily disabled)
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 8 filtered out; finished in 2.08s
+[full output: ~/.local/share/rtk/tee/1782047645_cargo_test.log]
+
+RESTORE FALLBACK AND RERUN
+cargo test: 4 passed, 8 filtered out (1 suite, 0.34s)
+
+FINAL WORKSPACE TEST SUBSET
+cargo test: 12 passed (1 suite, 0.35s)
+PURE_LOC hyprline-bar/src/infrastructure/hyprland_ipc.rs: 678

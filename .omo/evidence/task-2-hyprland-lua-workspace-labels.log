@@ -1,0 +1,34 @@
+cargo test: 2 errors, 0 warnings (1 crates)
+error[E0609]: no field `data` on type `spa_pod_builder`
+  --> /home/indiw33d/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libspa-0.8.0/src/pod/builder.rs:38:25
+   |
+38 |         (*this).builder.data = (*this).data.as_mut_ptr().cast::<c_void>();
+   |                         ^^^^ unknown field
+   |
+   = note: available field is: `_address`
+
+error[E0609]: no field `size` on type `spa_pod_builder`
+  --> /home/indiw33d/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libspa-0.8.0/src/pod/builder.rs:39:25
+   |
+39 |         (*this).builder.size = (*this)
+   |                         ^^^^ unknown field
+   |
+   = note: available field is: `_address`
+[full output: ~/.local/share/rtk/tee/1781894636_cargo_test.log]
+cargo test: 2 errors, 0 warnings (1 crates)
+error[E0609]: no field `data` on type `spa_pod_builder`
+  --> /home/indiw33d/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libspa-0.8.0/src/pod/builder.rs:38:25
+   |
+38 |         (*this).builder.data = (*this).data.as_mut_ptr().cast::<c_void>();
+   |                         ^^^^ unknown field
+   |
+   = note: available field is: `_address`
+
+error[E0609]: no field `size` on type `spa_pod_builder`
+  --> /home/indiw33d/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libspa-0.8.0/src/pod/builder.rs:39:25
+   |
+39 |         (*this).builder.size = (*this)
+   |                         ^^^^ unknown field
+   |
+   = note: available field is: `_address`
+[full output: ~/.local/share/rtk/tee/1781894698_cargo_test.log]

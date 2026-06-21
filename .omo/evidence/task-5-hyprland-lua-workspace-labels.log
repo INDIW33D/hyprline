@@ -1,0 +1,41 @@
+   Compiling libspa v0.8.0
+error[E0609]: no field `data` on type `spa_pod_builder`
+  --> /home/indiw33d/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libspa-0.8.0/src/pod/builder.rs:38:25
+   |
+38 |         (*this).builder.data = (*this).data.as_mut_ptr().cast::<c_void>();
+   |                         ^^^^ unknown field
+   |
+   = note: available field is: `_address`
+
+error[E0609]: no field `size` on type `spa_pod_builder`
+  --> /home/indiw33d/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libspa-0.8.0/src/pod/builder.rs:39:25
+   |
+39 |         (*this).builder.size = (*this)
+   |                         ^^^^ unknown field
+   |
+   = note: available field is: `_address`
+
+For more information about this error, try `rustc --explain E0609`.
+error: could not compile `libspa` (lib) due to 2 previous errors
+ Cargo.lock                                         | 394 +++------------------
+ README.md                                          |  29 +-
+ hyprline-bar/Cargo.toml                            |   2 +-
+ hyprline-bar/src/config/bar_config.rs              |  12 +-
+ hyprline-bar/src/config/mod.rs                     |  41 ---
+ hyprline-bar/src/config/widget_config.rs           | 245 +++++++++++--
+ hyprline-bar/src/domain/mod.rs                     |  20 +-
+ hyprline-bar/src/domain/models.rs                  |  62 +++-
+ .../infrastructure/dbus_status_notifier_watcher.rs |  53 ++-
+ hyprline-bar/src/infrastructure/hyprland_ipc.rs    |  97 +++++
+ .../src/infrastructure/lumen_brightness.rs         |  72 +++-
+ hyprline-bar/src/infrastructure/mod.rs             |  23 +-
+ hyprline-bar/src/main.rs                           | 267 ++++++++------
+ hyprline-bar/src/shared_state.rs                   |  93 ++++-
+ hyprline-bar/src/styles.css                        | 235 +++++++++---
+ hyprline-bar/src/ui/bar.rs                         |  99 ++++--
+ hyprline-bar/src/ui/mod.rs                         |  20 +-
+ hyprline-bar/src/ui/settings.rs                    | 167 +++++----
+ hyprline-notifications/Cargo.toml                  |   3 +-
+ hyprline-notifications/src/dbus_service.rs         |  31 +-
+ 20 files changed, 1166 insertions(+), 799 deletions(-)
+no forbidden runtime path added in feature files
