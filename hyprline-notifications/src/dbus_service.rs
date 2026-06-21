@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
-use tokio::sync::Mutex;
-use zbus::{interface, Connection, SignalContext};
 use async_channel::Sender;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use zbus::{interface, object_server::SignalEmitter, Connection};
 
 use crate::notification::{Notification, NotificationData, NotificationUrgency};
 use crate::repository::NotificationRepository;
@@ -52,7 +52,7 @@ impl NotificationDbusService {
     }
 
     /// Отправить сигнал об изменении количества уведомлений
-    async fn emit_count_changed(&self, ctxt: &SignalContext<'_>) {
+    async fn emit_count_changed(&self, ctxt: &SignalEmitter<'_>) {
         let count = {
             let repo = self.repository.lock().await;
             repo.get_count().unwrap_or(0) as u32
@@ -86,7 +86,7 @@ impl NotificationDbusService {
     /// Отправить уведомление
     async fn notify(
         &self,
-        #[zbus(signal_context)] ctxt: SignalContext<'_>,
+        #[zbus(signal_context)] ctxt: SignalEmitter<'_>,
         app_name: String,
         replaces_id: u32,
         app_icon: String,
@@ -157,11 +157,11 @@ impl NotificationDbusService {
     /// Закрыть уведомление (закрывает popup, но НЕ удаляет из истории)
     async fn close_notification(
         &self,
-        #[zbus(signal_context)] ctxt: SignalContext<'_>,
+        #[zbus(signal_context)] ctxt: SignalEmitter<'_>,
         id: u32,
     ) -> zbus::fdo::Result<()> {
         eprintln!("[NotificationService] CloseNotification called for id={} (popup only, keeping in history)", id);
-        
+
         // НЕ удаляем из БД - только закрываем popup
         // Уведомление остаётся в истории для просмотра пользователем
         // Удаление из истории происходит только через DeleteNotification
@@ -175,7 +175,7 @@ impl NotificationDbusService {
     /// Сигнал: уведомление закрыто
     #[zbus(signal)]
     async fn notification_closed(
-        ctxt: &SignalContext<'_>,
+        ctxt: &SignalEmitter<'_>,
         id: u32,
         reason: u32,
     ) -> zbus::Result<()>;
@@ -183,7 +183,7 @@ impl NotificationDbusService {
     /// Сигнал: действие активировано
     #[zbus(signal)]
     async fn action_invoked(
-        ctxt: &SignalContext<'_>,
+        ctxt: &SignalEmitter<'_>,
         id: u32,
         action_key: String,
     ) -> zbus::Result<()>;
@@ -215,7 +215,7 @@ impl NotificationDbusService {
     /// Удалить уведомление по ID
     async fn delete_notification(
         &self,
-        #[zbus(signal_context)] ctxt: SignalContext<'_>,
+        #[zbus(signal_context)] ctxt: SignalEmitter<'_>,
         id: u32,
     ) -> bool {
         let result = {
@@ -232,10 +232,7 @@ impl NotificationDbusService {
     }
 
     /// Очистить все уведомления
-    async fn clear_history(
-        &self,
-        #[zbus(signal_context)] ctxt: SignalContext<'_>,
-    ) -> u32 {
+    async fn clear_history(&self, #[zbus(signal_context)] ctxt: SignalEmitter<'_>) -> u32 {
         let deleted = {
             let mut repo = self.repository.lock().await;
             repo.clear_all().unwrap_or(0) as u32
@@ -261,9 +258,5 @@ impl NotificationDbusService {
 
     /// Сигнал: количество уведомлений изменилось
     #[zbus(signal)]
-    async fn notification_count_changed(
-        ctxt: &SignalContext<'_>,
-        count: u32,
-    ) -> zbus::Result<()>;
+    async fn notification_count_changed(ctxt: &SignalEmitter<'_>, count: u32) -> zbus::Result<()>;
 }
-
